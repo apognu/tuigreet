@@ -164,14 +164,13 @@ pub fn draw(
 
 fn get_height(greeter: &Greeter, message: &Option<String>) -> u16 {
     let (_, message_height) = get_message_height(message, 2, 0);
+    let greeting_height = get_greeting_height(&greeter.greeting, 1, 0);
     let initial = match greeter.mode {
         Mode::Username => 5,
         Mode::Password => 7,
     };
 
-    let greeting = if let Some(_) = greeter.greeting { 2 } else { 0 };
-
-    initial + greeting + message_height
+    initial + greeting_height + message_height
 }
 
 fn get_greeting_height(greeting: &Option<String>, padding: u16, fallback: u16) -> u16 {
