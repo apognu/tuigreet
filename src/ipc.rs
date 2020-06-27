@@ -66,11 +66,15 @@ fn parse_response(
             true => crate::exit(AuthStatus::Success, stream),
 
             false => {
-                greeter.done = true;
+                if let Some(command) = &greeter.command {
+                    greeter.done = true;
 
-                greeter.request = Some(Request::StartSession {
-                    cmd: vec![greeter.config().opt_str("cmd").unwrap_or("".to_string())],
-                })
+                    greeter.request = Some(Request::StartSession {
+                        cmd: vec![command.clone()],
+                    })
+                } else {
+                    crate::exit(AuthStatus::Failure, stream);
+                }
             }
         },
 
