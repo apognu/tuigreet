@@ -5,10 +5,11 @@ use std::{
     io::{self, Write},
 };
 
+use chrono::prelude::*;
 use termion::{cursor::Goto, raw::RawTerminal};
 use tui::{
     backend::TermionBackend,
-    layout::{Constraint, Direction, Layout},
+    layout::{Alignment, Constraint, Layout},
     style::{Modifier, Style},
     widgets::{Paragraph, Text},
     Terminal,
@@ -34,15 +35,24 @@ pub fn draw(
     terminal.draw(|mut f| {
         let size = f.size();
         let chunks = Layout::default()
-            .constraints([Constraint::Min(1), Constraint::Length(1)].as_ref())
+            .constraints(
+                [
+                    Constraint::Length(1),
+                    Constraint::Min(1),
+                    Constraint::Length(1),
+                ]
+                .as_ref(),
+            )
             .split(size);
 
-        let status = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(100)].as_ref())
-            .split(chunks[1]);
+        if greeter.config().opt_present("time") {
+            let time_text = [Text::raw(get_time())];
+            let time = Paragraph::new(time_text.iter()).alignment(Alignment::Center);
 
-        let t = [
+            f.render_widget(time, chunks[0]);
+        }
+
+        let status_text = [
             Text::styled(
                 format!("ESC"),
                 Style::default().modifier(Modifier::REVERSED),
@@ -54,9 +64,9 @@ pub fn draw(
                 greeter.command.clone().unwrap_or("-".to_string())
             )),
         ];
-        let p = Paragraph::new(t.iter());
+        let status = Paragraph::new(status_text.iter());
 
-        f.render_widget(p, status[0]);
+        f.render_widget(status, chunks[2]);
 
         cursor = self::prompt::draw(greeter, &mut f).ok();
     })?;
@@ -68,4 +78,8 @@ pub fn draw(
     io::stdout().flush()?;
 
     Ok(())
+}
+
+fn get_time() -> String {
+    Local::now().format("%b, %d %h %Y - %H:%M").to_string()
 }

@@ -7,14 +7,15 @@ Graphical console greter for [greetd](https://git.sr.ht/~kennylevinsen/greetd).
 ## Usage
 
 ```
-Usage: greetd-tui [options]
+Usage: greetd-tui [OPTIONS]
 
 Options:
+    -h, --help          show this usage information
     -c, --cmd COMMAND   command to run
     -i, --issue         show the host's issue file
     -g, --greeting GREETING
                         show custom text above login prompt
-    -h, --help          show this usage information
+    -t, --time          display the current date and time
 ```
 
 ## Configuration

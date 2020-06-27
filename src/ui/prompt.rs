@@ -46,7 +46,7 @@ pub fn draw(
     f.render_widget(block, container);
 
     let (message, message_height) = get_message_height(&greeter.message, 1, 1);
-    let greeting_height = get_greeting_height(&greeter.greeting, 1, 0);
+    let (greeting, greeting_height) = get_greeting_height(&greeter.greeting, 1, 0);
 
     let constraints = [
         Constraint::Length(greeting_height), // Greeting
@@ -70,11 +70,9 @@ pub fn draw(
 
     let pos = chunks[USERNAME_INDEX];
 
-    if let Some(greeting) = &greeter.greeting {
+    if let Some(greeting) = &greeting {
         let greeting_text = [Text::raw(greeting.trim_end())];
-        let greeting_label = Paragraph::new(greeting_text.iter())
-            .alignment(Alignment::Center)
-            .wrap(true);
+        let greeting_label = Paragraph::new(greeting_text.iter()).alignment(Alignment::Center);
 
         f.render_widget(greeting_label, chunks[GREETING_INDEX]);
     }
@@ -164,7 +162,7 @@ pub fn draw(
 
 fn get_height(greeter: &Greeter, message: &Option<String>) -> u16 {
     let (_, message_height) = get_message_height(message, 2, 0);
-    let greeting_height = get_greeting_height(&greeter.greeting, 1, 0);
+    let (_, greeting_height) = get_greeting_height(&greeter.greeting, 1, 0);
     let initial = match greeter.mode {
         Mode::Username => 5,
         Mode::Password => 7,
@@ -173,14 +171,18 @@ fn get_height(greeter: &Greeter, message: &Option<String>) -> u16 {
     initial + greeting_height + message_height
 }
 
-fn get_greeting_height(greeting: &Option<String>, padding: u16, fallback: u16) -> u16 {
+fn get_greeting_height(
+    greeting: &Option<String>,
+    padding: u16,
+    fallback: u16,
+) -> (Option<String>, u16) {
     if let Some(greeting) = greeting {
         let wrapped = textwrap::fill(greeting, WIDTH as usize - 4);
         let height = wrapped.trim_end().matches('\n').count();
 
-        height as u16 + 1 + padding
+        (Some(wrapped), height as u16 + 1 + padding)
     } else {
-        fallback
+        (None, fallback)
     }
 }
 

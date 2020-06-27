@@ -56,6 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut greeter = Greeter::default();
 
     let mut opts = Options::new();
+    opts.optflag("h", "help", "show this usage information");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt(
@@ -64,7 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         "show custom text above login prompt",
         "GREETING",
     );
-    opts.optflag("h", "help", "show this usage information");
+    opts.optflag("t", "time", "display the current date and time");
 
     greeter.config = match opts.parse(&env::args().collect::<Vec<String>>()) {
         Ok(matches) => Some(matches),
@@ -116,8 +117,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn print_usage(opts: Options) {
-    let brief = format!("Usage: {} [options]", "greetd-tui");
-    eprint!("{}", opts.usage(&brief));
+    eprint!("{}", opts.usage("Usage: greetd-tui [OPTIONS]"));
 }
 
 pub fn exit(status: AuthStatus, stream: &mut UnixStream) {
