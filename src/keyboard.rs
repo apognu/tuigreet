@@ -34,6 +34,14 @@ pub fn handle(
 
                 match greeter.mode {
                     Mode::Username => {
+                        if greeter.username.starts_with('!') {
+                            greeter.command =
+                                Some(greeter.username.trim_start_matches("!").to_string());
+                            greeter.username = String::new();
+                            greeter.working = false;
+                            return Ok(());
+                        }
+
                         greeter.request = Some(Request::CreateSession {
                             username: greeter.username.clone(),
                         });

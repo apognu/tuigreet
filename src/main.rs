@@ -32,6 +32,7 @@ impl Default for Mode {
 #[derive(Default)]
 pub struct Greeter {
     config: Option<Matches>,
+    pub command: Option<String>,
     pub mode: Mode,
     pub request: Option<Request>,
     pub cursor_offset: i16,
@@ -84,6 +85,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         eprintln!("Only one of --issue and --greeting may be used at the same time");
         print_usage(opts);
         std::process::exit(0);
+    }
+
+    if greeter.config().opt_present("cmd") {
+        greeter.command = greeter.config().opt_str("cmd");
     }
 
     let mut stream = UnixStream::connect(env::var("GREETD_SOCK")?)?;
