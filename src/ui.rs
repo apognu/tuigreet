@@ -7,6 +7,7 @@ use termion::{cursor::Goto, raw::RawTerminal};
 use tui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
+    style::{Modifier, Style},
     widgets::{Block, BorderType, Borders, Paragraph, Text},
     Terminal,
 };
@@ -21,7 +22,9 @@ const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 2;
 const MESSAGE_INDEX: usize = 3;
 
+const TITLE: &'static str = "Authenticate into";
 const USERNAME: &'static str = "Username:";
+const WORKING: &'static str = "Please wait...";
 
 pub fn draw(
     terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>,
@@ -29,6 +32,12 @@ pub fn draw(
 ) -> Result<(), Box<dyn Error>> {
     let mut size = Rect::default();
     let mut pos = Rect::default();
+
+    if greeter.working {
+        terminal.hide_cursor()?;
+    } else {
+        terminal.show_cursor()?;
+    }
 
     terminal.draw(|mut f| {
         size = f.size();
@@ -40,7 +49,7 @@ pub fn draw(
         let container = Rect::new(x, y, WIDTH, height);
         let frame = Rect::new(x + PADDING, y + PADDING, WIDTH - PADDING, height - PADDING);
 
-        let hostname = format!(" Authenticate into {} ", get_hostname());
+        let hostname = format!(" {} {} ", TITLE, get_hostname());
 
         let block = Block::default()
             .title(&hostname)
@@ -83,17 +92,24 @@ pub fn draw(
             f.render_widget(greeting_label, chunks[GREETING_INDEX]);
         }
 
-        let username = greeter.username.clone();
-        let answer = greeter.answer.clone();
-
-        let username_text = [Text::raw(USERNAME)];
+        let username_text = [Text::styled(
+            USERNAME,
+            Style::default().modifier(Modifier::BOLD),
+        )];
         let username_label = Paragraph::new(username_text.iter());
 
-        let username_value_text = [Text::raw(username)];
+        let username_value_text = [Text::raw(&greeter.username)];
         let username_value = Paragraph::new(username_value_text.iter());
 
-        let password_text = [Text::raw(&greeter.prompt)];
-        let password_label = Paragraph::new(password_text.iter());
+        let answer_text = if greeter.working {
+            [Text::raw(WORKING)]
+        } else {
+            [Text::styled(
+                &greeter.prompt,
+                Style::default().modifier(Modifier::BOLD),
+            )]
+        };
+        let answer_label = Paragraph::new(answer_text.iter());
 
         f.render_widget(username_label, chunks[USERNAME_INDEX]);
         f.render_widget(
@@ -107,14 +123,14 @@ pub fn draw(
         );
 
         if let Mode::Password = greeter.mode {
-            f.render_widget(password_label, chunks[ANSWER_INDEX]);
+            f.render_widget(answer_label, chunks[ANSWER_INDEX]);
 
             if !greeter.secret {
-                let password_value_text = [Text::raw(answer)];
-                let password_value = Paragraph::new(password_value_text.iter());
+                let answer_value_text = [Text::raw(&greeter.answer)];
+                let answer_value = Paragraph::new(answer_value_text.iter());
 
                 f.render_widget(
-                    password_value,
+                    answer_value,
                     Rect::new(
                         chunks[ANSWER_INDEX].x + greeter.prompt.len() as u16,
                         chunks[ANSWER_INDEX].y,

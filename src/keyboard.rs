@@ -21,8 +21,8 @@ pub fn handle(
             }
 
             Key::Char('\n') | Key::Char('\t') => {
+                greeter.working = true;
                 greeter.message = None;
-                greeter.prompt = "Please wait...".to_string();
 
                 match greeter.mode {
                     Mode::Username => {

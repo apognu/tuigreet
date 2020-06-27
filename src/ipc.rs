@@ -28,12 +28,14 @@ fn parse_response(
         } => match auth_message_type {
             AuthMessageType::Secret => {
                 greeter.mode = Mode::Password;
+                greeter.working = false;
                 greeter.secret = true;
                 greeter.prompt = auth_message;
             }
 
             AuthMessageType::Visible => {
                 greeter.mode = Mode::Password;
+                greeter.working = false;
                 greeter.secret = false;
                 greeter.prompt = auth_message;
             }

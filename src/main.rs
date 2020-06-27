@@ -40,6 +40,7 @@ pub struct Greeter {
     pub prompt: String,
     pub greeting: Option<String>,
     pub message: Option<String>,
+    pub working: bool,
     pub done: bool,
 }
 
@@ -91,7 +92,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     terminal.clear()?;
-    terminal.show_cursor()?;
 
     let events = Events::new();
 
