@@ -50,6 +50,16 @@ impl Greeter {
     pub fn config(&self) -> Matches {
         self.config.clone().unwrap()
     }
+
+    pub fn width(&self) -> u16 {
+        if let Some(value) = self.config().opt_str("width") {
+            if let Ok(width) = value.parse::<u16>() {
+                return width;
+            }
+        }
+
+        80
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -58,6 +68,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut opts = Options::new();
     opts.optflag("h", "help", "show this usage information");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
+    opts.optopt(
+        "",
+        "width",
+        "width of the main prompt (default: 80)",
+        "WIDTH",
+    );
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt(
         "g",

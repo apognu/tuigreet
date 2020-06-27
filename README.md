@@ -12,6 +12,7 @@ Usage: greetd-tui [OPTIONS]
 Options:
     -h, --help          show this usage information
     -c, --cmd COMMAND   command to run
+        --width WIDTH   width of the main prompt (default: 80)
     -i, --issue         show the host's issue file
     -g, --greeting GREETING
                         show custom text above login prompt

@@ -11,7 +11,6 @@ use tui::{
 
 use crate::{info::get_hostname, Greeter, Mode};
 
-const WIDTH: u16 = 80;
 const PADDING: u16 = 2;
 
 const GREETING_INDEX: usize = 0;
@@ -29,12 +28,13 @@ pub fn draw(
 ) -> Result<(u16, u16), Box<dyn Error>> {
     let size = f.size();
 
-    let height = get_height(&greeter, &greeter.message);
-    let x = (size.width - WIDTH) / 2;
+    let width = greeter.width();
+    let height = get_height(&greeter);
+    let x = (size.width - width) / 2;
     let y = (size.height - height) / 2;
 
-    let container = Rect::new(x, y, WIDTH, height);
-    let frame = Rect::new(x + PADDING, y + PADDING, WIDTH - PADDING, height - PADDING);
+    let container = Rect::new(x, y, width, height);
+    let frame = Rect::new(x + PADDING, y + PADDING, width - PADDING, height - PADDING);
 
     let hostname = format!(" {} {} ", TITLE, get_hostname());
 
@@ -45,8 +45,8 @@ pub fn draw(
 
     f.render_widget(block, container);
 
-    let (message, message_height) = get_message_height(&greeter.message, 1, 1);
-    let (greeting, greeting_height) = get_greeting_height(&greeter.greeting, 1, 0);
+    let (message, message_height) = get_message_height(greeter, 1, 1);
+    let (greeting, greeting_height) = get_greeting_height(greeter, 1, 0);
 
     let constraints = [
         Constraint::Length(greeting_height), // Greeting
@@ -68,7 +68,7 @@ pub fn draw(
         .constraints(constraints.as_ref())
         .split(frame);
 
-    let pos = chunks[USERNAME_INDEX];
+    let cursor = chunks[USERNAME_INDEX];
 
     if let Some(greeting) = &greeting {
         let greeting_text = [Text::raw(greeting.trim_end())];
@@ -141,7 +141,10 @@ pub fn draw(
             let username = greeter.username.clone();
             let offset = get_cursor_offset(greeter, username);
 
-            Ok((2 + pos.x + USERNAME.len() as u16 + offset as u16, 1 + pos.y))
+            Ok((
+                2 + cursor.x + USERNAME.len() as u16 + offset as u16,
+                1 + cursor.y,
+            ))
         }
 
         Mode::Password => {
@@ -149,20 +152,20 @@ pub fn draw(
             let offset = get_cursor_offset(greeter, answer);
 
             if greeter.secret {
-                Ok((1 + pos.x + greeter.prompt.len() as u16, 3 + pos.y))
+                Ok((1 + cursor.x + greeter.prompt.len() as u16, 3 + cursor.y))
             } else {
                 Ok((
-                    1 + pos.x + greeter.prompt.len() as u16 + offset as u16,
-                    3 + pos.y,
+                    1 + cursor.x + greeter.prompt.len() as u16 + offset as u16,
+                    3 + cursor.y,
                 ))
             }
         }
     }
 }
 
-fn get_height(greeter: &Greeter, message: &Option<String>) -> u16 {
-    let (_, message_height) = get_message_height(message, 2, 0);
-    let (_, greeting_height) = get_greeting_height(&greeter.greeting, 1, 0);
+fn get_height(greeter: &Greeter) -> u16 {
+    let (_, message_height) = get_message_height(greeter, 2, 0);
+    let (_, greeting_height) = get_greeting_height(greeter, 1, 0);
     let initial = match greeter.mode {
         Mode::Username => 5,
         Mode::Password => 7,
@@ -171,13 +174,10 @@ fn get_height(greeter: &Greeter, message: &Option<String>) -> u16 {
     initial + greeting_height + message_height
 }
 
-fn get_greeting_height(
-    greeting: &Option<String>,
-    padding: u16,
-    fallback: u16,
-) -> (Option<String>, u16) {
-    if let Some(greeting) = greeting {
-        let wrapped = textwrap::fill(greeting, WIDTH as usize - 4);
+fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<String>, u16) {
+    if let Some(greeting) = &greeter.greeting {
+        let width = greeter.width();
+        let wrapped = textwrap::fill(greeting, width as usize - 4);
         let height = wrapped.trim_end().matches('\n').count();
 
         (Some(wrapped), height as u16 + 1 + padding)
@@ -186,13 +186,10 @@ fn get_greeting_height(
     }
 }
 
-fn get_message_height(
-    message: &Option<String>,
-    padding: u16,
-    fallback: u16,
-) -> (Option<String>, u16) {
-    if let Some(message) = message {
-        let wrapped = textwrap::fill(message.trim_end(), WIDTH as usize - 4);
+fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<String>, u16) {
+    if let Some(message) = &greeter.message {
+        let width = greeter.width();
+        let wrapped = textwrap::fill(message.trim_end(), width as usize - 4);
         let height = wrapped.trim_end().matches('\n').count();
 
         (Some(wrapped), height as u16 + padding)
