@@ -52,17 +52,12 @@ pub fn draw(
             f.render_widget(time, chunks[0]);
         }
 
+        let command = greeter.command.clone().unwrap_or("-".to_string());
         let status_text = [
-            Text::styled(
-                format!("ESC"),
-                Style::default().modifier(Modifier::REVERSED),
-            ),
-            Text::raw(format!(" {} ", EXIT)),
-            Text::styled(COMMAND, Style::default().modifier(Modifier::REVERSED)),
-            Text::raw(format!(
-                " {} ",
-                greeter.command.clone().unwrap_or("-".to_string())
-            )),
+            status_label("ESC"),
+            status_value(format!(" {} ", EXIT)),
+            status_label(COMMAND),
+            status_value(format!(" {} ", command)),
         ];
         let status = Paragraph::new(status_text.iter());
 
@@ -82,4 +77,18 @@ pub fn draw(
 
 fn get_time() -> String {
     Local::now().format("%b, %d %h %Y - %H:%M").to_string()
+}
+
+fn status_label<'s, S>(text: S) -> Text<'s>
+where
+    S: Into<String>,
+{
+    Text::styled(text.into(), Style::default().modifier(Modifier::REVERSED))
+}
+
+fn status_value<'s, S>(text: S) -> Text<'s>
+where
+    S: Into<String>,
+{
+    Text::raw(text.into())
 }
