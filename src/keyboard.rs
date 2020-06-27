@@ -20,13 +20,11 @@ pub fn handle(
                 crate::exit(AuthStatus::Success, stream);
             }
 
-            Key::Left => {
-                greeter.cursor_offset -= 1;
-            }
+            Key::Left => greeter.cursor_offset -= 1,
+            Key::Right => greeter.cursor_offset += 1,
 
-            Key::Right => {
-                greeter.cursor_offset += 1;
-            }
+            Key::Ctrl('a') => greeter.cursor_offset = -(greeter.username.len() as i16),
+            Key::Ctrl('e') => greeter.cursor_offset = 0,
 
             Key::Char('\n') | Key::Char('\t') => {
                 greeter.working = true;

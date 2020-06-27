@@ -9,14 +9,15 @@ use termion::{cursor::Goto, raw::RawTerminal};
 use tui::{
     backend::TermionBackend,
     layout::{Constraint, Direction, Layout},
+    style::{Modifier, Style},
     widgets::{Paragraph, Text},
     Terminal,
 };
 
 use crate::Greeter;
 
+const EXIT: &'static str = "Exit";
 const COMMAND: &'static str = "SESSION";
-const CHANGE_COMMAND: &'static str = "(use !cmd to change it)";
 
 pub fn draw(
     terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>,
@@ -41,13 +42,18 @@ pub fn draw(
             .constraints([Constraint::Percentage(100)].as_ref())
             .split(chunks[1]);
 
-        let line = format!(
-            "ESC Reset | {} {} {}",
-            COMMAND,
-            greeter.command.clone().unwrap_or("-".to_string()),
-            CHANGE_COMMAND
-        );
-        let t = [Text::raw(&line)];
+        let t = [
+            Text::styled(
+                format!("ESC"),
+                Style::default().modifier(Modifier::REVERSED),
+            ),
+            Text::raw(format!(" {} ", EXIT)),
+            Text::styled(COMMAND, Style::default().modifier(Modifier::REVERSED)),
+            Text::raw(format!(
+                " {} ",
+                greeter.command.clone().unwrap_or("-".to_string())
+            )),
+        ];
         let p = Paragraph::new(t.iter());
 
         f.render_widget(p, status[0]);
