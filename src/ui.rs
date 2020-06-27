@@ -154,17 +154,20 @@ pub fn draw(
 
     match greeter.mode {
         Mode::Username => {
+            let username = greeter.username.clone();
+            let offset = get_cursor_offset(greeter, username);
+
             write!(
                 terminal.backend_mut(),
                 "{}",
-                Goto(
-                    2 + pos.x + USERNAME.len() as u16 + greeter.username.len() as u16,
-                    1 + pos.y
-                )
+                Goto(2 + pos.x + USERNAME.len() as u16 + offset as u16, 1 + pos.y)
             )?;
         }
 
         Mode::Password => {
+            let answer = greeter.answer.clone();
+            let offset = get_cursor_offset(greeter, answer);
+
             if greeter.secret {
                 write!(
                     terminal.backend_mut(),
@@ -176,7 +179,7 @@ pub fn draw(
                     terminal.backend_mut(),
                     "{}",
                     Goto(
-                        1 + pos.x + greeter.prompt.len() as u16 + greeter.answer.len() as u16,
+                        1 + pos.x + greeter.prompt.len() as u16 + offset as u16,
                         3 + pos.y
                     )
                 )?;
@@ -225,4 +228,18 @@ fn get_message_height(
     } else {
         (None, fallback)
     }
+}
+
+fn get_cursor_offset(greeter: &mut Greeter, text: String) -> i16 {
+    let mut offset = text.len() as i16 + greeter.cursor_offset;
+    if offset < 0 {
+        offset = 0;
+        greeter.cursor_offset = -(text.len() as i16);
+    }
+    if offset > text.len() as i16 {
+        offset = text.len() as i16;
+        greeter.cursor_offset = 0;
+    }
+
+    offset
 }

@@ -20,6 +20,14 @@ pub fn handle(
                 crate::exit(AuthStatus::Success, stream);
             }
 
+            Key::Left => {
+                greeter.cursor_offset -= 1;
+            }
+
+            Key::Right => {
+                greeter.cursor_offset += 1;
+            }
+
             Key::Char('\n') | Key::Char('\t') => {
                 greeter.working = true;
                 greeter.message = None;
@@ -42,16 +50,61 @@ pub fn handle(
             }
 
             Key::Char(char) => match greeter.mode {
-                Mode::Username => greeter.username.push(char),
-                Mode::Password => greeter.answer.push(char),
+                Mode::Username => {
+                    let index = greeter.username.len() as i16 + greeter.cursor_offset;
+
+                    greeter.username.insert(index as usize, char);
+                }
+
+                Mode::Password => {
+                    let index = greeter.answer.len() as i16 + greeter.cursor_offset;
+
+                    greeter.answer.insert(index as usize, char);
+                }
             },
 
             Key::Backspace => {
                 match greeter.mode {
-                    Mode::Username => greeter.username.pop(),
-                    Mode::Password => greeter.answer.pop(),
+                    Mode::Username => {
+                        let index = greeter.username.len() as i16 + greeter.cursor_offset - 1;
+
+                        if let Some(_) = greeter.username.chars().nth(index as usize) {
+                            greeter.username.remove(index as usize);
+                        }
+                    }
+
+                    Mode::Password => {
+                        let index = greeter.answer.len() as i16 + greeter.cursor_offset - 1;
+
+                        if let Some(_) = greeter.answer.chars().nth(index as usize) {
+                            greeter.answer.remove(index as usize);
+                        }
+                    }
                 };
             }
+
+            Key::Delete => {
+                match greeter.mode {
+                    Mode::Username => {
+                        let index = greeter.username.len() as i16 + greeter.cursor_offset;
+
+                        if let Some(_) = greeter.username.chars().nth(index as usize) {
+                            greeter.username.remove(index as usize);
+                            greeter.cursor_offset += 1;
+                        }
+                    }
+
+                    Mode::Password => {
+                        let index = greeter.answer.len() as i16 + greeter.cursor_offset;
+
+                        if let Some(_) = greeter.answer.chars().nth(index as usize) {
+                            greeter.answer.remove(index as usize);
+                            greeter.cursor_offset += 1;
+                        }
+                    }
+                };
+            }
+
             _ => {}
         }
     }

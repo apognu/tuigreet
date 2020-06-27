@@ -34,6 +34,7 @@ pub struct Greeter {
     config: Option<Matches>,
     pub mode: Mode,
     pub request: Option<Request>,
+    pub cursor_offset: i16,
     pub username: String,
     pub answer: String,
     pub secret: bool,
