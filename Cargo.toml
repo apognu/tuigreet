@@ -1,0 +1,13 @@
+[package]
+name = "greetd-tui"
+version = "0.1.0"
+authors = ["Antoine POPINEAU <antoine.popineau@appscho.com>"]
+edition = "2018"
+
+[dependencies]
+getopts = "0.2.21"
+greetd_ipc = { version = "0.6.0", features = ["sync-codec"] }
+termion = "1.5.5"
+tui = "0.9.5"
+nix = "0.17.0"
+textwrap = "0.12.0"
