@@ -3,61 +3,59 @@ use std::{io, sync::mpsc, thread, time::Duration};
 use termion::{event::Key, input::TermRead};
 
 pub enum Event<I> {
-    Input(I),
-    Tick,
+  Input(I),
+  Tick,
 }
 
 pub struct Events {
-    rx: mpsc::Receiver<Event<Key>>,
+  rx: mpsc::Receiver<Event<Key>>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Config {
-    pub tick_rate: Duration,
+  pub tick_rate: Duration,
 }
 
 impl Default for Config {
-    fn default() -> Config {
-        Config {
-            tick_rate: Duration::from_millis(250),
-        }
+  fn default() -> Config {
+    Config {
+      tick_rate: Duration::from_millis(250),
     }
+  }
 }
 
 impl Events {
-    pub fn new() -> Events {
-        let (tx, rx) = mpsc::channel();
+  pub fn new() -> Events {
+    let (tx, rx) = mpsc::channel();
 
-        {
-            let tx = tx.clone();
+    {
+      let tx = tx.clone();
 
-            {
-                let tx = tx.clone();
+      thread::spawn(move || {
+        let stdin = io::stdin();
 
-                thread::spawn(move || {
-                    let stdin = io::stdin();
-                    for evt in stdin.keys() {
-                        if let Ok(key) = evt {
-                            if let Err(_) = tx.send(Event::Input(key)) {
-                                return;
-                            }
-                        }
-                    }
-                })
-            };
+        for evt in stdin.keys() {
+          if let Ok(key) = evt {
+            if let Err(_) = tx.send(Event::Input(key)) {
+              return;
+            }
+          }
+        }
+      })
+    };
 
-            {
-                thread::spawn(move || loop {
-                    tx.send(Event::Tick).unwrap();
-                    thread::sleep(Duration::from_millis(250));
-                })
-            };
-        };
+    {
+      thread::spawn(move || loop {
+        tx.send(Event::Tick).unwrap();
 
-        Events { rx }
-    }
+        thread::sleep(Duration::from_millis(250));
+      })
+    };
 
-    pub fn next(&self) -> Result<Event<Key>, mpsc::RecvError> {
-        self.rx.recv()
-    }
+    Events { rx }
+  }
+
+  pub fn next(&self) -> Result<Event<Key>, mpsc::RecvError> {
+    self.rx.recv()
+  }
 }

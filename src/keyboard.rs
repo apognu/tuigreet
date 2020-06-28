@@ -1,119 +1,90 @@
-use std::{error::Error, os::unix::net::UnixStream};
+use std::error::Error;
 
-use greetd_ipc::{codec::SyncCodec, Request};
+use greetd_ipc::Request;
 use termion::event::Key;
 
 use crate::{
-    event::{Event, Events},
-    AuthStatus, Greeter, Mode,
+  event::{Event, Events},
+  AuthStatus, Greeter, Mode,
 };
 
-pub fn handle(
-    greeter: &mut Greeter,
-    events: &Events,
-    stream: &mut UnixStream,
-) -> Result<(), Box<dyn Error>> {
-    if let Event::Input(input) = events.next()? {
-        match input {
-            Key::Esc => {
-                Request::CancelSession.write_to(stream).unwrap();
-                crate::exit(AuthStatus::Success, stream);
+pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Error>> {
+  if let Event::Input(input) = events.next()? {
+    match input {
+      Key::Esc => crate::exit(greeter, AuthStatus::Cancel),
+
+      Key::Left => greeter.cursor_offset -= 1,
+      Key::Right => greeter.cursor_offset += 1,
+
+      Key::Ctrl('a') => greeter.cursor_offset = -(greeter.username.len() as i16),
+      Key::Ctrl('e') => greeter.cursor_offset = 0,
+
+      Key::Char('\n') | Key::Char('\t') => {
+        greeter.working = true;
+        greeter.message = None;
+
+        match greeter.mode {
+          Mode::Username => {
+            if greeter.username.starts_with('!') {
+              greeter.command = Some(greeter.username.trim_start_matches("!").to_string());
+              greeter.username = String::new();
+              greeter.working = false;
+
+              return Ok(());
             }
 
-            Key::Left => greeter.cursor_offset -= 1,
-            Key::Right => greeter.cursor_offset += 1,
+            greeter.request = Some(Request::CreateSession { username: greeter.username.clone() });
+          }
 
-            Key::Ctrl('a') => greeter.cursor_offset = -(greeter.username.len() as i16),
-            Key::Ctrl('e') => greeter.cursor_offset = 0,
-
-            Key::Char('\n') | Key::Char('\t') => {
-                greeter.working = true;
-                greeter.message = None;
-
-                match greeter.mode {
-                    Mode::Username => {
-                        if greeter.username.starts_with('!') {
-                            greeter.command =
-                                Some(greeter.username.trim_start_matches("!").to_string());
-                            greeter.username = String::new();
-                            greeter.working = false;
-                            return Ok(());
-                        }
-
-                        greeter.request = Some(Request::CreateSession {
-                            username: greeter.username.clone(),
-                        });
-                    }
-
-                    Mode::Password => {
-                        greeter.request = Some(Request::PostAuthMessageResponse {
-                            response: Some(greeter.answer.clone()),
-                        })
-                    }
-                }
-
-                greeter.answer = String::new();
-            }
-
-            Key::Char(char) => match greeter.mode {
-                Mode::Username => {
-                    let index = greeter.username.len() as i16 + greeter.cursor_offset;
-
-                    greeter.username.insert(index as usize, char);
-                }
-
-                Mode::Password => {
-                    let index = greeter.answer.len() as i16 + greeter.cursor_offset;
-
-                    greeter.answer.insert(index as usize, char);
-                }
-            },
-
-            Key::Backspace => {
-                match greeter.mode {
-                    Mode::Username => {
-                        let index = greeter.username.len() as i16 + greeter.cursor_offset - 1;
-
-                        if let Some(_) = greeter.username.chars().nth(index as usize) {
-                            greeter.username.remove(index as usize);
-                        }
-                    }
-
-                    Mode::Password => {
-                        let index = greeter.answer.len() as i16 + greeter.cursor_offset - 1;
-
-                        if let Some(_) = greeter.answer.chars().nth(index as usize) {
-                            greeter.answer.remove(index as usize);
-                        }
-                    }
-                };
-            }
-
-            Key::Delete => {
-                match greeter.mode {
-                    Mode::Username => {
-                        let index = greeter.username.len() as i16 + greeter.cursor_offset;
-
-                        if let Some(_) = greeter.username.chars().nth(index as usize) {
-                            greeter.username.remove(index as usize);
-                            greeter.cursor_offset += 1;
-                        }
-                    }
-
-                    Mode::Password => {
-                        let index = greeter.answer.len() as i16 + greeter.cursor_offset;
-
-                        if let Some(_) = greeter.answer.chars().nth(index as usize) {
-                            greeter.answer.remove(index as usize);
-                            greeter.cursor_offset += 1;
-                        }
-                    }
-                };
-            }
-
-            _ => {}
+          Mode::Password => {
+            greeter.request = Some(Request::PostAuthMessageResponse {
+              response: Some(greeter.answer.clone()),
+            })
+          }
         }
-    }
 
-    Ok(())
+        greeter.answer = String::new();
+      }
+
+      Key::Char(c) => insert_key(greeter, c),
+
+      Key::Backspace | Key::Delete => delete_key(greeter, input),
+
+      _ => {}
+    }
+  }
+
+  Ok(())
+}
+
+fn insert_key(greeter: &mut Greeter, c: char) {
+  let value = match greeter.mode {
+    Mode::Username => &mut greeter.username,
+    Mode::Password => &mut greeter.answer,
+  };
+
+  let index = value.len() as i16 + greeter.cursor_offset;
+
+  value.insert(index as usize, c);
+}
+
+fn delete_key(greeter: &mut Greeter, key: Key) {
+  let value = match greeter.mode {
+    Mode::Username => &mut greeter.username,
+    Mode::Password => &mut greeter.answer,
+  };
+
+  let index = match key {
+    Key::Backspace => value.len() as i16 + greeter.cursor_offset - 1,
+    Key::Delete => value.len() as i16 + greeter.cursor_offset,
+    _ => 0,
+  };
+
+  if let Some(_) = value.chars().nth(index as usize) {
+    value.remove(index as usize);
+
+    if let Key::Delete = key {
+      greeter.cursor_offset += 1;
+    }
+  }
 }

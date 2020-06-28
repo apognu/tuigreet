@@ -12,3 +12,6 @@ tui = "0.9.5"
 nix = "0.17.0"
 textwrap = "0.12.0"
 chrono = "0.4.11"
+
+[profile.release]
+lto = true
