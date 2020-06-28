@@ -1,15 +1,30 @@
-use std::{env, error::Error, os::unix::net::UnixStream, process};
+use std::{
+  env,
+  error::Error,
+  fmt::{self, Display},
+  os::unix::net::UnixStream,
+  process,
+};
 
 use getopts::{Matches, Options};
 use greetd_ipc::Request;
 
 use crate::info::get_issue;
 
+#[derive(Debug)]
 pub enum AuthStatus {
   Success,
   Failure,
   Cancel,
 }
+
+impl Display for AuthStatus {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{:?}", self)
+  }
+}
+
+impl Error for AuthStatus {}
 
 pub enum Mode {
   Username,

@@ -11,7 +11,7 @@ use crate::{
 pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Error>> {
   if let Event::Input(input) = events.next()? {
     match input {
-      Key::Esc => crate::exit(greeter, AuthStatus::Cancel),
+      Key::Esc => crate::exit(greeter, AuthStatus::Cancel)?,
 
       Key::Left => greeter.cursor_offset -= 1,
       Key::Right => greeter.cursor_offset += 1,
