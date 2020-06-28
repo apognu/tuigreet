@@ -37,9 +37,10 @@ impl Default for Mode {
   }
 }
 
+#[derive(Default)]
 pub struct Greeter {
   pub config: Option<Matches>,
-  pub stream: UnixStream,
+  pub stream: Option<UnixStream>,
   pub command: Option<String>,
   pub mode: Mode,
   pub request: Option<Request>,
@@ -55,29 +56,17 @@ pub struct Greeter {
 }
 
 impl Greeter {
-  pub fn new() -> Result<Self, Box<dyn Error>> {
-    let stream = UnixStream::connect(env::var("GREETD_SOCK")?)?;
-
-    Ok(Self {
-      stream,
-      config: Default::default(),
-      command: Default::default(),
-      mode: Default::default(),
-      request: Default::default(),
-      cursor_offset: Default::default(),
-      username: Default::default(),
-      answer: Default::default(),
-      secret: Default::default(),
-      prompt: Default::default(),
-      greeting: Default::default(),
-      message: Default::default(),
-      working: Default::default(),
-      done: Default::default(),
-    })
+  pub fn new() -> Self {
+    let mut greeter = Self::default();
+    greeter.parse_options();
+    greeter
   }
-
   pub fn config<'g>(&'g self) -> &'g Matches {
     self.config.as_ref().unwrap()
+  }
+
+  pub fn stream<'g>(&'g self) -> &'g UnixStream {
+    self.stream.as_ref().unwrap()
   }
 
   pub fn option(&self, name: &str) -> Option<String> {
@@ -96,48 +85,60 @@ impl Greeter {
 
     80
   }
-}
 
-pub fn parse_options(greeter: Greeter) -> Greeter {
-  let mut greeter = greeter;
-  let mut opts = Options::new();
+  pub fn parse_options(&mut self) {
+    let mut opts = Options::new();
 
-  opts.optflag("h", "help", "show this usage information");
-  opts.optopt("c", "cmd", "command to run", "COMMAND");
-  opts.optopt("", "width", "width of the main prompt (default: 80)", "WIDTH");
-  opts.optflag("i", "issue", "show the host's issue file");
-  opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
-  opts.optflag("t", "time", "display the current date and time");
+    opts.optflag("h", "help", "show this usage information");
+    opts.optopt("c", "cmd", "command to run", "COMMAND");
+    opts.optopt("", "width", "width of the main prompt (default: 80)", "WIDTH");
+    opts.optflag("i", "issue", "show the host's issue file");
+    opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
+    opts.optflag("t", "time", "display the current date and time");
 
-  greeter.config = match opts.parse(&env::args().collect::<Vec<String>>()) {
-    Ok(matches) => Some(matches),
+    self.config = match opts.parse(&env::args().collect::<Vec<String>>()) {
+      Ok(matches) => Some(matches),
 
-    Err(usage) => {
-      println!("{}", usage);
+      Err(usage) => {
+        println!("{}", usage);
+        print_usage(opts);
+        process::exit(1);
+      }
+    };
+
+    if self.config().opt_present("help") {
       print_usage(opts);
+      std::process::exit(0);
+    }
+
+    let socket = env::var("GREETD_SOCK");
+    if socket.is_err() {
+      eprintln!("GREETD_SOCK must be defined");
       process::exit(1);
     }
-  };
 
-  if greeter.config().opt_present("help") {
-    print_usage(opts);
-    std::process::exit(0);
+    match UnixStream::connect(socket.unwrap()) {
+      Ok(stream) => self.stream = Some(stream),
+
+      Err(err) => {
+        eprintln!("{}", err);
+        process::exit(1);
+      }
+    }
+
+    if self.config().opt_present("issue") && self.config().opt_present("greeting") {
+      eprintln!("Only one of --issue and --greeting may be used at the same time");
+      print_usage(opts);
+      std::process::exit(0);
+    }
+
+    self.greeting = self.option("greeting");
+    self.command = self.option("cmd");
+
+    if self.config().opt_present("issue") {
+      self.greeting = get_issue();
+    }
   }
-
-  if greeter.config().opt_present("issue") && greeter.config().opt_present("greeting") {
-    eprintln!("Only one of --issue and --greeting may be used at the same time");
-    print_usage(opts);
-    std::process::exit(0);
-  }
-
-  greeter.greeting = greeter.option("greeting");
-  greeter.command = greeter.option("cmd");
-
-  if greeter.config().opt_present("issue") {
-    greeter.greeting = get_issue();
-  }
-
-  greeter
 }
 
 fn print_usage(opts: Options) {

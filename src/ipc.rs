@@ -5,10 +5,10 @@ use greetd_ipc::{codec::SyncCodec, AuthMessageType, ErrorType, Request, Response
 use crate::{AuthStatus, Greeter, Mode};
 
 pub fn handle(greeter: &mut Greeter) -> Result<(), Box<dyn Error>> {
-  if let Some(ref mut request) = &mut greeter.request {
-    request.write_to(&mut greeter.stream)?;
+  if let Some(ref request) = greeter.request {
+    request.write_to(&mut greeter.stream())?;
     greeter.request = None;
-    let response = Response::read_from(&mut greeter.stream)?;
+    let response = Response::read_from(&mut greeter.stream())?;
 
     parse_response(greeter, response)?;
   }
@@ -47,9 +47,9 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
           }
         }
 
-        Request::PostAuthMessageResponse { response: None }.write_to(&mut greeter.stream)?;
+        Request::PostAuthMessageResponse { response: None }.write_to(&mut greeter.stream())?;
         greeter.request = None;
-        let response = Response::read_from(&mut greeter.stream)?;
+        let response = Response::read_from(&mut greeter.stream())?;
 
         parse_response(greeter, response)?;
       }
@@ -82,5 +82,5 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
 }
 
 pub fn cancel(greeter: &mut Greeter) {
-  Request::CancelSession.write_to(&mut greeter.stream).unwrap();
+  Request::CancelSession.write_to(&mut greeter.stream()).unwrap();
 }

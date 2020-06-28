@@ -28,7 +28,7 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
-  let mut greeter = config::parse_options(Greeter::new()?);
+  let mut greeter = Greeter::new();
 
   let stdout = io::stdout().into_raw_mode()?;
   let backend = TermionBackend::new(stdout);
