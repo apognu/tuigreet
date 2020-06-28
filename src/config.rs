@@ -142,5 +142,5 @@ impl Greeter {
 }
 
 fn print_usage(opts: Options) {
-  eprint!("{}", opts.usage("Usage: greetd-tui [OPTIONS]"));
+  eprint!("{}", opts.usage("Usage: tuigreet [OPTIONS]"));
 }

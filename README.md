@@ -1,13 +1,13 @@
-# greetd-tui
+# tuigreet
 
 Graphical console greter for [greetd](https://git.sr.ht/~kennylevinsen/greetd).
 
-![Screenshot of greetd-tui](https://github.com/apognu/greetd-tui/blob/master/contrib/screenshot.png)
+![Screenshot of tuigreet](https://github.com/apognu/tuigreet/blob/master/contrib/screenshot.png)
 
 ## Usage
 
 ```
-Usage: greetd-tui [OPTIONS]
+Usage: tuigreet [OPTIONS]
 
 Options:
     -h, --help          show this usage information
@@ -21,13 +21,13 @@ Options:
 
 ## Configuration
 
-Edit `/etc/greetd/config.toml` and set the `command` setting to use `greetd-tui`:
+Edit `/etc/greetd/config.toml` and set the `command` setting to use `tuigreet`:
 
 ```
 [terminal]
 vt = 1
 
 [default_session]
-command = "greetd-tui --cmd sway"
+command = "tuigreet --cmd sway"
 user = "greeter"
 ```

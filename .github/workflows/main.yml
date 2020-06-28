@@ -30,4 +30,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           cwd: ${{ github.workspace }}
-          files: target/release/greetd-tui
+          files: target/release/tuigreet

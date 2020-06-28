@@ -57,19 +57,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "greetd-tui"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "getopts",
- "greetd_ipc",
- "nix",
- "termion",
- "textwrap",
- "tui",
-]
-
-[[package]]
 name = "greetd_ipc"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -284,6 +271,19 @@ dependencies = [
  "termion",
  "unicode-segmentation",
  "unicode-width",
+]
+
+[[package]]
+name = "tuigreet"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "getopts",
+ "greetd_ipc",
+ "nix",
+ "termion",
+ "textwrap",
+ "tui",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "greetd-tui"
+name = "tuigreet"
 version = "0.1.0"
 authors = ["Antoine POPINEAU <antoine.popineau@appscho.com>"]
 edition = "2018"
