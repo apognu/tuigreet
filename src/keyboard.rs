@@ -26,7 +26,7 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
         match greeter.mode {
           Mode::Username => {
             if greeter.username.starts_with('!') {
-              greeter.command = Some(greeter.username.trim_start_matches("!").to_string());
+              greeter.command = Some(greeter.username.trim_start_matches('!').to_string());
               greeter.username = String::new();
               greeter.working = false;
 
@@ -80,7 +80,7 @@ fn delete_key(greeter: &mut Greeter, key: Key) {
     _ => 0,
   };
 
-  if let Some(_) = value.chars().nth(index as usize) {
+  if value.chars().nth(index as usize).is_some() {
     value.remove(index as usize);
 
     if let Key::Delete = key {

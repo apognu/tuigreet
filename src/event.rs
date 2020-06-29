@@ -36,7 +36,7 @@ impl Events {
 
         for evt in stdin.keys() {
           if let Ok(key) = evt {
-            if let Err(_) = tx.send(Event::Input(key)) {
+            if tx.send(Event::Input(key)).is_err() {
               return;
             }
           }
@@ -44,13 +44,11 @@ impl Events {
       })
     };
 
-    {
-      thread::spawn(move || loop {
-        tx.send(Event::Tick).unwrap();
+    thread::spawn(move || loop {
+      tx.send(Event::Tick).unwrap();
 
-        thread::sleep(Duration::from_millis(250));
-      })
-    };
+      thread::sleep(Duration::from_millis(250));
+    });
 
     Events { rx }
   }

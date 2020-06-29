@@ -19,11 +19,9 @@ fn main() {
       if let AuthStatus::Success = *status {
         return;
       }
-
-      process::exit(1);
-    } else {
-      process::exit(1);
     }
+
+    process::exit(1);
   }
 }
 

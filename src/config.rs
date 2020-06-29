@@ -61,11 +61,11 @@ impl Greeter {
     greeter.parse_options();
     greeter
   }
-  pub fn config<'g>(&'g self) -> &'g Matches {
+  pub fn config(&self) -> &Matches {
     self.config.as_ref().unwrap()
   }
 
-  pub fn stream<'g>(&'g self) -> &'g UnixStream {
+  pub fn stream(&self) -> &UnixStream {
     self.stream.as_ref().unwrap()
   }
 

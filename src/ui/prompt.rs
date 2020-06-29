@@ -18,9 +18,9 @@ const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 2;
 const MESSAGE_INDEX: usize = 3;
 
-const TITLE: &'static str = "Authenticate into";
-const USERNAME: &'static str = "Username:";
-const WORKING: &'static str = "Please wait...";
+const TITLE: &str = "Authenticate into";
+const USERNAME: &str = "Username:";
+const WORKING: &str = "Please wait...";
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
