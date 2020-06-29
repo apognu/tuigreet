@@ -49,5 +49,15 @@ pub fn exit(greeter: &mut Greeter, status: AuthStatus) -> Result<(), AuthStatus>
     AuthStatus::Cancel | AuthStatus::Failure => ipc::cancel(greeter),
   }
 
+  clear_screen();
+
   Err(status)
+}
+
+pub fn clear_screen() {
+  let backend = TermionBackend::new(io::stdout());
+
+  if let Ok(mut terminal) = Terminal::new(backend) {
+    let _ = terminal.clear();
+  }
 }
