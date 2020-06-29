@@ -55,18 +55,16 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
       }
     },
 
-    Response::Success => match greeter.done {
-      true => crate::exit(greeter, AuthStatus::Success)?,
-
-      false => {
-        if let Some(command) = &greeter.command {
-          greeter.done = true;
-          greeter.request = Some(Request::StartSession { cmd: vec![command.clone()] });
-        } else {
-          crate::exit(greeter, AuthStatus::Failure)?;
-        }
+    Response::Success => {
+      if greeter.done {
+        crate::exit(greeter, AuthStatus::Success)?;
+      } else if let Some(command) = &greeter.command {
+        greeter.done = true;
+        greeter.request = Some(Request::StartSession { cmd: vec![command.clone()] });
+      } else {
+        crate::exit(greeter, AuthStatus::Failure)?;
       }
-    },
+    }
 
     Response::Error { error_type, description } => match error_type {
       ErrorType::AuthError => crate::exit(greeter, AuthStatus::Failure)?,
