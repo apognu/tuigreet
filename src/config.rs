@@ -91,7 +91,7 @@ impl Greeter {
 
     opts.optflag("h", "help", "show this usage information");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
-    opts.optopt("", "width", "width of the main prompt (default: 80)", "WIDTH");
+    opts.optopt("w", "width", "width of the main prompt (default: 80)", "WIDTH");
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
     opts.optflag("t", "time", "display the current date and time");
