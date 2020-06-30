@@ -8,6 +8,7 @@ use std::{
 
 use getopts::{Matches, Options};
 use greetd_ipc::Request;
+use zeroize::Zeroize;
 
 use crate::info::get_issue;
 
@@ -53,6 +54,15 @@ pub struct Greeter {
   pub message: Option<String>,
   pub working: bool,
   pub done: bool,
+}
+
+impl Drop for Greeter {
+  fn drop(self: &mut Self) {
+    self.prompt.zeroize();
+    self.username.zeroize();
+    self.answer.zeroize();
+    self.message.zeroize();
+  }
 }
 
 impl Greeter {

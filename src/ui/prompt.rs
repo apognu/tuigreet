@@ -109,15 +109,13 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
   match greeter.mode {
     Mode::Username => {
-      let username = greeter.username.clone();
-      let offset = get_cursor_offset(greeter, username);
+      let offset = get_cursor_offset(greeter, greeter.username.len());
 
       Ok((2 + cursor.x + USERNAME.len() as u16 + offset as u16, 1 + cursor.y))
     }
 
     Mode::Password => {
-      let answer = greeter.answer.clone();
-      let offset = get_cursor_offset(greeter, answer);
+      let offset = get_cursor_offset(greeter, greeter.answer.len());
 
       if greeter.secret {
         Ok((1 + cursor.x + greeter.prompt.len() as u16, 3 + cursor.y))
@@ -131,6 +129,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 fn get_height(greeter: &Greeter) -> u16 {
   let (_, message_height) = get_message_height(greeter, 2, 0);
   let (_, greeting_height) = get_greeting_height(greeter, 1, 0);
+
   let initial = match greeter.mode {
     Mode::Username => 5,
     Mode::Password => 7,
@@ -167,14 +166,16 @@ fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option
   }
 }
 
-fn get_cursor_offset(greeter: &mut Greeter, text: String) -> i16 {
-  let mut offset = text.len() as i16 + greeter.cursor_offset;
+fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
+  let mut offset = length as i16 + greeter.cursor_offset;
+
   if offset < 0 {
     offset = 0;
-    greeter.cursor_offset = -(text.len() as i16);
+    greeter.cursor_offset = -(length as i16);
   }
-  if offset > text.len() as i16 {
-    offset = text.len() as i16;
+
+  if offset > length as i16 {
+    offset = length as i16;
     greeter.cursor_offset = 0;
   }
 
