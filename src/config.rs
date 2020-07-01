@@ -27,9 +27,11 @@ impl Display for AuthStatus {
 
 impl Error for AuthStatus {}
 
+#[derive(Copy, Clone, PartialEq)]
 pub enum Mode {
   Username,
   Password,
+  Command,
 }
 
 impl Default for Mode {
@@ -43,11 +45,13 @@ pub struct Greeter {
   pub config: Option<Matches>,
   pub stream: Option<UnixStream>,
   pub command: Option<String>,
+  pub previous_mode: Mode,
   pub mode: Mode,
   pub request: Option<Request>,
   pub cursor_offset: i16,
   pub username: String,
   pub answer: String,
+  pub new_command: String,
   pub secret: bool,
   pub prompt: String,
   pub greeting: Option<String>,

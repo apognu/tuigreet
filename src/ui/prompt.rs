@@ -4,11 +4,11 @@ use termion::raw::RawTerminal;
 use tui::{
   backend::TermionBackend,
   layout::{Alignment, Constraint, Direction, Layout, Rect},
-  style::{Modifier, Style},
   widgets::{Block, BorderType, Borders, Paragraph, Text},
   Frame,
 };
 
+use super::prompt_value;
 use crate::{info::get_hostname, Greeter, Mode};
 
 const PADDING: u16 = 2;
@@ -20,6 +20,7 @@ const MESSAGE_INDEX: usize = 3;
 
 const TITLE: &str = "Authenticate into";
 const USERNAME: &str = "Username:";
+const COMMAND: &str = "New command:";
 const WORKING: &str = "Please wait...";
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
@@ -59,51 +60,65 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
   }
 
-  let username_text = [Text::styled(USERNAME, Style::default().modifier(Modifier::BOLD))];
+  let username_text = [prompt_value(USERNAME)];
   let username_label = Paragraph::new(username_text.iter());
 
   let username_value_text = [Text::raw(&greeter.username)];
   let username_value = Paragraph::new(username_value_text.iter());
 
-  f.render_widget(username_label, chunks[USERNAME_INDEX]);
-  f.render_widget(
-    username_value,
-    Rect::new(1 + chunks[USERNAME_INDEX].x + USERNAME.len() as u16, chunks[USERNAME_INDEX].y, get_input_width(greeter, USERNAME), 1),
-  );
+  match greeter.mode {
+    Mode::Command => {
+      let command_label_text = [prompt_value(COMMAND)];
+      let command_label = Paragraph::new(command_label_text.iter());
+      let command_value_text = [Text::raw(&greeter.new_command)];
+      let command_value = Paragraph::new(command_value_text.iter());
 
-  let answer_text = if greeter.working {
-    [Text::raw(WORKING)]
-  } else {
-    [Text::styled(&greeter.prompt, Style::default().modifier(Modifier::BOLD))]
-  };
-  let answer_label = Paragraph::new(answer_text.iter());
-
-  if let Mode::Password = greeter.mode {
-    f.render_widget(answer_label, chunks[ANSWER_INDEX]);
-
-    if !greeter.secret {
-      let answer_value_text = [Text::raw(&greeter.answer)];
-      let answer_value = Paragraph::new(answer_value_text.iter());
-
+      f.render_widget(command_label, chunks[USERNAME_INDEX]);
       f.render_widget(
-        answer_value,
-        Rect::new(
-          chunks[ANSWER_INDEX].x + greeter.prompt.len() as u16,
-          chunks[ANSWER_INDEX].y,
-          get_input_width(greeter, &greeter.prompt),
-          1,
-        ),
+        command_value,
+        Rect::new(1 + chunks[USERNAME_INDEX].x + COMMAND.len() as u16, chunks[USERNAME_INDEX].y, get_input_width(greeter, COMMAND), 1),
       );
     }
-  }
 
-  if let Some(ref message) = message {
-    let message_text = [Text::raw(message)];
-    let message = Paragraph::new(message_text.iter());
+    Mode::Username | Mode::Password => {
+      f.render_widget(username_label, chunks[USERNAME_INDEX]);
+      f.render_widget(
+        username_value,
+        Rect::new(1 + chunks[USERNAME_INDEX].x + USERNAME.len() as u16, chunks[USERNAME_INDEX].y, get_input_width(greeter, USERNAME), 1),
+      );
 
-    match greeter.mode {
-      Mode::Username => f.render_widget(message, chunks[ANSWER_INDEX]),
-      Mode::Password => f.render_widget(message, chunks[MESSAGE_INDEX]),
+      let answer_text = if greeter.working { [Text::raw(WORKING)] } else { [prompt_value(&greeter.prompt)] };
+      let answer_label = Paragraph::new(answer_text.iter());
+
+      if greeter.mode == Mode::Password || greeter.previous_mode == Mode::Password {
+        f.render_widget(answer_label, chunks[ANSWER_INDEX]);
+
+        if !greeter.secret {
+          let answer_value_text = [Text::raw(&greeter.answer)];
+          let answer_value = Paragraph::new(answer_value_text.iter());
+
+          f.render_widget(
+            answer_value,
+            Rect::new(
+              chunks[ANSWER_INDEX].x + greeter.prompt.len() as u16,
+              chunks[ANSWER_INDEX].y,
+              get_input_width(greeter, &greeter.prompt),
+              1,
+            ),
+          );
+        }
+      }
+
+      if let Some(ref message) = message {
+        let message_text = [Text::raw(message)];
+        let message = Paragraph::new(message_text.iter());
+
+        match greeter.mode {
+          Mode::Username => f.render_widget(message, chunks[ANSWER_INDEX]),
+          Mode::Password => f.render_widget(message, chunks[MESSAGE_INDEX]),
+          Mode::Command => {}
+        }
+      }
     }
   }
 
@@ -123,6 +138,12 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
         Ok((1 + cursor.x + greeter.prompt.len() as u16 + offset as u16, 3 + cursor.y))
       }
     }
+
+    Mode::Command => {
+      let offset = get_cursor_offset(greeter, greeter.new_command.len());
+
+      Ok((2 + cursor.x + COMMAND.len() as u16 + offset as u16, 1 + cursor.y))
+    }
   }
 }
 
@@ -131,11 +152,14 @@ fn get_height(greeter: &Greeter) -> u16 {
   let (_, greeting_height) = get_greeting_height(greeter, 1, 0);
 
   let initial = match greeter.mode {
-    Mode::Username => 5,
+    Mode::Username | Mode::Command => 5,
     Mode::Password => 7,
   };
 
-  initial + greeting_height + message_height
+  match greeter.mode {
+    Mode::Command => initial + greeting_height,
+    _ => initial + greeting_height + message_height,
+  }
 }
 
 fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<String>, u16) {

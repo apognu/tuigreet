@@ -18,6 +18,7 @@ use tui::{
 use crate::Greeter;
 
 const EXIT: &str = "Exit";
+const CHANGE_COMMAND: &str = "Change command";
 const COMMAND: &str = "COMMAND";
 
 pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, greeter: &mut Greeter) -> Result<(), Box<dyn Error>> {
@@ -50,7 +51,14 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
     }
 
     let command = greeter.command.clone().unwrap_or_else(|| "-".to_string());
-    let status_text = [status_label("ESC"), status_value(format!(" {} ", EXIT)), status_label(COMMAND), status_value(format!(" {} ", command))];
+    let status_text = [
+      status_label("ESC"),
+      status_value(EXIT),
+      status_label("F2"),
+      status_value(CHANGE_COMMAND),
+      status_label(COMMAND),
+      status_value(command),
+    ];
     let status = Paragraph::new(status_text.iter());
 
     f.render_widget(status, chunks[2]);
@@ -82,5 +90,12 @@ fn status_value<'s, S>(text: S) -> Text<'s>
 where
   S: Into<String>,
 {
-  Text::raw(text.into())
+  Text::raw(format!(" {} ", text.into()))
+}
+
+fn prompt_value<'s, S>(text: S) -> Text<'s>
+where
+  S: Into<String>,
+{
+  Text::styled(text.into(), Style::default().modifier(Modifier::BOLD))
 }

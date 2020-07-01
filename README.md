@@ -23,7 +23,7 @@ The default configuration tends to be as minimal as possible, visually speaking,
 
 The initial prompt container will be 80 column wide. You may change this with `--width` in case you need more space (for example, to account for large PAM challenge messages).
 
-You may change the command that will be executed after opening a session by prefixing it with `!` in the username input box, for example `!bash`.
+You may change the command that will be executed after opening a session by huttint `F2` and amending the command.
 
 ## Install
 
