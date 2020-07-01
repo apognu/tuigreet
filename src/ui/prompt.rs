@@ -11,8 +11,6 @@ use tui::{
 use super::prompt_value;
 use crate::{info::get_hostname, Greeter, Mode};
 
-const PADDING: u16 = 2;
-
 const GREETING_INDEX: usize = 0;
 const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 2;
@@ -28,11 +26,13 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
   let width = greeter.width();
   let height = get_height(&greeter);
+  let container_padding = greeter.container_padding();
+  let prompt_padding = greeter.prompt_padding();
   let x = (size.width - width) / 2;
   let y = (size.height - height) / 2;
 
   let container = Rect::new(x, y, width, height);
-  let frame = Rect::new(x + PADDING, y + PADDING, width - PADDING, height - PADDING);
+  let frame = Rect::new(x + container_padding, y + container_padding, width - container_padding, height - container_padding);
 
   let hostname = format!(" {} {} ", TITLE, get_hostname());
   let block = Block::default().title(&hostname).borders(Borders::ALL).border_type(BorderType::Plain);
@@ -43,14 +43,13 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let (greeting, greeting_height) = get_greeting_height(greeter, 1, 0);
 
   let constraints = [
-    Constraint::Length(greeting_height),                                                    // Greeting
-    Constraint::Length(2),                                                                  // Username
-    Constraint::Length(if let Mode::Username = greeter.mode { message_height } else { 2 }), // Message or answer
-    Constraint::Length(if let Mode::Password = greeter.mode { message_height } else { 1 }), // Message
+    Constraint::Length(greeting_height),                                                                     // Greeting
+    Constraint::Length(1 + prompt_padding),                                                                  // Username
+    Constraint::Length(if let Mode::Username = greeter.mode { message_height } else { 1 + prompt_padding }), // Message or answer
+    Constraint::Length(if let Mode::Password = greeter.mode { message_height } else { 1 }),                  // Message
   ];
 
   let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(frame);
-
   let cursor = chunks[USERNAME_INDEX];
 
   if let Some(greeting) = &greeting {
@@ -126,34 +125,36 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
     Mode::Username => {
       let offset = get_cursor_offset(greeter, greeter.username.len());
 
-      Ok((2 + cursor.x + USERNAME.len() as u16 + offset as u16, 1 + cursor.y))
+      Ok((2 + cursor.x + USERNAME.len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
     }
 
     Mode::Password => {
       let offset = get_cursor_offset(greeter, greeter.answer.len());
 
       if greeter.secret {
-        Ok((1 + cursor.x + greeter.prompt.len() as u16, 3 + cursor.y))
+        Ok((1 + cursor.x + greeter.prompt.len() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
       } else {
-        Ok((1 + cursor.x + greeter.prompt.len() as u16 + offset as u16, 3 + cursor.y))
+        Ok((1 + cursor.x + greeter.prompt.len() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
       }
     }
 
     Mode::Command => {
       let offset = get_cursor_offset(greeter, greeter.new_command.len());
 
-      Ok((2 + cursor.x + COMMAND.len() as u16 + offset as u16, 1 + cursor.y))
+      Ok((2 + cursor.x + COMMAND.len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
     }
   }
 }
 
 fn get_height(greeter: &Greeter) -> u16 {
+  let container_padding = greeter.container_padding();
+  let prompt_padding = greeter.prompt_padding();
   let (_, message_height) = get_message_height(greeter, 2, 0);
   let (_, greeting_height) = get_greeting_height(greeter, 1, 0);
 
   let initial = match greeter.mode {
-    Mode::Username | Mode::Command => 5,
-    Mode::Password => 7,
+    Mode::Username | Mode::Command => (2 * container_padding) + 1,
+    Mode::Password => (2 * container_padding) + 2 + (2 * prompt_padding),
   };
 
   match greeter.mode {

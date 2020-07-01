@@ -100,6 +100,26 @@ impl Greeter {
     80
   }
 
+  pub fn container_padding(&self) -> u16 {
+    if let Some(value) = self.option("container-padding") {
+      if let Ok(padding) = value.parse::<u16>() {
+        return padding + 1;
+      }
+    }
+
+    2
+  }
+
+  pub fn prompt_padding(&self) -> u16 {
+    if let Some(value) = self.option("prompt-padding") {
+      if let Ok(padding) = value.parse::<u16>() {
+        return padding;
+      }
+    }
+
+    1
+  }
+
   pub fn parse_options(&mut self) {
     let mut opts = Options::new();
 
@@ -109,6 +129,8 @@ impl Greeter {
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
     opts.optflag("t", "time", "display the current date and time");
+    opts.optopt("", "container-padding", "padding inside the main prompt container (default: 1)", "PADDING");
+    opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
 
     self.config = match opts.parse(&env::args().collect::<Vec<String>>()) {
       Ok(matches) => Some(matches),

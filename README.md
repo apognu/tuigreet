@@ -15,13 +15,17 @@ Options:
     -g, --greeting GREETING
                         show custom text above login prompt
     -t, --time          display the current date and time
+        --container-padding PADDING
+                        padding inside the main prompt container (default: 1)
+        --prompt-padding PADDING
+                        padding between prompt rows (default: 1)
 ```
 
 ## Usage
 
 The default configuration tends to be as minimal as possible, visually speaking, only showing the authentication prompts and some minor information in the status bar. You may print your system's `/etc/issue` at the top of the prompt with `--issue` and the current date and time with `--time`. You may include a custom one-line greeting message instead of `/etc/issue` with `--greeting`.
 
-The initial prompt container will be 80 column wide. You may change this with `--width` in case you need more space (for example, to account for large PAM challenge messages).
+The initial prompt container will be 80 column wide. You may change this with `--width` in case you need more space (for example, to account for large PAM challenge messages). Please refer to usage information (`--help`) for more customizaton options.
 
 You may change the command that will be executed after opening a session by huttint `F2` and amending the command.
 
