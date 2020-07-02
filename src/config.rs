@@ -124,6 +124,7 @@ impl Greeter {
     let mut opts = Options::new();
 
     opts.optflag("h", "help", "show this usage information");
+    opts.optflag("v", "version", "print version information");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
     opts.optopt("w", "width", "width of the main prompt (default: 80)", "WIDTH");
     opts.optflag("i", "issue", "show the host's issue file");
@@ -144,6 +145,10 @@ impl Greeter {
 
     if self.config().opt_present("help") {
       print_usage(opts);
+      std::process::exit(0);
+    }
+    if self.config().opt_present("version") {
+      print_version();
       std::process::exit(0);
     }
 
@@ -179,4 +184,10 @@ impl Greeter {
 
 fn print_usage(opts: Options) {
   eprint!("{}", opts.usage("Usage: tuigreet [OPTIONS]"));
+}
+
+fn print_version() {
+  println!("tuigreet {} ({})", env!("VERSION"), env!("TARGET"));
+  println!("Copyright (C) 2020 Antoine POPINEAU <https://github.com/apognu/tuigreet>.");
+  println!("Licensed under GPLv3 (GNU GPL version 3 or later).");
 }

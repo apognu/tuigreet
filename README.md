@@ -9,6 +9,7 @@ Usage: tuigreet [OPTIONS]
 
 Options:
     -h, --help          show this usage information
+    -v, --version       print version information
     -c, --cmd COMMAND   command to run
     -w, --width WIDTH   width of the main prompt (default: 80)
     -i, --issue         show the host's issue file
