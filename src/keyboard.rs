@@ -11,13 +11,10 @@ use crate::{
 pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Error>> {
   if let Event::Input(input) = events.next()? {
     match input {
-      Key::Esc => {
-        if let Mode::Command = greeter.mode {
-          greeter.mode = greeter.previous_mode;
-        } else {
-          crate::exit(greeter, AuthStatus::Cancel)?;
-        }
-      }
+      Key::Esc => match greeter.mode {
+        Mode::Command | Mode::Sessions => greeter.mode = greeter.previous_mode,
+        _ => crate::exit(greeter, AuthStatus::Cancel)?,
+      },
 
       Key::Left => greeter.cursor_offset -= 1,
       Key::Right => greeter.cursor_offset += 1,
@@ -26,6 +23,27 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
         greeter.new_command = greeter.command.clone().unwrap_or_else(String::new);
         greeter.previous_mode = greeter.mode;
         greeter.mode = Mode::Command;
+      }
+
+      Key::F(3) => {
+        greeter.previous_mode = greeter.mode;
+        greeter.mode = Mode::Sessions;
+      }
+
+      Key::Up => {
+        if let Mode::Sessions = greeter.mode {
+          if greeter.selected_session > 0 {
+            greeter.selected_session -= 1;
+          }
+        }
+      }
+
+      Key::Down => {
+        if let Mode::Sessions = greeter.mode {
+          if greeter.selected_session < greeter.sessions.len() - 1 {
+            greeter.selected_session += 1;
+          }
+        }
       }
 
       Key::Ctrl('a') => greeter.cursor_offset = -(greeter.username.len() as i16),
@@ -52,6 +70,15 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
 
         Mode::Command => {
           greeter.command = Some(greeter.new_command.clone());
+          greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
+          greeter.mode = greeter.previous_mode;
+        }
+
+        Mode::Sessions => {
+          if let Some((_, command)) = greeter.sessions.get(greeter.selected_session) {
+            greeter.command = Some(command.clone());
+          }
+
           greeter.mode = greeter.previous_mode;
         }
       },
@@ -72,6 +99,7 @@ fn insert_key(greeter: &mut Greeter, c: char) {
     Mode::Username => &mut greeter.username,
     Mode::Password => &mut greeter.answer,
     Mode::Command => &mut greeter.new_command,
+    Mode::Sessions => return,
   };
 
   let index = value.len() as i16 + greeter.cursor_offset;
@@ -84,6 +112,7 @@ fn delete_key(greeter: &mut Greeter, key: Key) {
     Mode::Username => &mut greeter.username,
     Mode::Password => &mut greeter.answer,
     Mode::Command => &mut greeter.new_command,
+    Mode::Sessions => return,
   };
 
   let index = match key {

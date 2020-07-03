@@ -115,10 +115,12 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
         match greeter.mode {
           Mode::Username => f.render_widget(message, chunks[ANSWER_INDEX]),
           Mode::Password => f.render_widget(message, chunks[MESSAGE_INDEX]),
-          Mode::Command => {}
+          Mode::Command | Mode::Sessions => {}
         }
       }
     }
+
+    Mode::Sessions => {}
   }
 
   match greeter.mode {
@@ -143,6 +145,8 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
       Ok((2 + cursor.x + COMMAND.len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
     }
+
+    Mode::Sessions => Ok((1, 1)),
   }
 }
 
@@ -154,7 +158,8 @@ fn get_height(greeter: &Greeter) -> u16 {
 
   let initial = match greeter.mode {
     Mode::Username | Mode::Command => (2 * container_padding) + 1,
-    Mode::Password => (2 * container_padding) + 2 + (2 * prompt_padding),
+    Mode::Password => (2 * container_padding) + prompt_padding + 2,
+    Mode::Sessions => 0,
   };
 
   match greeter.mode {

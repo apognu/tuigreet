@@ -32,6 +32,7 @@ pub enum Mode {
   Username,
   Password,
   Command,
+  Sessions,
 }
 
 impl Default for Mode {
@@ -44,18 +45,25 @@ impl Default for Mode {
 pub struct Greeter {
   pub config: Option<Matches>,
   pub stream: Option<UnixStream>,
-  pub command: Option<String>,
-  pub previous_mode: Mode,
-  pub mode: Mode,
   pub request: Option<Request>,
+
+  pub mode: Mode,
+  pub previous_mode: Mode,
   pub cursor_offset: i16,
-  pub username: String,
-  pub answer: String,
+
+  pub command: Option<String>,
   pub new_command: String,
-  pub secret: bool,
+  pub sessions: Vec<(String, String)>,
+  pub selected_session: usize,
+
+  pub username: String,
   pub prompt: String,
+  pub answer: String,
+  pub secret: bool,
+
   pub greeting: Option<String>,
   pub message: Option<String>,
+
   pub working: bool,
   pub done: bool,
 }
@@ -72,9 +80,13 @@ impl Drop for Greeter {
 impl Greeter {
   pub fn new() -> Self {
     let mut greeter = Self::default();
+
     greeter.parse_options();
+    greeter.sessions = crate::info::get_sessions().unwrap_or_default();
+    greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
     greeter
   }
+
   pub fn config(&self) -> &Matches {
     self.config.as_ref().unwrap()
   }

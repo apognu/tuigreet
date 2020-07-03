@@ -1,4 +1,5 @@
 mod prompt;
+mod sessions;
 
 use std::{
   error::Error,
@@ -15,9 +16,10 @@ use tui::{
   Terminal,
 };
 
-use crate::Greeter;
+use crate::{Greeter, Mode};
 
 const EXIT: &str = "Exit";
+const SESSIONS: &str = "Choose session";
 const CHANGE_COMMAND: &str = "Change command";
 const COMMAND: &str = "COMMAND";
 
@@ -56,6 +58,8 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       status_value(EXIT),
       status_label("F2"),
       status_value(CHANGE_COMMAND),
+      status_label("F3"),
+      status_value(SESSIONS),
       status_label(COMMAND),
       status_value(command),
     ];
@@ -63,7 +67,10 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
 
     f.render_widget(status, chunks[2]);
 
-    cursor = self::prompt::draw(greeter, &mut f).ok();
+    cursor = match greeter.mode {
+      Mode::Sessions => self::sessions::draw(greeter, &mut f).ok(),
+      _ => self::prompt::draw(greeter, &mut f).ok(),
+    }
   })?;
 
   if let Some(cursor) = cursor {
