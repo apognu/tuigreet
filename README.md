@@ -28,7 +28,7 @@ The default configuration tends to be as minimal as possible, visually speaking,
 
 The initial prompt container will be 80 column wide. You may change this with `--width` in case you need more space (for example, to account for large PAM challenge messages). Please refer to usage information (`--help`) for more customizaton options.
 
-You may change the command that will be executed after opening a session by hittint `F2` and amending the command. Alternatively, you can list the system-declared sessions by hitting `F3`.
+You may change the command that will be executed after opening a session by hitting `F2` and amending the command. Alternatively, you can list the system-declared sessions by hitting `F3`.
 
 ## Install
 
