@@ -50,6 +50,15 @@ On ArchLinux, `tuigreeter` is available on [AUR](https://aur.archlinux.org/packa
 $ yay -S greetd-tuigreet-git
 ```
 
+### From Gentoo
+
+On Gentoo, `tuigreet` is available as a package `gui-apps/tuigreet`:
+
+```
+$ emege --ask --verbose gui-apps/tuigreet
+```
+
+
 ### Pre-built binaries
 
 Pre-built binaries of `tuigreet` for several architectures can be found in the [releases](https://github.com/apognu/tuigreet/releases) section of this repository. The [tip prerelease](https://github.com/apognu/tuigreet/releases/tag/tip) is continuously built and kept in sync with the `master` branch.
