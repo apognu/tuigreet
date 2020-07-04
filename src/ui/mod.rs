@@ -1,5 +1,7 @@
+mod command;
 mod prompt;
 mod sessions;
+mod util;
 
 use std::{
   error::Error,
@@ -81,6 +83,7 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
     }
 
     cursor = match greeter.mode {
+      Mode::Command => self::command::draw(greeter, &mut f).ok(),
       Mode::Sessions => self::sessions::draw(greeter, &mut f).ok(),
       _ => self::prompt::draw(greeter, &mut f).ok(),
     }

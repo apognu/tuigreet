@@ -20,7 +20,7 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
       Key::Right => greeter.cursor_offset += 1,
 
       Key::F(2) => {
-        greeter.new_command = greeter.command.clone().unwrap_or_else(String::new);
+        greeter.new_command = greeter.command.clone().unwrap_or_default();
         greeter.previous_mode = greeter.mode;
         greeter.mode = Mode::Command;
       }

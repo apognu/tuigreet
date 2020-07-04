@@ -9,6 +9,7 @@ use tui::{
   Frame,
 };
 
+use super::util::*;
 use crate::Greeter;
 
 const CHANGE_SESSION: &str = "Change session";
@@ -17,7 +18,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let size = f.size();
 
   let width = greeter.width();
-  let height: u16 = greeter.sessions.len() as u16 + 4;
+  let height: u16 = get_height(greeter) + greeter.sessions.len() as u16;
   let x = (size.width - width) / 2;
   let y = (size.height - height) / 2;
 
