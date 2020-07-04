@@ -1,3 +1,0 @@
-[submodule "contrib/aur-git"]
-	path = contrib/aur-git
-	url = ssh://aur@aur.archlinux.org/greetd-tuigreet-git.git
