@@ -55,7 +55,7 @@ $ yay -S greetd-tuigreet-git
 On Gentoo, `tuigreet` is available as a package `gui-apps/tuigreet`:
 
 ```
-$ emege --ask --verbose gui-apps/tuigreet
+$ emerge --ask --verbose gui-apps/tuigreet
 ```
 
 
