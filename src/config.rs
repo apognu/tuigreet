@@ -201,5 +201,8 @@ fn print_usage(opts: Options) {
 fn print_version() {
   println!("tuigreet {} ({})", env!("VERSION"), env!("TARGET"));
   println!("Copyright (C) 2020 Antoine POPINEAU <https://github.com/apognu/tuigreet>.");
-  println!("Licensed under GPLv3 (GNU GPL version 3 or later).");
+  println!("Licensed under GPLv3+ (GNU GPL version 3 or later).");
+  println!();
+  println!("This is free software, you are welcome to redistribute it under some conditions.");
+  println!("There is NO WARRANTY, to the extent provided by law.");
 }
