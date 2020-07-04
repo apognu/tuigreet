@@ -8,7 +8,7 @@ fn main() {
 }
 
 fn get_version() -> Result<String, Box<dyn Error>> {
-  let tag = Command::new("git").args(&["describe", "--tags", "--abbrev=0"]).output()?;
+  let tag = Command::new("git").args(&["describe", "--abbrev=0"]).output()?;
   let tag = match tag.status.code() {
     Some(0) => String::from_utf8(tag.stdout)?,
     _ => "0.0.0".to_string(),
