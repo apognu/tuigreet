@@ -1,4 +1,10 @@
-use std::{env, error::Error, fs, path::Path};
+use std::{
+  env,
+  error::Error,
+  fs, io,
+  path::Path,
+  process::{Command, Output},
+};
 
 use ini::Ini;
 use nix::sys::utsname;
@@ -54,4 +60,18 @@ where
   let exec = section.get("Exec").ok_or("no Exec property in desktop file")?;
 
   Ok((name.to_string(), exec.to_string()))
+}
+
+pub fn capslock_status() -> bool {
+  match command("kbdinfo", &["gkbled", "capslock"]) {
+    Ok(output) => output.status.code() == Some(0),
+    Err(_) => false,
+  }
+}
+
+pub fn command<S>(name: S, args: &[&str]) -> io::Result<Output>
+where
+  S: Into<String>,
+{
+  Command::new(name.into()).args(args).output()
 }

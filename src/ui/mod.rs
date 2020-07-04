@@ -10,21 +10,22 @@ use chrono::prelude::*;
 use termion::{cursor::Goto, raw::RawTerminal};
 use tui::{
   backend::TermionBackend,
-  layout::{Alignment, Constraint, Layout},
+  layout::{Alignment, Constraint, Direction, Layout},
   style::{Modifier, Style},
   widgets::{Paragraph, Text},
   Terminal,
 };
 
-use crate::{Greeter, Mode};
+use crate::{info::capslock_status, Greeter, Mode};
 
 const EXIT: &str = "Exit";
 const SESSIONS: &str = "Choose session";
 const CHANGE_COMMAND: &str = "Change command";
 const COMMAND: &str = "COMMAND";
+const CAPS_LOCK: &str = "CAPS LOCK";
 
 pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, greeter: &mut Greeter) -> Result<(), Box<dyn Error>> {
-  if greeter.working {
+  if greeter.working || greeter.mode == Mode::Sessions {
     terminal.hide_cursor()?;
   } else {
     terminal.show_cursor()?;
@@ -52,8 +53,13 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       f.render_widget(time, chunks[0]);
     }
 
+    let status_chunks = Layout::default()
+      .direction(Direction::Horizontal)
+      .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+      .split(chunks[2]);
+
     let command = greeter.command.clone().unwrap_or_else(|| "-".to_string());
-    let status_text = [
+    let status_left_text = [
       status_label("ESC"),
       status_value(EXIT),
       status_label("F2"),
@@ -63,9 +69,16 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       status_label(COMMAND),
       status_value(command),
     ];
-    let status = Paragraph::new(status_text.iter());
+    let status_left = Paragraph::new(status_left_text.iter());
 
-    f.render_widget(status, chunks[2]);
+    f.render_widget(status_left, status_chunks[0]);
+
+    if capslock_status() {
+      let status_right_text = [status_label(format!(" {} ", CAPS_LOCK))];
+      let status_right = Paragraph::new(status_right_text.iter()).alignment(Alignment::Right);
+
+      f.render_widget(status_right, status_chunks[1]);
+    }
 
     cursor = match greeter.mode {
       Mode::Sessions => self::sessions::draw(greeter, &mut f).ok(),
