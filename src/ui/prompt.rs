@@ -41,10 +41,13 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let (message, message_height) = get_message_height(greeter, 1, 1);
   let (greeting, greeting_height) = get_greeting_height(greeter, 1, 0);
 
+  let username_padding = if greeter.mode == Mode::Username && prompt_padding == 0 { 1 } else { prompt_padding };
+  let answer_padding = if prompt_padding == 0 { 1 } else { prompt_padding };
+
   let constraints = [
     Constraint::Length(greeting_height),                                                                  // Greeting
-    Constraint::Length(1 + prompt_padding),                                                               // Username
-    Constraint::Length(if greeter.mode == Mode::Username { message_height } else { 1 + prompt_padding }), // Message or answer
+    Constraint::Length(1 + username_padding),                                                             // Username
+    Constraint::Length(if greeter.mode == Mode::Username { message_height } else { 1 + answer_padding }), // Message or answer
     Constraint::Length(if greeter.mode == Mode::Password { message_height } else { 1 }),                  // Message
   ];
 
