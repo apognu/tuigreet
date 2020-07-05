@@ -44,12 +44,12 @@ jobs:
           args: --release --target=${{ matrix.arch.target }}
           use-cross: ${{ matrix.arch.cross }}
       - name: Rename artifact
-        run: mv target/${{ matrix.arch.target }}/release/tuigreet target/${{ matrix.arch.target }}/release/tuigreet-master-${{ matrix.arch.name }}
+        run: mv target/${{ matrix.arch.target }}/release/tuigreet target/${{ matrix.arch.target }}/release/tuigreet-tip-${{ matrix.arch.name }}
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: tuigreet-master-${{ matrix.arch.name }}
-          path: target/${{ matrix.arch.target }}/release/tuigreet-master-${{ matrix.arch.name }}
+          name: tuigreet-tip-${{ matrix.arch.name }}
+          path: target/${{ matrix.arch.target }}/release/tuigreet-tip-${{ matrix.arch.name }}
 
   package:
     runs-on: ubuntu-latest
