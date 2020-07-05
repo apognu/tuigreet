@@ -44,11 +44,13 @@ $ cargo build --release
 
 ### From AUR
 
-On ArchLinux, `tuigreeter` is available on [AUR](https://aur.archlinux.org/packages/greetd-tuigreet-git) and is installable through your preferred AUR helper:
+On ArchLinux, `tuigreeter` is available on [AUR](https://aur.archlinux.org/packages/greetd-tuigreet) and is installable through your preferred AUR helper:
 
 ```
-$ yay -S greetd-tuigreet-git
+$ yay -S greetd-tuigreet
 ```
+
+Two more distributions are available: `greetd-tuigreet-bin` is the precompiled release for the latest tagged release of `tuigreet` and `greetd-tuigreet-git` is a rolling release always following the `master` branch of this repository.
 
 ### From Gentoo
 
@@ -62,8 +64,6 @@ $ emerge --ask --verbose gui-apps/tuigreet
 ### Pre-built binaries
 
 Pre-built binaries of `tuigreet` for several architectures can be found in the [releases](https://github.com/apognu/tuigreet/releases) section of this repository. The [tip prerelease](https://github.com/apognu/tuigreet/releases/tag/tip) is continuously built and kept in sync with the `master` branch.
-
-Actual tag releases will be created when the project stabilizes.
 
 ## Configuration
 
