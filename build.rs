@@ -1,13 +1,17 @@
-use std::{env, error::Error, process::Command};
+use std::{env, error::Error, path::Path, process::Command};
 
 fn main() {
-  let version = get_version().unwrap_or_else(|_| String::from("unknown"));
+  let version = if Path::new(".git").exists() {
+    get_git_version().unwrap_or_else(|_| String::from("unknown"))
+  } else {
+    env!("CARGO_PKG_VERSION").to_string()
+  };
 
   println!("cargo:rustc-env=VERSION={}", version);
   println!("cargo:rustc-env=TARGET={}", env::var("TARGET").unwrap());
 }
 
-fn get_version() -> Result<String, Box<dyn Error>> {
+fn get_git_version() -> Result<String, Box<dyn Error>> {
   let tag = Command::new("git").args(&["describe", "--abbrev=0"]).output()?;
   let tag = match tag.status.code() {
     Some(0) => String::from_utf8(tag.stdout)?,
