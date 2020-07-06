@@ -88,7 +88,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
           f.render_widget(
             answer_value,
             Rect::new(
-              chunks[ANSWER_INDEX].x + greeter.prompt.len() as u16,
+              chunks[ANSWER_INDEX].x + greeter.prompt.chars().count() as u16,
               chunks[ANSWER_INDEX].y,
               get_input_width(greeter, &greeter.prompt),
               1,
@@ -114,18 +114,18 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
   match greeter.mode {
     Mode::Username => {
-      let offset = get_cursor_offset(greeter, greeter.username.len());
+      let offset = get_cursor_offset(greeter, greeter.username.chars().count());
 
       Ok((2 + cursor.x + USERNAME.len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
     }
 
     Mode::Password => {
-      let offset = get_cursor_offset(greeter, greeter.answer.len());
+      let offset = get_cursor_offset(greeter, greeter.answer.chars().count());
 
       if greeter.secret {
-        Ok((1 + cursor.x + greeter.prompt.len() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
+        Ok((1 + cursor.x + greeter.prompt.chars().count() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
       } else {
-        Ok((1 + cursor.x + greeter.prompt.len() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
+        Ok((1 + cursor.x + greeter.prompt.chars().count() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
       }
     }
 

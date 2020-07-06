@@ -19,7 +19,7 @@ pub fn get_height(greeter: &Greeter) -> u16 {
 }
 
 pub fn get_input_width(greeter: &Greeter, label: &str) -> u16 {
-  greeter.width() - label.len() as u16 - 4 - 1
+  greeter.width() - label.chars().count() as u16 - 4 - 1
 }
 
 pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {

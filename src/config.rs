@@ -148,8 +148,8 @@ impl Greeter {
     self.config = match opts.parse(&env::args().collect::<Vec<String>>()) {
       Ok(matches) => Some(matches),
 
-      Err(usage) => {
-        println!("{}", usage);
+      Err(error) => {
+        println!("{}", error);
         print_usage(opts);
         process::exit(1);
       }

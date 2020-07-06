@@ -45,7 +45,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   f.render_widget(command_label, chunks[0]);
   f.render_widget(command_value, Rect::new(1 + chunks[0].x + COMMAND.len() as u16, chunks[0].y, get_input_width(greeter, COMMAND), 1));
 
-  let offset = get_cursor_offset(greeter, greeter.new_command.len());
+  let offset = get_cursor_offset(greeter, greeter.new_command.chars().count());
 
   Ok((2 + cursor.x + COMMAND.len() as u16 + offset as u16, cursor.y + 1))
 }

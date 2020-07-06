@@ -46,7 +46,15 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
         }
       }
 
-      Key::Ctrl('a') => greeter.cursor_offset = -(greeter.username.len() as i16),
+      Key::Ctrl('a') => {
+        let value = match greeter.mode {
+          Mode::Username => &greeter.username,
+          _ => &greeter.answer,
+        };
+
+        greeter.cursor_offset = -(value.chars().count() as i16);
+      }
+
       Key::Ctrl('e') => greeter.cursor_offset = 0,
 
       Key::Char('\n') | Key::Char('\t') => match greeter.mode {
@@ -102,9 +110,11 @@ fn insert_key(greeter: &mut Greeter, c: char) {
     Mode::Sessions => return,
   };
 
-  let index = value.len() as i16 + greeter.cursor_offset;
+  let index = (value.chars().count() as i16 + greeter.cursor_offset) as usize;
+  let left = value.chars().take(index);
+  let right = value.chars().skip(index);
 
-  value.insert(index as usize, c);
+  *value = left.chain(vec![c].into_iter()).chain(right).collect();
 }
 
 fn delete_key(greeter: &mut Greeter, key: Key) {
@@ -116,13 +126,16 @@ fn delete_key(greeter: &mut Greeter, key: Key) {
   };
 
   let index = match key {
-    Key::Backspace => value.len() as i16 + greeter.cursor_offset - 1,
-    Key::Delete => value.len() as i16 + greeter.cursor_offset,
+    Key::Backspace => (value.chars().count() as i16 + greeter.cursor_offset - 1) as usize,
+    Key::Delete => (value.chars().count() as i16 + greeter.cursor_offset) as usize,
     _ => 0,
   };
 
   if value.chars().nth(index as usize).is_some() {
-    value.remove(index as usize);
+    let left = value.chars().take(index);
+    let right = value.chars().skip(index + 1);
+
+    *value = left.chain(right).collect();
 
     if let Key::Delete = key {
       greeter.cursor_offset += 1;
