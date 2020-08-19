@@ -5,6 +5,7 @@ use termion::event::Key;
 
 use crate::{
   event::{Event, Events},
+  info::delete_last_username,
   AuthStatus, Greeter, Mode,
 };
 
@@ -13,7 +14,12 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
     match input {
       Key::Esc => match greeter.mode {
         Mode::Command | Mode::Sessions => greeter.mode = greeter.previous_mode,
-        _ => crate::exit(greeter, AuthStatus::Cancel)?,
+
+        _ => {
+          delete_last_username();
+
+          crate::exit(greeter, AuthStatus::Cancel)?;
+        }
       },
 
       Key::Left => greeter.cursor_offset -= 1,

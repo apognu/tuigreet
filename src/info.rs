@@ -46,6 +46,10 @@ pub fn write_last_username(username: &str) {
   let _ = fs::write(LAST_USERNAME, username);
 }
 
+pub fn delete_last_username() {
+  let _ = fs::remove_file(LAST_USERNAME);
+}
+
 pub fn get_sessions() -> Result<Vec<(String, String)>, Box<dyn Error>> {
   let directories = vec![X_SESSIONS, WAYLAND_SESSIONS];
 
