@@ -4,7 +4,7 @@ use termion::raw::RawTerminal;
 use tui::{
   backend::TermionBackend,
   layout::{Constraint, Direction, Layout, Rect},
-  text::Spans,
+  text::Span,
   widgets::{Block, BorderType, Borders, Paragraph},
   Frame,
 };
@@ -38,9 +38,9 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(frame);
   let cursor = chunks[0];
 
-  let command_label_text = vec![prompt_value(COMMAND)];
+  let command_label_text = prompt_value(COMMAND);
   let command_label = Paragraph::new(command_label_text);
-  let command_value_text = vec![Spans::from(greeter.new_command.clone())];
+  let command_value_text = Span::from(greeter.new_command.clone());
   let command_value = Paragraph::new(command_value_text);
 
   f.render_widget(command_label, chunks[0]);
