@@ -9,7 +9,7 @@ use std::{
 };
 
 use chrono::prelude::*;
-use termion::{cursor::Goto, raw::RawTerminal};
+use termion::raw::RawTerminal;
 use tui::{
   backend::TermionBackend,
   layout::{Alignment, Constraint, Direction, Layout},
@@ -28,13 +28,12 @@ const COMMAND: &str = "COMMAND";
 const CAPS_LOCK: &str = "CAPS LOCK";
 
 pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, greeter: &mut Greeter) -> Result<(), Box<dyn Error>> {
-  if greeter.working || greeter.mode == Mode::Sessions {
+  let hide_cursor = if greeter.working || greeter.mode == Mode::Sessions {
     terminal.hide_cursor()?;
+    true
   } else {
-    terminal.show_cursor()?;
-  }
-
-  let mut cursor: Option<(u16, u16)> = None;
+    false
+  };
 
   terminal.draw(|mut f| {
     let size = f.size();
@@ -83,16 +82,18 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       f.render_widget(status_right, status_chunks[1]);
     }
 
-    cursor = match greeter.mode {
+    let cursor = match greeter.mode {
       Mode::Command => self::command::draw(greeter, &mut f).ok(),
       Mode::Sessions => self::sessions::draw(greeter, &mut f).ok(),
       _ => self::prompt::draw(greeter, &mut f).ok(),
+    };
+
+    if !hide_cursor {
+      if let Some(cursor) = cursor {
+        f.set_cursor(cursor.0 - 1, cursor.1 - 1);
+      }
     }
   })?;
-
-  if let Some(cursor) = cursor {
-    write!(terminal.backend_mut(), "{}", Goto(cursor.0, cursor.1))?;
-  }
 
   io::stdout().flush()?;
 
