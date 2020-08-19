@@ -14,7 +14,8 @@ use tui::{
   backend::TermionBackend,
   layout::{Alignment, Constraint, Direction, Layout},
   style::{Modifier, Style},
-  widgets::{Paragraph, Text},
+  text::{Span, Spans},
+  widgets::Paragraph,
   Terminal,
 };
 
@@ -49,8 +50,8 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       .split(size);
 
     if greeter.config().opt_present("time") {
-      let time_text = [Text::raw(get_time())];
-      let time = Paragraph::new(time_text.iter()).alignment(Alignment::Center);
+      let time_text = vec![Spans::from(get_time())];
+      let time = Paragraph::new(time_text).alignment(Alignment::Center);
 
       f.render_widget(time, chunks[0]);
     }
@@ -61,7 +62,7 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       .split(chunks[2]);
 
     let command = greeter.command.clone().unwrap_or_else(|| "-".to_string());
-    let status_left_text = [
+    let status_left_text = vec![
       status_label("ESC"),
       status_value(EXIT),
       status_label("F2"),
@@ -71,13 +72,13 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       status_label(COMMAND),
       status_value(command),
     ];
-    let status_left = Paragraph::new(status_left_text.iter());
+    let status_left = Paragraph::new(status_left_text);
 
     f.render_widget(status_left, status_chunks[0]);
 
     if capslock_status() {
-      let status_right_text = [status_label(format!(" {} ", CAPS_LOCK))];
-      let status_right = Paragraph::new(status_right_text.iter()).alignment(Alignment::Right);
+      let status_right_text = vec![status_label(format!(" {} ", CAPS_LOCK))];
+      let status_right = Paragraph::new(status_right_text).alignment(Alignment::Right);
 
       f.render_widget(status_right, status_chunks[1]);
     }
@@ -102,23 +103,23 @@ fn get_time() -> String {
   Local::now().format("%b, %d %h %Y - %H:%M").to_string()
 }
 
-fn status_label<'s, S>(text: S) -> Text<'s>
+fn status_label<'s, S>(text: S) -> Spans<'s>
 where
   S: Into<String>,
 {
-  Text::styled(text.into(), Style::default().modifier(Modifier::REVERSED))
+  Spans::from(Span::styled(text.into(), Style::default().add_modifier(Modifier::REVERSED)))
 }
 
-fn status_value<'s, S>(text: S) -> Text<'s>
+fn status_value<'s, S>(text: S) -> Spans<'s>
 where
   S: Into<String>,
 {
-  Text::raw(format!(" {} ", text.into()))
+  Spans::from(format!(" {} ", text.into()))
 }
 
-fn prompt_value<'s, S>(text: S) -> Text<'s>
+fn prompt_value<'s, S>(text: S) -> Spans<'s>
 where
   S: Into<String>,
 {
-  Text::styled(text.into(), Style::default().modifier(Modifier::BOLD))
+  Spans::from(Span::styled(text.into(), Style::default().add_modifier(Modifier::BOLD)))
 }

@@ -4,7 +4,8 @@ use termion::raw::RawTerminal;
 use tui::{
   backend::TermionBackend,
   layout::{Alignment, Constraint, Direction, Layout, Rect},
-  widgets::{Block, BorderType, Borders, Paragraph, Text},
+  text::Spans,
+  widgets::{Block, BorderType, Borders, Paragraph},
   Frame,
 };
 
@@ -33,8 +34,8 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let container = Rect::new(x, y, width, height);
   let frame = Rect::new(x + container_padding, y + container_padding, width - container_padding, height - container_padding);
 
-  let hostname = format!(" {} {} ", TITLE, get_hostname());
-  let block = Block::default().title(&hostname).borders(Borders::ALL).border_type(BorderType::Plain);
+  let hostname = Spans::from(format!(" {} {} ", TITLE, get_hostname()));
+  let block = Block::default().title(hostname).borders(Borders::ALL).border_type(BorderType::Plain);
 
   f.render_widget(block, container);
 
@@ -55,17 +56,17 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let cursor = chunks[USERNAME_INDEX];
 
   if let Some(greeting) = &greeting {
-    let greeting_text = [Text::raw(greeting.trim_end())];
-    let greeting_label = Paragraph::new(greeting_text.iter()).alignment(Alignment::Center);
+    let greeting_text = vec![Spans::from(greeting.trim_end())];
+    let greeting_label = Paragraph::new(greeting_text).alignment(Alignment::Center);
 
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
   }
 
-  let username_text = [prompt_value(USERNAME)];
-  let username_label = Paragraph::new(username_text.iter());
+  let username_text = vec![prompt_value(USERNAME)];
+  let username_label = Paragraph::new(username_text);
 
-  let username_value_text = [Text::raw(&greeter.username)];
-  let username_value = Paragraph::new(username_value_text.iter());
+  let username_value_text = vec![Spans::from(greeter.username.clone())];
+  let username_value = Paragraph::new(username_value_text);
 
   match greeter.mode {
     Mode::Username | Mode::Password => {
@@ -75,8 +76,8 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
         Rect::new(1 + chunks[USERNAME_INDEX].x + USERNAME.len() as u16, chunks[USERNAME_INDEX].y, get_input_width(greeter, USERNAME), 1),
       );
 
-      let answer_text = if greeter.working { [Text::raw(WORKING)] } else { [prompt_value(&greeter.prompt)] };
-      let answer_label = Paragraph::new(answer_text.iter());
+      let answer_text = if greeter.working { vec![Spans::from(WORKING)] } else { vec![prompt_value(&greeter.prompt)] };
+      let answer_label = Paragraph::new(answer_text);
 
       if greeter.mode == Mode::Password || greeter.previous_mode == Mode::Password {
         f.render_widget(answer_label, chunks[ANSWER_INDEX]);
@@ -88,8 +89,8 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
             greeter.answer.clone()
           };
 
-          let answer_value_text = [Text::raw(&value)];
-          let answer_value = Paragraph::new(answer_value_text.iter());
+          let answer_value_text = vec![Spans::from(value)];
+          let answer_value = Paragraph::new(answer_value_text);
 
           f.render_widget(
             answer_value,
@@ -103,9 +104,9 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
         }
       }
 
-      if let Some(ref message) = message {
-        let message_text = [Text::raw(message)];
-        let message = Paragraph::new(message_text.iter());
+      if let Some(message) = message {
+        let message_text = vec![Spans::from(message)];
+        let message = Paragraph::new(message_text);
 
         match greeter.mode {
           Mode::Username => f.render_widget(message, chunks[ANSWER_INDEX]),
