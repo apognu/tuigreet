@@ -10,7 +10,7 @@ use getopts::{Matches, Options};
 use greetd_ipc::Request;
 use zeroize::Zeroize;
 
-use crate::info::get_issue;
+use crate::info::{get_issue, get_last_username};
 
 #[derive(Debug)]
 pub enum AuthStatus {
@@ -61,6 +61,8 @@ pub struct Greeter {
   pub answer: String,
   pub secret: bool,
 
+  pub remember: bool,
+  pub asterisks: bool,
   pub greeting: Option<String>,
   pub message: Option<String>,
 
@@ -84,6 +86,11 @@ impl Greeter {
     greeter.parse_options();
     greeter.sessions = crate::info::get_sessions().unwrap_or_default();
     greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
+
+    if greeter.remember {
+      greeter.username = get_last_username().unwrap_or_default().trim().to_string();
+    }
+
     greeter
   }
 
@@ -142,6 +149,8 @@ impl Greeter {
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
     opts.optflag("t", "time", "display the current date and time");
+    opts.optflag("r", "remember", "remember last logged-in username");
+    opts.optflag("", "asterisks", "display asterisks when a secret is typed");
     opts.optopt("", "container-padding", "padding inside the main prompt container (default: 1)", "PADDING");
     opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
 
@@ -185,6 +194,8 @@ impl Greeter {
       std::process::exit(0);
     }
 
+    self.remember = self.config().opt_present("remember");
+    self.asterisks = self.config().opt_present("asterisks");
     self.greeting = self.option("greeting");
     self.command = self.option("cmd");
 

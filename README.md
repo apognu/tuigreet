@@ -16,6 +16,8 @@ Options:
     -g, --greeting GREETING
                         show custom text above login prompt
     -t, --time          display the current date and time
+    -r, --remember      remember last logged-in username
+        --asterisks     display asterisks when a secret is typed
         --container-padding PADDING
                         padding inside the main prompt container (default: 1)
         --prompt-padding PADDING

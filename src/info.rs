@@ -11,6 +11,7 @@ use nix::sys::utsname;
 
 const X_SESSIONS: &str = "/usr/share/xsessions";
 const WAYLAND_SESSIONS: &str = "/usr/share/wayland-sessions";
+const LAST_USERNAME: &str = "/var/cache/tuigreet/lastuser";
 
 pub fn get_hostname() -> String {
   utsname::uname().nodename().to_string()
@@ -35,6 +36,14 @@ pub fn get_issue() -> Option<String> {
   }
 
   None
+}
+
+pub fn get_last_username() -> Result<String, io::Error> {
+  fs::read_to_string(LAST_USERNAME)
+}
+
+pub fn write_last_username(username: &str) {
+  let _ = fs::write(LAST_USERNAME, username);
 }
 
 pub fn get_sessions() -> Result<Vec<(String, String)>, Box<dyn Error>> {

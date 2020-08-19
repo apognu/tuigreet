@@ -2,7 +2,7 @@ use std::error::Error;
 
 use greetd_ipc::{codec::SyncCodec, AuthMessageType, ErrorType, Request, Response};
 
-use crate::{AuthStatus, Greeter, Mode};
+use crate::{info::write_last_username, AuthStatus, Greeter, Mode};
 
 pub fn handle(greeter: &mut Greeter) -> Result<(), Box<dyn Error>> {
   if let Some(ref request) = greeter.request {
@@ -57,6 +57,10 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
 
     Response::Success => {
       if greeter.done {
+        if greeter.remember {
+          write_last_username(&greeter.username);
+        }
+
         crate::exit(greeter, AuthStatus::Success)?;
       } else if let Some(command) = &greeter.command {
         greeter.done = true;

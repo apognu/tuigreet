@@ -81,8 +81,14 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
       if greeter.mode == Mode::Password || greeter.previous_mode == Mode::Password {
         f.render_widget(answer_label, chunks[ANSWER_INDEX]);
 
-        if !greeter.secret {
-          let answer_value_text = [Text::raw(&greeter.answer)];
+        if !greeter.secret || greeter.asterisks {
+          let value = if greeter.secret && greeter.asterisks {
+            "*".repeat(greeter.answer.len())
+          } else {
+            greeter.answer.clone()
+          };
+
+          let answer_value_text = [Text::raw(&value)];
           let answer_value = Paragraph::new(answer_value_text.iter());
 
           f.render_widget(
@@ -122,7 +128,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
     Mode::Password => {
       let offset = get_cursor_offset(greeter, greeter.answer.chars().count());
 
-      if greeter.secret {
+      if greeter.secret && !greeter.asterisks {
         Ok((1 + cursor.x + greeter.prompt.chars().count() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
       } else {
         Ok((1 + cursor.x + greeter.prompt.chars().count() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))

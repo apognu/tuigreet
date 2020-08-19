@@ -7,6 +7,7 @@ mod ui;
 
 use std::{error::Error, io, process};
 
+use greetd_ipc::Request;
 use termion::raw::IntoRawMode;
 use tui::{backend::TermionBackend, Terminal};
 
@@ -35,6 +36,10 @@ fn run() -> Result<(), Box<dyn Error>> {
   terminal.clear()?;
 
   let events = Events::new();
+
+  if greeter.remember && !greeter.username.is_empty() {
+    greeter.request = Some(Request::CreateSession { username: greeter.username.clone() });
+  }
 
   loop {
     ui::draw(&mut terminal, &mut greeter)?;
