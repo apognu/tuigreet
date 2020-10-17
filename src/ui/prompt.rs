@@ -56,7 +56,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let cursor = chunks[USERNAME_INDEX];
 
   if let Some(greeting) = &greeting {
-    let greeting_text = Span::from(greeting.trim_end());
+    let greeting_text = greeting.trim_end();
     let greeting_label = Paragraph::new(greeting_text).alignment(Alignment::Center);
 
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
