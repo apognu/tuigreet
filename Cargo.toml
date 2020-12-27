@@ -4,6 +4,10 @@ version = "0.2.0"
 authors = ["Antoine POPINEAU <antoine.popineau@appscho.com>"]
 edition = "2018"
 build = "build.rs"
+readme = "README.md"
+license-file = "LICENSE"
+repository = "https://github.com/mmstick/cargo-deb"
+description = "Graphical console greeter for greetd."
 
 [dependencies]
 getopts = "0.2.21"
@@ -18,3 +22,7 @@ rust-ini = "0.15.3"
 
 [profile.release]
 lto = true
+
+[package.metadata.deb]
+depends = "$auto, greetd"
+extended-description = "Graphical console greeter for greetd."
