@@ -18,24 +18,33 @@ pub fn get_hostname() -> String {
 }
 
 pub fn get_issue() -> Option<String> {
-  let vtnr: usize = env::var("XDG_VTNR").unwrap_or_else(|_| "0".to_string()).parse().expect("unable to parse VTNR");
+  let vtnr: usize = env::var("XDG_VTNR").as_deref().unwrap_or("0").parse().expect("unable to parse VTNR");
   let uts = utsname::uname();
 
-  if let Ok(issue) = fs::read_to_string("/etc/issue") {
-    return Some(
-      issue
-        .replace("\\S", "Linux")
-        .replace("\\l", &format!("tty{}", vtnr))
-        .replace("\\s", &uts.sysname())
-        .replace("\\r", &uts.release())
-        .replace("\\v", &uts.version())
-        .replace("\\n", &uts.nodename())
-        .replace("\\m", &uts.machine())
-        .replace("\\\\", "\\"),
-    );
-  }
-
-  None
+  fs::read_to_string("/etc/issue").ok()
+    .map(|issue| {
+      let mut ret = String::new();
+      let mut itr = issue.chars();
+      while let Some(c) = itr.next() {
+        if c != '\\' {
+          ret.push(c);
+        } else {
+          match itr.next() {
+            Some('S') => ret.push_str("Linux"),
+            Some('l') => ret.push_str(&format!("tty{}", vtnr)),
+            Some('s') => ret.push_str(uts.sysname()),
+            Some('r') => ret.push_str(uts.release()),
+            Some('v') => ret.push_str(uts.version()),
+            Some('n') => ret.push_str(uts.nodename()),
+            Some('m') => ret.push_str(uts.machine()),
+            Some('\\') => ret.push('\\'),
+            Some(c) => ret.push(c),
+            _ => ret.push('\\'),
+          }
+        }
+      }
+      ret
+    })
 }
 
 pub fn get_last_username() -> Result<String, io::Error> {
