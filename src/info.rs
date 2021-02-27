@@ -1,13 +1,16 @@
 use std::{
   env,
   error::Error,
-  fs, io,
+  fs::{self, File},
+  io,
+  os::unix::io::AsRawFd,
   path::Path,
-  process::{Command, Output},
 };
 
 use ini::Ini;
 use nix::sys::utsname;
+use nix::unistd::isatty;
+use nix::ioctl_read_bad;
 
 const X_SESSIONS: &str = "/usr/share/xsessions";
 const WAYLAND_SESSIONS: &str = "/usr/share/wayland-sessions";
@@ -85,15 +88,29 @@ where
 }
 
 pub fn capslock_status() -> bool {
-  match command("kbdinfo", &["gkbled", "capslock"]) {
-    Ok(output) => output.status.code() == Some(0),
-    Err(_) => false,
+  for f in &["/proc/self/fd/0", "/dev/tty", "/dev/tty0", "/dev/vc/0", "/dev/systty", "/dev/console"] {
+    if let Ok(f) = File::open(f) {
+      let mut arg = 0;
+      if
+        isatty(f.as_raw_fd()) == Ok(true) &&
+        unsafe { kdgkbtype(f.as_raw_fd(), &mut arg) } == Ok(0) &&
+        (arg == KB_101 || arg == KB_84) &&
+        unsafe { kdgkbled(f.as_raw_fd(), &mut arg) } == Ok(0)
+      {
+        return arg & K_CAPSLOCK != 0;
+      }
+    }
   }
+
+  return false;
 }
 
-pub fn command<S>(name: S, args: &[&str]) -> io::Result<Output>
-where
-  S: Into<String>,
-{
-  Command::new(name.into()).args(args).output()
-}
+const KDGKBTYPE: u64 = 0x4B33;
+const KB_84: u8 = 0x01;
+const KB_101: u8 = 0x02;
+
+const KDGKBLED: u64 = 0x4B64;  /* get led flags (not lights) */
+const K_CAPSLOCK: u8 = 0x04;
+
+ioctl_read_bad!(kdgkbtype, KDGKBTYPE, u8);
+ioctl_read_bad!(kdgkbled, KDGKBLED, u8);
