@@ -101,7 +101,7 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
 }
 
 fn get_time() -> String {
-  Local::now().format("%b, %d %h %Y - %H:%M").to_string()
+  Local::now().format("%a, %d %h %Y - %H:%M").to_string()
 }
 
 fn status_label<'s, S>(text: S) -> Span<'s>
