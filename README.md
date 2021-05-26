@@ -11,6 +11,7 @@ Options:
     -h, --help          show this usage information
     -v, --version       print version information
     -c, --cmd COMMAND   command to run
+    -s, --sessions DIRS colon-separated list of session paths
     -w, --width WIDTH   width of the main prompt (default: 80)
     -i, --issue         show the host's issue file
     -g, --greeting GREETING
@@ -30,7 +31,7 @@ The default configuration tends to be as minimal as possible, visually speaking,
 
 The initial prompt container will be 80 column wide. You may change this with `--width` in case you need more space (for example, to account for large PAM challenge messages). Please refer to usage information (`--help`) for more customizaton options.
 
-You may change the command that will be executed after opening a session by hitting `F2` and amending the command. Alternatively, you can list the system-declared sessions by hitting `F3`.
+You may change the command that will be executed after opening a session by hitting `F2` and amending the command. Alternatively, you can list the system-declared sessions (or custom ones) by hitting `F3`.
 
 ## Install
 
@@ -81,3 +82,7 @@ user = "greeter"
 ```
 
 Please refer to [greetd's wiki](https://man.sr.ht/~kennylevinsen/greetd/) for more information on setting up `greetd`.
+
+### Sessions
+
+The available sessions are fetched from `desktop` files in `/usr/share/xsessions` and `/usr/share/wayland-sessions`. If you want to provide custom directories, you can set the `--sessions` arguments with a colon-separated list of directories for `tuigreet` to fetch session definitions some other place.

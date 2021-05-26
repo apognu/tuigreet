@@ -53,6 +53,7 @@ pub struct Greeter {
 
   pub command: Option<String>,
   pub new_command: String,
+  pub sessions_path: Option<String>,
   pub sessions: Vec<(String, String)>,
   pub selected_session: usize,
 
@@ -71,7 +72,7 @@ pub struct Greeter {
 }
 
 impl Drop for Greeter {
-  fn drop(self: &mut Self) {
+  fn drop(&mut self) {
     self.prompt.zeroize();
     self.username.zeroize();
     self.answer.zeroize();
@@ -84,7 +85,7 @@ impl Greeter {
     let mut greeter = Self::default();
 
     greeter.parse_options();
-    greeter.sessions = crate::info::get_sessions().unwrap_or_default();
+    greeter.sessions = crate::info::get_sessions(&greeter).unwrap_or_default();
     greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
 
     if greeter.remember {
@@ -145,6 +146,7 @@ impl Greeter {
     opts.optflag("h", "help", "show this usage information");
     opts.optflag("v", "version", "print version information");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
+    opts.optopt("s", "sessions", "colon-separated list of session paths", "DIRS");
     opts.optopt("w", "width", "width of the main prompt (default: 80)", "WIDTH");
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
@@ -198,6 +200,7 @@ impl Greeter {
     self.asterisks = self.config().opt_present("asterisks");
     self.greeting = self.option("greeting");
     self.command = self.option("cmd");
+    self.sessions_path = self.option("sessions");
 
     if self.config().opt_present("issue") {
       self.greeting = get_issue();

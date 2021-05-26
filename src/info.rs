@@ -2,12 +2,14 @@ use std::{
   env,
   error::Error,
   fs, io,
-  path::Path,
+  path::{Path, PathBuf},
   process::{Command, Output},
 };
 
 use ini::Ini;
 use nix::sys::utsname;
+
+use crate::Greeter;
 
 const X_SESSIONS: &str = "/usr/share/xsessions";
 const WAYLAND_SESSIONS: &str = "/usr/share/wayland-sessions";
@@ -50,12 +52,15 @@ pub fn delete_last_username() {
   let _ = fs::remove_file(LAST_USERNAME);
 }
 
-pub fn get_sessions() -> Result<Vec<(String, String)>, Box<dyn Error>> {
-  let directories = vec![X_SESSIONS, WAYLAND_SESSIONS];
+pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn Error>> {
+  let sessions = match greeter.sessions_path {
+    Some(ref dirs) => env::split_paths(&dirs).collect(),
+    None => vec![PathBuf::from(X_SESSIONS), PathBuf::from(WAYLAND_SESSIONS)],
+  };
 
-  let files = directories
+  let files = sessions
     .iter()
-    .flat_map(|directory| fs::read_dir(&directory))
+    .flat_map(fs::read_dir)
     .flat_map(|directory| directory.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path()))).flatten())
     .collect::<Vec<_>>();
 
