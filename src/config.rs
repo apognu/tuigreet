@@ -104,10 +104,7 @@ impl Greeter {
   }
 
   pub fn option(&self, name: &str) -> Option<String> {
-    match self.config().opt_str(name) {
-      Some(value) => Some(value),
-      None => None,
-    }
+    self.config().opt_str(name)
   }
 
   pub fn width(&self) -> u16 {

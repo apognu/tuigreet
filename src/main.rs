@@ -16,10 +16,8 @@ use self::event::Events;
 
 fn main() {
   if let Err(error) = run() {
-    if let Some(status) = error.downcast_ref::<AuthStatus>() {
-      if let AuthStatus::Success = *status {
-        return;
-      }
+    if let Some(AuthStatus::Success) = error.downcast_ref::<AuthStatus>() {
+      return;
     }
 
     process::exit(1);
