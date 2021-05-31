@@ -99,6 +99,13 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
 
       Key::Backspace | Key::Delete => delete_key(greeter, input),
 
+      Key::Ctrl('u') => match greeter.mode {
+        Mode::Username => greeter.username = String::new(),
+        Mode::Password => greeter.answer = String::new(),
+        Mode::Command => greeter.new_command = String::new(),
+        _ => {}
+      },
+
       _ => {}
     }
   }
