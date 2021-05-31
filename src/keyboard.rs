@@ -26,11 +26,21 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
       Key::Right => greeter.cursor_offset += 1,
 
       Key::F(2) => {
+        greeter.previous_mode = match greeter.mode {
+          Mode::Command | Mode::Sessions => greeter.previous_mode,
+          _ => greeter.mode,
+        };
+
         greeter.new_command = greeter.command.clone().unwrap_or_default();
         greeter.mode = Mode::Command;
       }
 
       Key::F(3) => {
+        greeter.previous_mode = match greeter.mode {
+          Mode::Command | Mode::Sessions => greeter.previous_mode,
+          _ => greeter.mode,
+        };
+
         greeter.mode = Mode::Sessions;
       }
 
