@@ -203,6 +203,10 @@ impl Greeter {
       self.greeting = get_issue();
     }
   }
+
+  pub fn set_prompt(&mut self, prompt: &str) {
+    self.prompt = if prompt.ends_with(' ') { prompt.into() } else { format!("{} ", prompt) };
+  }
 }
 
 fn print_usage(opts: Options) {

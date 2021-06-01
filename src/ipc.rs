@@ -23,14 +23,14 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
         greeter.mode = Mode::Password;
         greeter.working = false;
         greeter.secret = true;
-        greeter.prompt = auth_message;
+        greeter.set_prompt(&auth_message);
       }
 
       AuthMessageType::Visible => {
         greeter.mode = Mode::Password;
         greeter.working = false;
         greeter.secret = false;
-        greeter.prompt = auth_message;
+        greeter.set_prompt(&auth_message);
       }
 
       AuthMessageType::Error => greeter.message = Some(auth_message),
