@@ -27,6 +27,11 @@ const CHANGE_COMMAND: &str = "Change command";
 const COMMAND: &str = "COMMAND";
 const CAPS_LOCK: &str = "CAPS LOCK";
 
+const TITLEBAR_INDEX: usize = 1;
+const STATUSBAR_INDEX: usize = 3;
+const STATUSBAR_LEFT_INDEX: usize = 1;
+const STATUSBAR_RIGHT_INDEX: usize = 2;
+
 pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, greeter: &mut Greeter) -> Result<(), Box<dyn Error>> {
   let hide_cursor = if greeter.working || greeter.mode == Mode::Sessions {
     terminal.hide_cursor()?;
@@ -40,9 +45,11 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
     let chunks = Layout::default()
       .constraints(
         [
-          Constraint::Length(1), // Date and time
-          Constraint::Min(1),    // Main area
-          Constraint::Length(1), // Status line
+          Constraint::Length(greeter.window_padding()), // Top vertical padding
+          Constraint::Length(1),                        // Date and time
+          Constraint::Min(1),                           // Main area
+          Constraint::Length(1),                        // Status line
+          Constraint::Length(greeter.window_padding()), // Bottom vertical padding
         ]
         .as_ref(),
       )
@@ -52,13 +59,21 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       let time_text = Span::from(get_time());
       let time = Paragraph::new(time_text).alignment(Alignment::Center);
 
-      f.render_widget(time, chunks[0]);
+      f.render_widget(time, chunks[TITLEBAR_INDEX]);
     }
 
     let status_chunks = Layout::default()
       .direction(Direction::Horizontal)
-      .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-      .split(chunks[2]);
+      .constraints(
+        [
+          Constraint::Length(greeter.window_padding()),
+          Constraint::Percentage(50),
+          Constraint::Percentage(50),
+          Constraint::Length(greeter.window_padding()),
+        ]
+        .as_ref(),
+      )
+      .split(chunks[STATUSBAR_INDEX]);
 
     let command = greeter.command.clone().unwrap_or_else(|| "-".to_string());
     let status_left_text = Spans::from(vec![
@@ -73,13 +88,13 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
     ]);
     let status_left = Paragraph::new(status_left_text);
 
-    f.render_widget(status_left, status_chunks[0]);
+    f.render_widget(status_left, status_chunks[STATUSBAR_LEFT_INDEX]);
 
     if capslock_status() {
       let status_right_text = status_label(format!(" {} ", CAPS_LOCK));
       let status_right = Paragraph::new(status_right_text).alignment(Alignment::Right);
 
-      f.render_widget(status_right, status_chunks[1]);
+      f.render_widget(status_right, status_chunks[STATUSBAR_RIGHT_INDEX]);
     }
 
     let cursor = match greeter.mode {

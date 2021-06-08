@@ -19,6 +19,8 @@ Options:
     -t, --time          display the current date and time
     -r, --remember      remember last logged-in username
         --asterisks     display asterisks when a secret is typed
+        --window-padding PADDING
+                        padding inside the terminal area (default: 0)
         --container-padding PADDING
                         padding inside the main prompt container (default: 1)
         --prompt-padding PADDING

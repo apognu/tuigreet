@@ -117,6 +117,16 @@ impl Greeter {
     80
   }
 
+  pub fn window_padding(&self) -> u16 {
+    if let Some(value) = self.option("window-padding") {
+      if let Ok(padding) = value.parse::<u16>() {
+        return padding;
+      }
+    }
+
+    0
+  }
+
   pub fn container_padding(&self) -> u16 {
     if let Some(value) = self.option("container-padding") {
       if let Ok(padding) = value.parse::<u16>() {
@@ -150,6 +160,7 @@ impl Greeter {
     opts.optflag("t", "time", "display the current date and time");
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "asterisks", "display asterisks when a secret is typed");
+    opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
     opts.optopt("", "container-padding", "padding inside the main prompt container (default: 1)", "PADDING");
     opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
 
