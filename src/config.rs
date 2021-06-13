@@ -33,6 +33,7 @@ pub enum Mode {
   Password,
   Command,
   Sessions,
+  Power,
 }
 
 impl Default for Mode {
@@ -56,6 +57,8 @@ pub struct Greeter {
   pub sessions_path: Option<String>,
   pub sessions: Vec<(String, String)>,
   pub selected_session: usize,
+
+  pub selected_power_option: usize,
 
   pub username: String,
   pub prompt: String,

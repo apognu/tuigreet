@@ -1,11 +1,13 @@
 use std::error::Error;
 
 use greetd_ipc::Request;
+use system_shutdown::{reboot, shutdown};
 use termion::event::Key;
 
 use crate::{
   event::{Event, Events},
   info::delete_last_username,
+  ui::{PowerOption, POWER_OPTIONS},
   AuthStatus, Greeter, Mode,
 };
 
@@ -13,7 +15,7 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
   if let Event::Input(input) = events.next()? {
     match input {
       Key::Esc => match greeter.mode {
-        Mode::Command | Mode::Sessions => greeter.mode = greeter.previous_mode,
+        Mode::Command | Mode::Sessions | Mode::Power => greeter.mode = greeter.previous_mode,
 
         _ => {
           delete_last_username();
@@ -27,7 +29,7 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
 
       Key::F(2) => {
         greeter.previous_mode = match greeter.mode {
-          Mode::Command | Mode::Sessions => greeter.previous_mode,
+          Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
           _ => greeter.mode,
         };
 
@@ -37,11 +39,20 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
 
       Key::F(3) => {
         greeter.previous_mode = match greeter.mode {
-          Mode::Command | Mode::Sessions => greeter.previous_mode,
+          Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
           _ => greeter.mode,
         };
 
         greeter.mode = Mode::Sessions;
+      }
+
+      Key::F(12) => {
+        greeter.previous_mode = match greeter.mode {
+          Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
+          _ => greeter.mode,
+        };
+
+        greeter.mode = Mode::Power;
       }
 
       Key::Up => {
@@ -50,12 +61,24 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
             greeter.selected_session -= 1;
           }
         }
+
+        if let Mode::Power = greeter.mode {
+          if greeter.selected_power_option > 0 {
+            greeter.selected_power_option -= 1;
+          }
+        }
       }
 
       Key::Down => {
         if let Mode::Sessions = greeter.mode {
           if greeter.selected_session < greeter.sessions.len() - 1 {
             greeter.selected_session += 1;
+          }
+        }
+
+        if let Mode::Power = greeter.mode {
+          if greeter.selected_power_option < POWER_OPTIONS.len() - 1 {
+            greeter.selected_power_option += 1;
           }
         }
       }
@@ -103,6 +126,15 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
 
           greeter.mode = greeter.previous_mode;
         }
+
+        Mode::Power => {
+          let _ = match POWER_OPTIONS[greeter.selected_power_option] {
+            (PowerOption::Shutdown, _) => shutdown(),
+            (PowerOption::Reboot, _) => reboot(),
+          };
+
+          greeter.mode = greeter.previous_mode;
+        }
       },
 
       Key::Char(c) => insert_key(greeter, c),
@@ -128,7 +160,7 @@ fn insert_key(greeter: &mut Greeter, c: char) {
     Mode::Username => &mut greeter.username,
     Mode::Password => &mut greeter.answer,
     Mode::Command => &mut greeter.new_command,
-    Mode::Sessions => return,
+    Mode::Sessions | Mode::Power => return,
   };
 
   let index = (value.chars().count() as i16 + greeter.cursor_offset) as usize;
@@ -143,7 +175,7 @@ fn delete_key(greeter: &mut Greeter, key: Key) {
     Mode::Username => &mut greeter.username,
     Mode::Password => &mut greeter.answer,
     Mode::Command => &mut greeter.new_command,
-    Mode::Sessions => return,
+    Mode::Sessions | Mode::Power => return,
   };
 
   let index = match key {

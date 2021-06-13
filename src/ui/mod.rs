@@ -1,4 +1,5 @@
 mod command;
+mod power;
 mod prompt;
 mod sessions;
 mod util;
@@ -21,10 +22,13 @@ use tui::{
 
 use crate::{info::capslock_status, Greeter, Mode};
 
+pub use self::power::{Option as PowerOption, OPTIONS as POWER_OPTIONS};
+
 const EXIT: &str = "Exit";
 const SESSIONS: &str = "Choose session";
 const CHANGE_COMMAND: &str = "Change command";
 const COMMAND: &str = "COMMAND";
+const POWER: &str = "POWER";
 const CAPS_LOCK: &str = "CAPS LOCK";
 
 const TITLEBAR_INDEX: usize = 1;
@@ -83,6 +87,8 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       status_value(CHANGE_COMMAND),
       status_label("F3"),
       status_value(SESSIONS),
+      status_label("F12"),
+      status_value(POWER),
       status_label(COMMAND),
       status_value(command),
     ]);
@@ -100,6 +106,7 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
     let cursor = match greeter.mode {
       Mode::Command => self::command::draw(greeter, &mut f).ok(),
       Mode::Sessions => self::sessions::draw(greeter, &mut f).ok(),
+      Mode::Power => self::power::draw(greeter, &mut f).ok(),
       _ => self::prompt::draw(greeter, &mut f).ok(),
     };
 

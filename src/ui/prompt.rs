@@ -111,7 +111,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
         match greeter.mode {
           Mode::Username => f.render_widget(message, chunks[ANSWER_INDEX]),
           Mode::Password => f.render_widget(message, chunks[MESSAGE_INDEX]),
-          Mode::Command | Mode::Sessions => {}
+          Mode::Command | Mode::Sessions | Mode::Power => {}
         }
       }
     }
