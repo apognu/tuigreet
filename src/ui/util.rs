@@ -41,10 +41,10 @@ pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
 pub fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<String>, u16) {
   if let Some(greeting) = &greeter.greeting {
     let width = greeter.width();
-    let wrapped = textwrap::fill(greeting, width as usize - 4);
+    let wrapped = textwrap::fill(greeting, (width - (2 * padding)) as usize);
     let height = wrapped.trim_end().matches('\n').count();
 
-    (Some(wrapped), height as u16 + 1 + padding)
+    (Some(wrapped), height as u16 + 2)
   } else {
     (None, fallback)
   }

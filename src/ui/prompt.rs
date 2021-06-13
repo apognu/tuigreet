@@ -32,15 +32,15 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let y = (size.height - height) / 2;
 
   let container = Rect::new(x, y, width, height);
-  let frame = Rect::new(x + container_padding, y + container_padding, width - container_padding, height - container_padding);
+  let frame = Rect::new(x + container_padding, y + container_padding, width - (2 * container_padding), height - (2 * container_padding));
 
   let hostname = Span::from(format!(" {} {} ", TITLE, get_hostname()));
   let block = Block::default().title(hostname).borders(Borders::ALL).border_type(BorderType::Plain);
 
   f.render_widget(block, container);
 
-  let (message, message_height) = get_message_height(greeter, 1, 1);
-  let (greeting, greeting_height) = get_greeting_height(greeter, 1, 0);
+  let (message, message_height) = get_message_height(greeter, container_padding, 1);
+  let (greeting, greeting_height) = get_greeting_height(greeter, container_padding, 0);
 
   let username_padding = if greeter.mode == Mode::Username && prompt_padding == 0 { 1 } else { prompt_padding };
   let answer_padding = if prompt_padding == 0 { 1 } else { prompt_padding };
