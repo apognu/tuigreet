@@ -6,24 +6,13 @@ use termion::event::Key;
 
 use crate::{
   event::{Event, Events},
-  info::delete_last_username,
   ui::{PowerOption, POWER_OPTIONS},
-  AuthStatus, Greeter, Mode,
+  Greeter, Mode,
 };
 
 pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Error>> {
   if let Event::Input(input) = events.next()? {
     match input {
-      Key::Esc => match greeter.mode {
-        Mode::Command | Mode::Sessions | Mode::Power => greeter.mode = greeter.previous_mode,
-
-        _ => {
-          delete_last_username();
-
-          crate::exit(greeter, AuthStatus::Cancel)?;
-        }
-      },
-
       Key::Left => greeter.cursor_offset -= 1,
       Key::Right => greeter.cursor_offset += 1,
 

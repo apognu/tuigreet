@@ -106,7 +106,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
       if let Some(message) = message {
         let message_text = Span::from(message);
-        let message = Paragraph::new(message_text);
+        let message = Paragraph::new(message_text).alignment(Alignment::Center);
 
         match greeter.mode {
           Mode::Username => f.render_widget(message, chunks[ANSWER_INDEX]),

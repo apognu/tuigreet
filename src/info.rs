@@ -48,10 +48,6 @@ pub fn write_last_username(username: &str) {
   let _ = fs::write(LAST_USERNAME, username);
 }
 
-pub fn delete_last_username() {
-  let _ = fs::remove_file(LAST_USERNAME);
-}
-
 pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn Error>> {
   let sessions = match greeter.sessions_path {
     Some(ref dirs) => env::split_paths(&dirs).collect(),

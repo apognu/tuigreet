@@ -45,6 +45,7 @@ impl Default for Mode {
 #[derive(Default)]
 pub struct Greeter {
   pub config: Option<Matches>,
+  pub socket: String,
   pub stream: Option<UnixStream>,
   pub request: Option<Request>,
 
@@ -96,6 +97,28 @@ impl Greeter {
     }
 
     greeter
+  }
+
+  pub fn reset(&mut self) {
+    self.mode = Mode::Username;
+    self.previous_mode = Mode::Username;
+    self.username = String::new();
+    self.answer = String::new();
+    self.working = false;
+    self.done = false;
+
+    self.connect();
+  }
+
+  pub fn connect(&mut self) {
+    match UnixStream::connect(&self.socket) {
+      Ok(stream) => self.stream = Some(stream),
+
+      Err(err) => {
+        eprintln!("{}", err);
+        process::exit(1);
+      }
+    }
   }
 
   pub fn config(&self) -> &Matches {
@@ -186,25 +209,20 @@ impl Greeter {
       std::process::exit(0);
     }
 
-    let socket = env::var("GREETD_SOCK");
-    if socket.is_err() {
-      eprintln!("GREETD_SOCK must be defined");
-      process::exit(1);
-    }
-
-    match UnixStream::connect(socket.unwrap()) {
-      Ok(stream) => self.stream = Some(stream),
-
-      Err(err) => {
-        eprintln!("{}", err);
+    match env::var("GREETD_SOCK") {
+      Ok(socket) => self.socket = socket,
+      Err(_) => {
+        eprintln!("GREETD_SOCK must be defined");
         process::exit(1);
       }
     }
 
+    self.connect();
+
     if self.config().opt_present("issue") && self.config().opt_present("greeting") {
       eprintln!("Only one of --issue and --greeting may be used at the same time");
       print_usage(opts);
-      std::process::exit(0);
+      process::exit(0);
     }
 
     self.remember = self.config().opt_present("remember");
