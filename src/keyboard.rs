@@ -6,6 +6,7 @@ use termion::event::Key;
 
 use crate::{
   event::{Event, Events},
+  ipc::cancel,
   ui::{PowerOption, POWER_OPTIONS},
   Greeter, Mode,
 };
@@ -13,6 +14,11 @@ use crate::{
 pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Error>> {
   if let Event::Input(input) = events.next()? {
     match input {
+      Key::Esc => {
+        cancel(greeter);
+        greeter.reset();
+      }
+
       Key::Left => greeter.cursor_offset -= 1,
       Key::Right => greeter.cursor_offset += 1,
 

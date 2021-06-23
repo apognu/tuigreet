@@ -1,4 +1,4 @@
-name: Development unpublished build
+name: Development build
 
 on:
   push:

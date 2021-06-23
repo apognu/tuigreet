@@ -24,6 +24,7 @@ use crate::{info::capslock_status, Greeter, Mode};
 
 pub use self::power::{Option as PowerOption, OPTIONS as POWER_OPTIONS};
 
+const RESET: &str = "Reset";
 const SESSIONS: &str = "Choose session";
 const CHANGE_COMMAND: &str = "Change command";
 const COMMAND: &str = "COMMAND";
@@ -80,6 +81,8 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
 
     let command = greeter.command.clone().unwrap_or_else(|| "-".to_string());
     let status_left_text = Spans::from(vec![
+      status_label("ESC"),
+      status_value(RESET),
       status_label("F2"),
       status_value(CHANGE_COMMAND),
       status_label("F3"),
