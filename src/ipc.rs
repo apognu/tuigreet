@@ -91,5 +91,5 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
 }
 
 pub fn cancel(greeter: &mut Greeter) {
-  Request::CancelSession.write_to(&mut greeter.stream()).unwrap();
+  let _ = Request::CancelSession.write_to(&mut greeter.stream());
 }

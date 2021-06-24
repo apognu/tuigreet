@@ -179,14 +179,11 @@ impl Greeter {
   }
 
   fn set_locale(&mut self) {
-    self.locale = match DesktopLanguageRequester::requested_languages().into_iter().next() {
-      Some(selected) => match selected.region {
-        None => None,
-        Some(region) => format!("{}_{}", selected.language, region).as_str().try_into().ok(),
-      },
-
-      None => None,
-    };
+    self.locale = DesktopLanguageRequester::requested_languages()
+      .into_iter()
+      .next()
+      .and_then(|locale| locale.region.map(|region| format!("{}_{}", locale.language, region)))
+      .and_then(|id| id.as_str().try_into().ok());
   }
 
   fn parse_options(&mut self) {
