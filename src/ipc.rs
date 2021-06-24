@@ -67,8 +67,6 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
       } else if let Some(command) = &greeter.command {
         greeter.done = true;
         greeter.request = Some(Request::StartSession { cmd: vec![command.clone()] });
-      } else {
-        crate::exit(greeter, AuthStatus::Failure)?;
       }
     }
 

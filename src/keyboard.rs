@@ -143,6 +143,13 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
         _ => {}
       },
 
+      #[cfg(debug_assertions)]
+      Key::Ctrl('x') => {
+        use crate::config::AuthStatus;
+
+        crate::exit(greeter, AuthStatus::Cancel)?;
+      }
+
       _ => {}
     }
   }

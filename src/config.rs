@@ -218,11 +218,11 @@ impl Greeter {
 
     if self.config().opt_present("help") {
       print_usage(opts);
-      std::process::exit(0);
+      process::exit(0);
     }
     if self.config().opt_present("version") {
       print_version();
-      std::process::exit(0);
+      process::exit(0);
     }
 
     match env::var("GREETD_SOCK") {
