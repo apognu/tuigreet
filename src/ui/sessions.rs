@@ -13,8 +13,6 @@ use tui::{
 use super::util::*;
 use crate::Greeter;
 
-const CHANGE_SESSION: &str = "Change session";
-
 pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
@@ -25,7 +23,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
   let container = Rect::new(x, y, width, height);
 
-  let title = Span::from(format!(" {} ", CHANGE_SESSION));
+  let title = Span::from(titleize(&fl!("title_session")));
   let block = Block::default().title(title).borders(Borders::ALL).border_type(BorderType::Plain);
 
   for (index, (name, _)) in greeter.sessions.iter().enumerate() {

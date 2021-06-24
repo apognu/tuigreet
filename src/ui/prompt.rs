@@ -17,10 +17,6 @@ const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 2;
 const MESSAGE_INDEX: usize = 3;
 
-const TITLE: &str = "Authenticate into";
-const USERNAME: &str = "Username:";
-const WORKING: &str = "Please wait...";
-
 pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
@@ -34,7 +30,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let container = Rect::new(x, y, width, height);
   let frame = Rect::new(x + container_padding, y + container_padding, width - (2 * container_padding), height - (2 * container_padding));
 
-  let hostname = Span::from(format!(" {} {} ", TITLE, get_hostname()));
+  let hostname = Span::from(titleize(&fl!("title_authenticate", hostname = get_hostname())));
   let block = Block::default().title(hostname).borders(Borders::ALL).border_type(BorderType::Plain);
 
   f.render_widget(block, container);
@@ -62,7 +58,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
   }
 
-  let username_text = prompt_value(USERNAME);
+  let username_text = prompt_value(fl!("username"));
   let username_label = Paragraph::new(username_text);
 
   let username_value_text = Span::from(greeter.username.clone());
@@ -73,10 +69,15 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
       f.render_widget(username_label, chunks[USERNAME_INDEX]);
       f.render_widget(
         username_value,
-        Rect::new(1 + chunks[USERNAME_INDEX].x + USERNAME.len() as u16, chunks[USERNAME_INDEX].y, get_input_width(greeter, USERNAME), 1),
+        Rect::new(
+          1 + chunks[USERNAME_INDEX].x + fl!("username").len() as u16,
+          chunks[USERNAME_INDEX].y,
+          get_input_width(greeter, &fl!("username")),
+          1,
+        ),
       );
 
-      let answer_text = if greeter.working { Span::from(WORKING) } else { prompt_value(&greeter.prompt) };
+      let answer_text = if greeter.working { Span::from(fl!("wait")) } else { prompt_value(&greeter.prompt) };
       let answer_label = Paragraph::new(answer_text);
 
       if greeter.mode == Mode::Password || greeter.previous_mode == Mode::Password {
@@ -123,7 +124,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
     Mode::Username => {
       let offset = get_cursor_offset(greeter, greeter.username.chars().count());
 
-      Ok((2 + cursor.x + USERNAME.len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
+      Ok((2 + cursor.x + fl!("username").len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
     }
 
     Mode::Password => {

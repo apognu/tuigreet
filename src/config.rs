@@ -1,4 +1,5 @@
 use std::{
+  convert::TryInto,
   env,
   error::Error,
   fmt::{self, Display},
@@ -6,8 +7,10 @@ use std::{
   process,
 };
 
+use chrono::Locale;
 use getopts::{Matches, Options};
 use greetd_ipc::Request;
+use i18n_embed::DesktopLanguageRequester;
 use zeroize::Zeroize;
 
 use crate::info::{get_issue, get_last_username};
@@ -44,6 +47,7 @@ impl Default for Mode {
 
 #[derive(Default)]
 pub struct Greeter {
+  pub locale: Option<Locale>,
   pub config: Option<Matches>,
   pub socket: String,
   pub stream: Option<UnixStream>,
@@ -88,6 +92,7 @@ impl Greeter {
   pub fn new() -> Self {
     let mut greeter = Self::default();
 
+    greeter.set_locale();
     greeter.parse_options();
     greeter.sessions = crate::info::get_sessions(&greeter).unwrap_or_default();
     greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
@@ -173,7 +178,18 @@ impl Greeter {
     1
   }
 
-  pub fn parse_options(&mut self) {
+  fn set_locale(&mut self) {
+    self.locale = match DesktopLanguageRequester::requested_languages().into_iter().next() {
+      Some(selected) => match selected.region {
+        None => None,
+        Some(region) => format!("{}_{}", selected.language, region).as_str().try_into().ok(),
+      },
+
+      None => None,
+    };
+  }
+
+  fn parse_options(&mut self) {
     let mut opts = Options::new();
 
     opts.optflag("h", "help", "show this usage information");

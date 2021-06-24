@@ -24,13 +24,6 @@ use crate::{info::capslock_status, Greeter, Mode};
 
 pub use self::power::{Option as PowerOption, OPTIONS as POWER_OPTIONS};
 
-const RESET: &str = "Reset";
-const SESSIONS: &str = "Choose session";
-const CHANGE_COMMAND: &str = "Change command";
-const COMMAND: &str = "COMMAND";
-const POWER: &str = "POWER";
-const CAPS_LOCK: &str = "CAPS LOCK";
-
 const TITLEBAR_INDEX: usize = 1;
 const STATUSBAR_INDEX: usize = 3;
 const STATUSBAR_LEFT_INDEX: usize = 1;
@@ -60,7 +53,7 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
       .split(size);
 
     if greeter.config().opt_present("time") {
-      let time_text = Span::from(get_time());
+      let time_text = Span::from(get_time(&greeter));
       let time = Paragraph::new(time_text).alignment(Alignment::Center);
 
       f.render_widget(time, chunks[TITLEBAR_INDEX]);
@@ -82,14 +75,14 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
     let command = greeter.command.clone().unwrap_or_else(|| "-".to_string());
     let status_left_text = Spans::from(vec![
       status_label("ESC"),
-      status_value(RESET),
+      status_value(fl!("action_reset")),
       status_label("F2"),
-      status_value(CHANGE_COMMAND),
+      status_value(fl!("action_command")),
       status_label("F3"),
-      status_value(SESSIONS),
+      status_value(fl!("action_session")),
       status_label("F12"),
-      status_value(POWER),
-      status_label(COMMAND),
+      status_value(fl!("action_power")),
+      status_label(fl!("status_command")),
       status_value(command),
     ]);
     let status_left = Paragraph::new(status_left_text);
@@ -97,7 +90,7 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
     f.render_widget(status_left, status_chunks[STATUSBAR_LEFT_INDEX]);
 
     if capslock_status() {
-      let status_right_text = status_label(format!(" {} ", CAPS_LOCK));
+      let status_right_text = status_label(fl!("status_caps"));
       let status_right = Paragraph::new(status_right_text).alignment(Alignment::Right);
 
       f.render_widget(status_right, status_chunks[STATUSBAR_RIGHT_INDEX]);
@@ -122,8 +115,8 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
   Ok(())
 }
 
-fn get_time() -> String {
-  Local::now().format("%a, %d %h %Y - %H:%M").to_string()
+fn get_time(greeter: &Greeter) -> String {
+  Local::now().format_localized(&fl!("date"), greeter.locale.unwrap_or(Locale::en_US)).to_string()
 }
 
 fn status_label<'s, S>(text: S) -> Span<'s>

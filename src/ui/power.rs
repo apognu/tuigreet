@@ -1,5 +1,6 @@
 use std::{error::Error, io};
 
+use lazy_static::lazy_static;
 use termion::raw::RawTerminal;
 use tui::{
   backend::TermionBackend,
@@ -13,14 +14,19 @@ use tui::{
 use super::util::*;
 use crate::Greeter;
 
-const TITLE: &str = "Power options";
-
 pub enum Option {
   Shutdown,
   Reboot,
 }
 
-pub const OPTIONS: &[(Option, &str)] = &[(Option::Shutdown, "Shutdown"), (Option::Reboot, "Reboot")];
+lazy_static! {
+  pub static ref OPTIONS: [(Option, String); 2] = {
+    let shutdown = fl!("shutdown");
+    let reboot = fl!("reboot");
+
+    [(Option::Shutdown, shutdown), (Option::Reboot, reboot)]
+  };
+}
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
@@ -32,7 +38,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
   let container = Rect::new(x, y, width, height);
 
-  let title = Span::from(format!(" {} ", TITLE));
+  let title = Span::from(titleize(&fl!("title_power")));
   let block = Block::default().title(title).borders(Borders::ALL).border_type(BorderType::Plain);
 
   for (index, (_, label)) in OPTIONS.iter().enumerate() {

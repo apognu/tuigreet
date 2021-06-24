@@ -1,5 +1,9 @@
 use crate::{Greeter, Mode};
 
+pub fn titleize(message: &str) -> String {
+  format!(" {} ", message)
+}
+
 pub fn get_height(greeter: &Greeter) -> u16 {
   let container_padding = greeter.container_padding();
   let prompt_padding = greeter.prompt_padding();
