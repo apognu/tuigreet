@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate smart_default;
+
 mod config;
 mod event;
 mod info;

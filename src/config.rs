@@ -15,7 +15,8 @@ use zeroize::Zeroize;
 
 use crate::info::{get_issue, get_last_username};
 
-pub const DEFAULT_LOCALE: Locale = Locale::en_US;
+const DEFAULT_LOCALE: Locale = Locale::en_US;
+const DEFAULT_ASTERISKS_CHAR: char = '*';
 
 #[derive(Debug)]
 pub enum AuthStatus {
@@ -32,8 +33,9 @@ impl Display for AuthStatus {
 
 impl Error for AuthStatus {}
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(SmartDefault, Copy, Clone, PartialEq)]
 pub enum Mode {
+  #[default]
   Username,
   Password,
   Command,
@@ -41,15 +43,10 @@ pub enum Mode {
   Power,
 }
 
-impl Default for Mode {
-  fn default() -> Mode {
-    Mode::Username
-  }
-}
-
-#[derive(Default)]
+#[derive(SmartDefault)]
 pub struct Greeter {
-  pub locale: Option<Locale>,
+  #[default(DEFAULT_LOCALE)]
+  pub locale: Locale,
   pub config: Option<Matches>,
   pub socket: String,
   pub stream: Option<UnixStream>,
@@ -74,6 +71,8 @@ pub struct Greeter {
 
   pub remember: bool,
   pub asterisks: bool,
+  #[default(DEFAULT_ASTERISKS_CHAR)]
+  pub asterisks_char: char,
   pub greeting: Option<String>,
   pub message: Option<String>,
 
@@ -181,11 +180,15 @@ impl Greeter {
   }
 
   fn set_locale(&mut self) {
-    self.locale = DesktopLanguageRequester::requested_languages()
+    let locale = DesktopLanguageRequester::requested_languages()
       .into_iter()
       .next()
       .and_then(|locale| locale.region.map(|region| format!("{}_{}", locale.language, region)))
       .and_then(|id| id.as_str().try_into().ok());
+
+    if let Some(locale) = locale {
+      self.locale = locale;
+    }
   }
 
   fn parse_options(&mut self) {
@@ -201,6 +204,7 @@ impl Greeter {
     opts.optflag("t", "time", "display the current date and time");
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "asterisks", "display asterisks when a secret is typed");
+    opts.optopt("", "asterisks-char", "character to be used to redact secrets (default: *)", "CHAR");
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
     opts.optopt("", "container-padding", "padding inside the main prompt container (default: 1)", "PADDING");
     opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
@@ -209,7 +213,7 @@ impl Greeter {
       Ok(matches) => Some(matches),
 
       Err(error) => {
-        println!("{}", error);
+        eprintln!("{}", error);
         print_usage(opts);
         process::exit(1);
       }
@@ -232,23 +236,34 @@ impl Greeter {
       }
     }
 
-    self.connect();
-
     if self.config().opt_present("issue") && self.config().opt_present("greeting") {
       eprintln!("Only one of --issue and --greeting may be used at the same time");
       print_usage(opts);
-      process::exit(0);
+      process::exit(1);
+    }
+
+    if let Some(value) = self.config().opt_str("asterisks-char") {
+      if value.chars().count() != 1 {
+        eprintln!("--asterisks-char can only have one single character as its value");
+        print_usage(opts);
+        process::exit(1);
+      }
+
+      self.asterisks_char = value.chars().next().unwrap();
     }
 
     self.remember = self.config().opt_present("remember");
     self.asterisks = self.config().opt_present("asterisks");
     self.greeting = self.option("greeting");
     self.command = self.option("cmd");
+
     self.sessions_path = self.option("sessions");
 
     if self.config().opt_present("issue") {
       self.greeting = get_issue();
     }
+
+    self.connect();
   }
 
   pub fn set_prompt(&mut self, prompt: &str) {

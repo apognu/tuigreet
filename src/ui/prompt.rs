@@ -85,7 +85,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
         if !greeter.secret || greeter.asterisks {
           let value = if greeter.secret && greeter.asterisks {
-            "*".repeat(greeter.answer.len())
+            greeter.asterisks_char.to_string().repeat(greeter.answer.len())
           } else {
             greeter.answer.clone()
           };
