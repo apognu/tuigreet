@@ -15,6 +15,8 @@ use zeroize::Zeroize;
 
 use crate::info::{get_issue, get_last_username};
 
+pub const DEFAULT_LOCALE: Locale = Locale::en_US;
+
 #[derive(Debug)]
 pub enum AuthStatus {
   Success,

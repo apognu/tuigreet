@@ -20,7 +20,7 @@ use tui::{
   Terminal,
 };
 
-use crate::{info::capslock_status, Greeter, Mode};
+use crate::{info::capslock_status, ui::util::titleize, Greeter, Mode, DEFAULT_LOCALE};
 
 pub use self::power::{Option as PowerOption, OPTIONS as POWER_OPTIONS};
 
@@ -116,7 +116,7 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
 }
 
 fn get_time(greeter: &Greeter) -> String {
-  Local::now().format_localized(&fl!("date"), greeter.locale.unwrap_or(Locale::en_US)).to_string()
+  Local::now().format_localized(&fl!("date"), greeter.locale.unwrap_or(DEFAULT_LOCALE)).to_string()
 }
 
 fn status_label<'s, S>(text: S) -> Span<'s>
@@ -130,7 +130,7 @@ fn status_value<'s, S>(text: S) -> Span<'s>
 where
   S: Into<String>,
 {
-  Span::from(format!(" {} ", text.into()))
+  Span::from(titleize(&text.into()))
 }
 
 fn prompt_value<'s, S>(text: S) -> Span<'s>
