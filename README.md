@@ -67,6 +67,27 @@ On Gentoo, `tuigreet` is available as a package `gui-apps/tuigreet`:
 $ emerge --ask --verbose gui-apps/tuigreet
 ```
 
+### From NixOS
+
+On NixOS `greetd` and `tuigreet` both available via `<nixpkgs>` main repository.
+Please refer to the snippet below for the minimal `tuigreet` configuration:
+
+```nix
+{ pkgs, lib, ... }:
+{
+  services.greetd = {
+    enable = true;
+    settings = {
+      default_session = {
+        command = "${lib.makeBinPath [pkgs.greetd.tuigreet] }/tuigreet --time --cmd sway";
+        user = "greeter";
+      };
+    };
+  };
+}
+```
+
+[More details](https://search.nixos.org/options?channel=unstable&show=services.greetd.settings&from=0&size=50&sort=relevance&query=greetd)
 
 ### Pre-built binaries
 
