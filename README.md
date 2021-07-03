@@ -35,9 +35,11 @@ Options:
 
 The default configuration tends to be as minimal as possible, visually speaking, only showing the authentication prompts and some minor information in the status bar. You may print your system's `/etc/issue` at the top of the prompt with `--issue` and the current date and time with `--time`. You may include a custom one-line greeting message instead of `/etc/issue` with `--greeting`.
 
-The initial prompt container will be 80 column wide. You may change this with `--width` in case you need more space (for example, to account for large PAM challenge messages). Please refer to usage information (`--help`) for more customizaton options.
+The initial prompt container will be 80 column wide. You may change this with `--width` in case you need more space (for example, to account for large PAM challenge messages). Please refer to usage information (`--help`) for more customizaton options. Various padding settings are availble through the `*-padding` options.
 
-You may change the command that will be executed after opening a session by hitting `F2` and amending the command. Alternatively, you can list the system-declared sessions (or custom ones) by hitting `F3`.
+You can instruct `tuigreet` to remember the last username that successfully opened a session with the `--remember` option (that way, the username field will be pre-filled). Similarly, the command and session configuration can be retained between runs with the `--remember-session` option (when using this, the `--cmd` value is overridden by manual selections).
+
+You may change the command that will be executed after opening a session by hitting `F2` and amending the command. Alternatively, you can list the system-declared sessions (or custom ones) by hitting `F3`. Power options are available through `F12`.
 
 ## Install
 
@@ -53,7 +55,7 @@ $ cargo build --release
 
 ### From AUR
 
-On ArchLinux, `tuigreeter` is available on [AUR](https://aur.archlinux.org/packages/greetd-tuigreet) and is installable through your preferred AUR helper:
+On ArchLinux, `tuigreet` is available on [AUR](https://aur.archlinux.org/packages/greetd-tuigreet) and is installable through your preferred AUR helper:
 
 ```
 $ yay -S greetd-tuigreet
