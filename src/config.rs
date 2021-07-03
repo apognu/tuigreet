@@ -13,7 +13,7 @@ use greetd_ipc::Request;
 use i18n_embed::DesktopLanguageRequester;
 use zeroize::Zeroize;
 
-use crate::info::{get_issue, get_last_username};
+use crate::info::{get_issue, get_last_session, get_last_username};
 
 const DEFAULT_LOCALE: Locale = Locale::en_US;
 const DEFAULT_ASTERISKS_CHAR: char = '*';
@@ -70,6 +70,7 @@ pub struct Greeter {
   pub secret: bool,
 
   pub remember: bool,
+  pub remember_session: bool,
   pub asterisks: bool,
   #[default(DEFAULT_ASTERISKS_CHAR)]
   pub asterisks_char: char,
@@ -96,11 +97,24 @@ impl Greeter {
     greeter.set_locale();
     greeter.parse_options();
     greeter.sessions = crate::info::get_sessions(&greeter).unwrap_or_default();
-    greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
+
+    if let Some((_, command)) = greeter.sessions.get(0) {
+      if greeter.command.is_none() {
+        greeter.command = Some(command.clone());
+      }
+    }
 
     if greeter.remember {
       greeter.username = get_last_username().unwrap_or_default().trim().to_string();
     }
+
+    if greeter.remember_session {
+      if let Ok(session) = get_last_session() {
+        greeter.command = Some(session.trim().to_string());
+      }
+    }
+
+    greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
 
     greeter
   }
@@ -203,6 +217,7 @@ impl Greeter {
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
     opts.optflag("t", "time", "display the current date and time");
     opts.optflag("r", "remember", "remember last logged-in username");
+    opts.optflag("", "remember-session", "remember last selected session");
     opts.optflag("", "asterisks", "display asterisks when a secret is typed");
     opts.optopt("", "asterisks-char", "character to be used to redact secrets (default: *)", "CHAR");
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
@@ -253,6 +268,7 @@ impl Greeter {
     }
 
     self.remember = self.config().opt_present("remember");
+    self.remember_session = self.config().opt_present("remember-session");
     self.asterisks = self.config().opt_present("asterisks");
     self.greeting = self.option("greeting");
     self.command = self.option("cmd");

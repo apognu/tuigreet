@@ -14,6 +14,7 @@ use crate::Greeter;
 const X_SESSIONS: &str = "/usr/share/xsessions";
 const WAYLAND_SESSIONS: &str = "/usr/share/wayland-sessions";
 const LAST_USERNAME: &str = "/var/cache/tuigreet/lastuser";
+const LAST_SESSION: &str = "/var/cache/tuigreet/lastsession";
 
 pub fn get_hostname() -> String {
   utsname::uname().nodename().to_string()
@@ -46,6 +47,14 @@ pub fn get_last_username() -> Result<String, io::Error> {
 
 pub fn write_last_username(username: &str) {
   let _ = fs::write(LAST_USERNAME, username);
+}
+
+pub fn get_last_session() -> Result<String, io::Error> {
+  fs::read_to_string(LAST_SESSION)
+}
+
+pub fn write_last_session(session: &str) {
+  let _ = fs::write(LAST_SESSION, session);
 }
 
 pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn Error>> {

@@ -6,6 +6,7 @@ use termion::event::Key;
 
 use crate::{
   event::{Event, Events},
+  info::write_last_session,
   ipc::cancel,
   ui::{PowerOption, POWER_OPTIONS},
   Greeter, Mode,
@@ -111,12 +112,21 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
         Mode::Command => {
           greeter.command = Some(greeter.new_command.clone());
           greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
+
+          if greeter.remember_session {
+            write_last_session(&greeter.new_command);
+          }
+
           greeter.mode = greeter.previous_mode;
         }
 
         Mode::Sessions => {
           if let Some((_, command)) = greeter.sessions.get(greeter.selected_session) {
             greeter.command = Some(command.clone());
+
+            if greeter.remember_session {
+              write_last_session(command);
+            }
           }
 
           greeter.mode = greeter.previous_mode;

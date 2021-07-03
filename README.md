@@ -18,6 +18,8 @@ Options:
                         show custom text above login prompt
     -t, --time          display the current date and time
     -r, --remember      remember last logged-in username
+        --remember-session
+                        remember last selected session
         --asterisks     display asterisks when a secret is typed
         --asterisks-char CHAR
                         character to be used to redact secrets (default: *)
