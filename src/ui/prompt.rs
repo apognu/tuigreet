@@ -15,7 +15,6 @@ use crate::{info::get_hostname, Greeter, Mode};
 const GREETING_INDEX: usize = 0;
 const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 2;
-const MESSAGE_INDEX: usize = 3;
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
@@ -42,10 +41,9 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   let answer_padding = if prompt_padding == 0 { 1 } else { prompt_padding };
 
   let constraints = [
-    Constraint::Length(greeting_height),                                                                  // Greeting
-    Constraint::Length(1 + username_padding),                                                             // Username
-    Constraint::Length(if greeter.mode == Mode::Username { message_height } else { 1 + answer_padding }), // Message or answer
-    Constraint::Length(if greeter.mode == Mode::Password { message_height } else { 1 }),                  // Message
+    Constraint::Length(greeting_height),                                                     // Greeting
+    Constraint::Length(1 + username_padding),                                                // Username
+    Constraint::Length(if greeter.mode == Mode::Username { 0 } else { 1 + answer_padding }), // Answer
   ];
 
   let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(frame);
@@ -109,11 +107,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
         let message_text = Span::from(message);
         let message = Paragraph::new(message_text).alignment(Alignment::Center);
 
-        match greeter.mode {
-          Mode::Username => f.render_widget(message, chunks[ANSWER_INDEX]),
-          Mode::Password => f.render_widget(message, chunks[MESSAGE_INDEX]),
-          Mode::Command | Mode::Sessions | Mode::Power => {}
-        }
+        f.render_widget(message, Rect::new(x, y + height, width, message_height));
       }
     }
 
