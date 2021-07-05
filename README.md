@@ -115,3 +115,26 @@ Please refer to [greetd's wiki](https://man.sr.ht/~kennylevinsen/greetd/) for mo
 ### Sessions
 
 The available sessions are fetched from `desktop` files in `/usr/share/xsessions` and `/usr/share/wayland-sessions`. If you want to provide custom directories, you can set the `--sessions` arguments with a colon-separated list of directories for `tuigreet` to fetch session definitions some other place.
+
+#### Desktop environments
+
+`greetd` only accepts a single argument-less and environment-less command to be used to start a session. Therefore, if your desktop environment requires either arguments or environment variables, you will need to create a wrapper script and refer to it in an appropriate desktop file.
+
+For example, to run X11 Gnome, you may need to start it through `startx` and configure your `~/.xinitrc` (or an external `xinitrc` with a wrapper script):
+
+```
+exec gnome-session
+```
+
+To run Wayland Gnome, you would need to create a wrapper script akin to the following:
+
+```
+XDG_SESSION_TYPE=wayland dbus-run-session gnome-session
+```
+
+Then refer to your wrapper script in a custom desktop file (in a directory declared with the `-s/--sessions` option):
+
+```
+Name=Wayland Gnome
+Exec=/path/to/my/wrapper.sh
+```
