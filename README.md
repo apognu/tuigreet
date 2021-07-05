@@ -118,7 +118,7 @@ The available sessions are fetched from `desktop` files in `/usr/share/xsessions
 
 #### Desktop environments
 
-`greetd` only accepts a single argument-less and environment-less command to be used to start a session. Therefore, if your desktop environment requires either arguments or environment variables, you will need to create a wrapper script and refer to it in an appropriate desktop file.
+`greetd` only accepts environment-less commands to be used to start a session. Therefore, if your desktop environment requires either arguments or environment variables, you will need to create a wrapper script and refer to it in an appropriate desktop file.
 
 For example, to run X11 Gnome, you may need to start it through `startx` and configure your `~/.xinitrc` (or an external `xinitrc` with a wrapper script):
 
