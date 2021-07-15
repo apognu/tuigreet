@@ -11,7 +11,7 @@ mod ipc;
 mod keyboard;
 mod ui;
 
-use std::{error::Error, io, process};
+use std::{error::Error, io, process, sync::Arc};
 
 use greetd_ipc::Request;
 use i18n_embed::{
@@ -21,10 +21,11 @@ use i18n_embed::{
 use lazy_static::lazy_static;
 use rust_embed::RustEmbed;
 use termion::raw::IntoRawMode;
+use tokio::sync::RwLock;
 use tui::{backend::TermionBackend, Terminal};
 
 pub use self::config::*;
-use self::event::Events;
+use self::{event::Events, ipc::new_ipc};
 
 #[derive(RustEmbed)]
 #[folder = "contrib/locales"]
@@ -42,8 +43,9 @@ lazy_static! {
   };
 }
 
-fn main() {
-  if let Err(error) = run() {
+#[tokio::main]
+async fn main() {
+  if let Err(error) = run().await {
     if let Some(AuthStatus::Success) = error.downcast_ref::<AuthStatus>() {
       return;
     }
@@ -52,8 +54,8 @@ fn main() {
   }
 }
 
-fn run() -> Result<(), Box<dyn Error>> {
-  let mut greeter = Greeter::new();
+async fn run() -> Result<(), Box<dyn Error>> {
+  let greeter = Greeter::new().await;
 
   let stdout = io::stdout().into_raw_mode()?;
   let backend = TermionBackend::new(stdout);
@@ -61,28 +63,44 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   terminal.clear()?;
 
-  let events = Events::new();
+  let mut events = Events::new().await;
+
+  let (ipc_rx, ipc_tx) = new_ipc();
 
   if greeter.remember && !greeter.username.is_empty() {
-    greeter.request = Some(Request::CreateSession { username: greeter.username.clone() });
+    let _ = ipc_tx.lock().await.send(Request::CreateSession { username: greeter.username.clone() }).await;
   }
 
+  let greeter = Arc::new(RwLock::new(greeter));
+
+  tokio::task::spawn({
+    let greeter = greeter.clone();
+    let (ipc_rx, ipc_tx) = (ipc_rx.clone(), ipc_tx.clone());
+
+    async move {
+      loop {
+        let _ = ipc::handle(greeter.clone(), ipc_tx.clone(), ipc_rx.clone()).await;
+      }
+    }
+  });
+
   loop {
-    ui::draw(&mut terminal, &mut greeter)?;
-    ipc::handle(&mut greeter)?;
-    keyboard::handle(&mut greeter, &events)?;
+    greeter.read().await.exit?;
+
+    ui::draw(greeter.clone(), &mut terminal).await?;
+    keyboard::handle(greeter.clone(), &mut events, ipc_tx.clone()).await?;
   }
 }
 
-pub fn exit(greeter: &mut Greeter, status: AuthStatus) -> Result<(), AuthStatus> {
+pub async fn exit(mut greeter: &mut Greeter, status: AuthStatus) {
   match status {
     AuthStatus::Success => {}
-    AuthStatus::Cancel | AuthStatus::Failure => ipc::cancel(greeter),
+    AuthStatus::Cancel | AuthStatus::Failure => ipc::cancel(&mut greeter).await,
   }
 
   clear_screen();
 
-  Err(status)
+  greeter.exit = Err(status);
 }
 
 pub fn clear_screen() {
@@ -91,4 +109,13 @@ pub fn clear_screen() {
   if let Ok(mut terminal) = Terminal::new(backend) {
     let _ = terminal.clear();
   }
+}
+
+#[cfg(debug_assertions)]
+pub fn log(msg: &str) {
+  use std::io::Write;
+
+  let mut file = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/tuigreet.log").unwrap();
+  file.write_all(msg.as_ref()).unwrap();
+  file.write_all("\n".as_bytes()).unwrap();
 }

@@ -13,11 +13,11 @@ use tui::{
 use super::util::*;
 use crate::Greeter;
 
-pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();
-  let height: u16 = get_height(greeter) + greeter.sessions.len() as u16;
+  let height: u16 = get_height(&greeter) + greeter.sessions.len() as u16;
   let x = (size.width - width) / 2;
   let y = (size.height - height) / 2;
 

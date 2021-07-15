@@ -7,10 +7,12 @@ mod util;
 use std::{
   error::Error,
   io::{self, Write},
+  sync::Arc,
 };
 
 use chrono::prelude::*;
 use termion::raw::RawTerminal;
+use tokio::sync::RwLock;
 use tui::{
   backend::TermionBackend,
   layout::{Alignment, Constraint, Direction, Layout},
@@ -29,7 +31,11 @@ const STATUSBAR_INDEX: usize = 3;
 const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
 
-pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, greeter: &mut Greeter) -> Result<(), Box<dyn Error>> {
+type Term = Terminal<TermionBackend<RawTerminal<io::Stdout>>>;
+
+pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<(), Box<dyn Error>> {
+  let mut greeter = greeter.write().await;
+
   let hide_cursor = if greeter.working || greeter.mode == Mode::Sessions {
     terminal.hide_cursor()?;
     true
@@ -97,10 +103,10 @@ pub fn draw(terminal: &mut Terminal<TermionBackend<RawTerminal<io::Stdout>>>, gr
     }
 
     let cursor = match greeter.mode {
-      Mode::Command => self::command::draw(greeter, &mut f).ok(),
-      Mode::Sessions => self::sessions::draw(greeter, &mut f).ok(),
-      Mode::Power => self::power::draw(greeter, &mut f).ok(),
-      _ => self::prompt::draw(greeter, &mut f).ok(),
+      Mode::Command => self::command::draw(&mut greeter, &mut f).ok(),
+      Mode::Sessions => self::sessions::draw(&mut greeter, &mut f).ok(),
+      Mode::Power => self::power::draw(&mut greeter, &mut f).ok(),
+      _ => self::prompt::draw(&mut greeter, &mut f).ok(),
     };
 
     if !hide_cursor {

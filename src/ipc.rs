@@ -1,22 +1,44 @@
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 
-use greetd_ipc::{codec::SyncCodec, AuthMessageType, ErrorType, Request, Response};
+use greetd_ipc::{codec::TokioCodec, AuthMessageType, ErrorType, Request, Response};
+use tokio::sync::{
+  mpsc::{Receiver, Sender},
+  Mutex, RwLock,
+};
 
 use crate::{info::write_last_username, AuthStatus, Greeter, Mode};
 
-pub fn handle(greeter: &mut Greeter) -> Result<(), Box<dyn Error>> {
-  if let Some(ref request) = greeter.request {
-    request.write_to(&mut greeter.stream())?;
-    greeter.request = None;
-    let response = Response::read_from(&mut greeter.stream())?;
+type IpcChannel = (Arc<Mutex<Receiver<Request>>>, Arc<Mutex<Sender<Request>>>);
 
-    parse_response(greeter, response)?;
+pub fn new_ipc() -> IpcChannel {
+  let (net_tx, net_rx) = tokio::sync::mpsc::channel::<Request>(10);
+
+  (Arc::new(Mutex::new(net_rx)), Arc::new(Mutex::new(net_tx)))
+}
+
+pub async fn handle(greeter: Arc<RwLock<Greeter>>, net_tx: Arc<Mutex<Sender<Request>>>, net_rx: Arc<Mutex<Receiver<Request>>>) -> Result<(), Box<dyn Error>> {
+  let request = net_rx.lock().await.recv().await;
+
+  if let Some(request) = request {
+    let stream = {
+      let greeter = greeter.read().await;
+
+      greeter.stream.as_ref().unwrap().clone()
+    };
+
+    let response = {
+      request.write_to(&mut *stream.write().await).await?;
+
+      Response::read_from(&mut *stream.write().await).await?
+    };
+
+    parse_response(&mut *greeter.write().await, response, net_tx).await?;
   }
 
   Ok(())
 }
 
-fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<dyn Error>> {
+async fn parse_response(mut greeter: &mut Greeter, response: Response, net_tx: Arc<Mutex<Sender<Request>>>) -> Result<(), Box<dyn Error>> {
   match response {
     Response::AuthMessage { auth_message_type, auth_message } => match auth_message_type {
       AuthMessageType::Secret => {
@@ -47,11 +69,7 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
           }
         }
 
-        Request::PostAuthMessageResponse { response: None }.write_to(&mut greeter.stream())?;
-        greeter.request = None;
-        let response = Response::read_from(&mut greeter.stream())?;
-
-        parse_response(greeter, response)?;
+        let _ = net_tx.lock().await.send(Request::PostAuthMessageResponse { response: None }).await;
       }
     },
 
@@ -61,15 +79,16 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
           write_last_username(&greeter.username);
         }
 
-        crate::exit(greeter, AuthStatus::Success)?;
+        crate::exit(&mut greeter, AuthStatus::Success).await;
       } else if let Some(command) = &greeter.command {
         greeter.done = true;
-        greeter.request = Some(Request::StartSession { cmd: vec![command.clone()] });
+
+        let _ = net_tx.lock().await.send(Request::StartSession { cmd: vec![command.clone()] }).await;
       }
     }
 
     Response::Error { error_type, description } => {
-      cancel(greeter);
+      cancel(&mut greeter).await;
 
       match error_type {
         ErrorType::AuthError => {
@@ -81,13 +100,13 @@ fn parse_response(greeter: &mut Greeter, response: Response) -> Result<(), Box<d
         }
       }
 
-      greeter.reset();
+      greeter.reset().await;
     }
   }
 
   Ok(())
 }
 
-pub fn cancel(greeter: &mut Greeter) {
-  let _ = Request::CancelSession.write_to(&mut greeter.stream());
+pub async fn cancel(greeter: &mut Greeter) {
+  let _ = Request::CancelSession.write_to(&mut *greeter.stream().await).await;
 }

@@ -3,14 +3,17 @@ use std::{
   env,
   error::Error,
   fmt::{self, Display},
-  os::unix::net::UnixStream,
   process,
+  sync::Arc,
 };
 
 use chrono::Locale;
 use getopts::{Matches, Options};
-use greetd_ipc::Request;
 use i18n_embed::DesktopLanguageRequester;
+use tokio::{
+  net::UnixStream,
+  sync::{RwLock, RwLockWriteGuard},
+};
 use zeroize::Zeroize;
 
 use crate::info::{get_issue, get_last_session, get_last_username};
@@ -18,7 +21,7 @@ use crate::info::{get_issue, get_last_session, get_last_username};
 const DEFAULT_LOCALE: Locale = Locale::en_US;
 const DEFAULT_ASTERISKS_CHAR: char = '*';
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum AuthStatus {
   Success,
   Failure,
@@ -49,8 +52,7 @@ pub struct Greeter {
   pub locale: Locale,
   pub config: Option<Matches>,
   pub socket: String,
-  pub stream: Option<UnixStream>,
-  pub request: Option<Request>,
+  pub stream: Option<Arc<RwLock<UnixStream>>>,
 
   pub mode: Mode,
   pub previous_mode: Mode,
@@ -79,6 +81,8 @@ pub struct Greeter {
 
   pub working: bool,
   pub done: bool,
+  #[default(Ok(()))]
+  pub exit: Result<(), AuthStatus>,
 }
 
 impl Drop for Greeter {
@@ -88,11 +92,11 @@ impl Drop for Greeter {
 }
 
 impl Greeter {
-  pub fn new() -> Self {
+  pub async fn new() -> Self {
     let mut greeter = Self::default();
 
     greeter.set_locale();
-    greeter.parse_options();
+    greeter.parse_options().await;
     greeter.sessions = crate::info::get_sessions(&greeter).unwrap_or_default();
 
     if let Some((_, command)) = greeter.sessions.get(0) {
@@ -126,19 +130,19 @@ impl Greeter {
     }
   }
 
-  pub fn reset(&mut self) {
+  pub async fn reset(&mut self) {
     self.mode = Mode::Username;
     self.previous_mode = Mode::Username;
     self.working = false;
     self.done = false;
 
     self.scrub(false);
-    self.connect();
+    self.connect().await;
   }
 
-  pub fn connect(&mut self) {
-    match UnixStream::connect(&self.socket) {
-      Ok(stream) => self.stream = Some(stream),
+  pub async fn connect(&mut self) {
+    match UnixStream::connect(&self.socket).await {
+      Ok(stream) => self.stream = Some(Arc::new(RwLock::new(stream))),
 
       Err(err) => {
         eprintln!("{}", err);
@@ -151,8 +155,8 @@ impl Greeter {
     self.config.as_ref().unwrap()
   }
 
-  pub fn stream(&self) -> &UnixStream {
-    self.stream.as_ref().unwrap()
+  pub async fn stream(&self) -> RwLockWriteGuard<'_, UnixStream> {
+    self.stream.as_ref().unwrap().write().await
   }
 
   pub fn option(&self, name: &str) -> Option<String> {
@@ -211,7 +215,7 @@ impl Greeter {
     }
   }
 
-  fn parse_options(&mut self) {
+  async fn parse_options(&mut self) {
     let mut opts = Options::new();
 
     opts.optflag("h", "help", "show this usage information");
@@ -233,8 +237,8 @@ impl Greeter {
     self.config = match opts.parse(&env::args().collect::<Vec<String>>()) {
       Ok(matches) => Some(matches),
 
-      Err(error) => {
-        eprintln!("{}", error);
+      Err(err) => {
+        eprintln!("{}", err);
         print_usage(opts);
         process::exit(1);
       }
@@ -285,7 +289,7 @@ impl Greeter {
       self.greeting = get_issue();
     }
 
-    self.connect();
+    self.connect().await;
   }
 
   pub fn set_prompt(&mut self, prompt: &str) {

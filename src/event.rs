@@ -1,6 +1,7 @@
-use std::{io, sync::mpsc, thread, time::Duration};
+use std::{io, time::Duration};
 
 use termion::{event::Key, input::TermRead};
+use tokio::sync::mpsc;
 
 pub enum Event<I> {
   Input(I),
@@ -25,33 +26,35 @@ impl Default for Config {
 }
 
 impl Events {
-  pub fn new() -> Events {
-    let (tx, rx) = mpsc::channel();
+  pub async fn new() -> Events {
+    let (tx, rx) = mpsc::channel(10);
 
     {
       let tx = tx.clone();
 
-      thread::spawn(move || {
+      tokio::task::spawn(async move {
         let stdin = io::stdin();
 
         for key in stdin.keys().flatten() {
-          if tx.send(Event::Input(key)).is_err() {
+          if tx.send(Event::Input(key)).await.is_err() {
             return;
           }
         }
       })
     };
 
-    thread::spawn(move || loop {
-      let _ = tx.send(Event::Tick);
+    tokio::task::spawn(async move {
+      loop {
+        let _ = tx.send(Event::Tick).await;
 
-      thread::sleep(Duration::from_millis(250));
+        tokio::time::sleep(Duration::from_millis(250)).await;
+      }
     });
 
     Events { rx }
   }
 
-  pub fn next(&self) -> Result<Event<Key>, mpsc::RecvError> {
-    self.rx.recv()
+  pub async fn next(&mut self) -> Option<Event<Key>> {
+    self.rx.recv().await
   }
 }

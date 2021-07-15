@@ -1,8 +1,9 @@
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 
 use greetd_ipc::Request;
 use system_shutdown::{reboot, shutdown};
 use termion::event::Key;
+use tokio::sync::{mpsc::Sender, Mutex, RwLock};
 
 use crate::{
   event::{Event, Events},
@@ -12,12 +13,14 @@ use crate::{
   Greeter, Mode,
 };
 
-pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Error>> {
-  if let Event::Input(input) = events.next()? {
+pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, net_tx: Arc<Mutex<Sender<Request>>>) -> Result<(), Box<dyn Error>> {
+  if let Some(Event::Input(input)) = events.next().await {
+    let mut greeter = greeter.write().await;
+
     match input {
       Key::Esc => {
-        cancel(greeter);
-        greeter.reset();
+        cancel(&mut greeter).await;
+        greeter.reset().await;
       }
 
       Key::Left => greeter.cursor_offset -= 1,
@@ -80,9 +83,11 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
       }
 
       Key::Ctrl('a') => {
-        let value = match greeter.mode {
-          Mode::Username => &greeter.username,
-          _ => &greeter.answer,
+        let value = {
+          match greeter.mode {
+            Mode::Username => greeter.username.clone(),
+            _ => greeter.answer.clone(),
+          }
         };
 
         greeter.cursor_offset = -(value.chars().count() as i16);
@@ -94,7 +99,8 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
         Mode::Username => {
           greeter.working = true;
           greeter.message = None;
-          greeter.request = Some(Request::CreateSession { username: greeter.username.clone() });
+
+          let _ = net_tx.lock().await.send(Request::CreateSession { username: greeter.username.clone() }).await;
           greeter.answer = String::new();
         }
 
@@ -102,16 +108,22 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
           greeter.working = true;
           greeter.message = None;
 
-          greeter.request = Some(Request::PostAuthMessageResponse {
-            response: Some(greeter.answer.clone()),
-          });
+          let _ = net_tx
+            .lock()
+            .await
+            .send(Request::PostAuthMessageResponse {
+              response: Some(greeter.answer.clone()),
+            })
+            .await;
 
           greeter.answer = String::new();
         }
 
         Mode::Command => {
+          let cmd = greeter.command.clone();
+
           greeter.command = Some(greeter.new_command.clone());
-          greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
+          greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == cmd.as_ref()).unwrap_or(0);
 
           if greeter.remember_session {
             write_last_session(&greeter.new_command);
@@ -121,11 +133,16 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
         }
 
         Mode::Sessions => {
-          if let Some((_, command)) = greeter.sessions.get(greeter.selected_session) {
+          let session = match greeter.sessions.get(greeter.selected_session) {
+            Some((_, command)) => Some(command.clone()),
+            _ => None,
+          };
+
+          if let Some(command) = session {
             greeter.command = Some(command.clone());
 
             if greeter.remember_session {
-              write_last_session(command);
+              write_last_session(&command);
             }
           }
 
@@ -142,9 +159,9 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
         }
       },
 
-      Key::Char(c) => insert_key(greeter, c),
+      Key::Char(c) => insert_key(&mut greeter, c).await,
 
-      Key::Backspace | Key::Delete => delete_key(greeter, input),
+      Key::Backspace | Key::Delete => delete_key(&mut greeter, input).await,
 
       Key::Ctrl('u') => match greeter.mode {
         Mode::Username => greeter.username = String::new(),
@@ -157,7 +174,7 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
       Key::Ctrl('x') => {
         use crate::config::AuthStatus;
 
-        crate::exit(greeter, AuthStatus::Cancel)?;
+        crate::exit(&mut greeter, AuthStatus::Cancel).await;
       }
 
       _ => {}
@@ -167,11 +184,11 @@ pub fn handle(greeter: &mut Greeter, events: &Events) -> Result<(), Box<dyn Erro
   Ok(())
 }
 
-fn insert_key(greeter: &mut Greeter, c: char) {
+async fn insert_key(greeter: &mut Greeter, c: char) {
   let value = match greeter.mode {
-    Mode::Username => &mut greeter.username,
-    Mode::Password => &mut greeter.answer,
-    Mode::Command => &mut greeter.new_command,
+    Mode::Username => greeter.username.clone(),
+    Mode::Password => greeter.answer.clone(),
+    Mode::Command => greeter.new_command.clone(),
     Mode::Sessions | Mode::Power => return,
   };
 
@@ -179,14 +196,22 @@ fn insert_key(greeter: &mut Greeter, c: char) {
   let left = value.chars().take(index);
   let right = value.chars().skip(index);
 
-  *value = left.chain(vec![c].into_iter()).chain(right).collect();
+  let value = left.chain(vec![c].into_iter()).chain(right).collect();
+  let mode = greeter.mode;
+
+  match mode {
+    Mode::Username => greeter.username = value,
+    Mode::Password => greeter.answer = value,
+    Mode::Command => greeter.new_command = value,
+    _ => {}
+  };
 }
 
-fn delete_key(greeter: &mut Greeter, key: Key) {
+async fn delete_key(greeter: &mut Greeter, key: Key) {
   let value = match greeter.mode {
-    Mode::Username => &mut greeter.username,
-    Mode::Password => &mut greeter.answer,
-    Mode::Command => &mut greeter.new_command,
+    Mode::Username => greeter.username.clone(),
+    Mode::Password => greeter.answer.clone(),
+    Mode::Command => greeter.new_command.clone(),
     Mode::Sessions | Mode::Power => return,
   };
 
@@ -200,7 +225,14 @@ fn delete_key(greeter: &mut Greeter, key: Key) {
     let left = value.chars().take(index);
     let right = value.chars().skip(index + 1);
 
-    *value = left.chain(right).collect();
+    let value = left.chain(right).collect();
+
+    match greeter.mode {
+      Mode::Username => greeter.username = value,
+      Mode::Password => greeter.answer = value,
+      Mode::Command => greeter.new_command = value,
+      Mode::Sessions | Mode::Power => return,
+    };
 
     if let Key::Delete = key {
       greeter.cursor_offset += 1;
