@@ -5,9 +5,9 @@ pub fn titleize(message: &str) -> String {
 }
 
 pub fn get_height(greeter: &Greeter) -> u16 {
+  let (_, greeting_height) = get_greeting_height(&greeter, 1, 0);
   let container_padding = greeter.container_padding();
   let prompt_padding = greeter.prompt_padding();
-  let (_, greeting_height) = get_greeting_height(greeter, 1, 0);
 
   let initial = match greeter.mode {
     Mode::Username | Mode::Command => (2 * container_padding) + 1,

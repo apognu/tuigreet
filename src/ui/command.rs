@@ -12,7 +12,7 @@ use tui::{
 use super::prompt_value;
 use crate::{ui::util::*, Greeter};
 
-pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();
@@ -43,10 +43,11 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
   f.render_widget(command_label, chunks[0]);
   f.render_widget(
     command_value,
-    Rect::new(1 + chunks[0].x + fl!("new_command").len() as u16, chunks[0].y, get_input_width(greeter, &fl!("new_command")), 1),
+    Rect::new(1 + chunks[0].x + fl!("new_command").len() as u16, chunks[0].y, get_input_width(&greeter, &fl!("new_command")), 1),
   );
 
-  let offset = get_cursor_offset(greeter, greeter.new_command.chars().count());
+  let new_command = greeter.new_command.clone();
+  let offset = get_cursor_offset(&mut greeter, new_command.chars().count());
 
   Ok((2 + cursor.x + fl!("new_command").len() as u16 + offset as u16, cursor.y + 1))
 }

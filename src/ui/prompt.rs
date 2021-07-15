@@ -16,7 +16,7 @@ const GREETING_INDEX: usize = 0;
 const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 2;
 
-pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();
@@ -34,8 +34,8 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
   f.render_widget(block, container);
 
-  let (message, message_height) = get_message_height(greeter, container_padding, 1);
-  let (greeting, greeting_height) = get_greeting_height(greeter, container_padding, 0);
+  let (message, message_height) = get_message_height(&greeter, container_padding, 1);
+  let (greeting, greeting_height) = get_greeting_height(&greeter, container_padding, 0);
 
   let username_padding = if greeter.mode == Mode::Username && prompt_padding == 0 { 1 } else { prompt_padding };
   let answer_padding = if prompt_padding == 0 { 1 } else { prompt_padding };
@@ -70,7 +70,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
         Rect::new(
           1 + chunks[USERNAME_INDEX].x + fl!("username").len() as u16,
           chunks[USERNAME_INDEX].y,
-          get_input_width(greeter, &fl!("username")),
+          get_input_width(&greeter, &fl!("username")),
           1,
         ),
       );
@@ -96,7 +96,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
             Rect::new(
               chunks[ANSWER_INDEX].x + greeter.prompt.chars().count() as u16,
               chunks[ANSWER_INDEX].y,
-              get_input_width(greeter, &greeter.prompt),
+              get_input_width(&greeter, &greeter.prompt),
               1,
             ),
           );
@@ -116,13 +116,15 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<TermionBackend<RawTerminal<io::
 
   match greeter.mode {
     Mode::Username => {
-      let offset = get_cursor_offset(greeter, greeter.username.chars().count());
+      let username = greeter.username.clone();
+      let offset = get_cursor_offset(&mut greeter, username.chars().count());
 
       Ok((2 + cursor.x + fl!("username").len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
     }
 
     Mode::Password => {
-      let offset = get_cursor_offset(greeter, greeter.answer.chars().count());
+      let answer = greeter.answer.clone();
+      let offset = get_cursor_offset(&mut greeter, answer.chars().count());
 
       if greeter.secret && !greeter.asterisks {
         Ok((1 + cursor.x + greeter.prompt.chars().count() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
