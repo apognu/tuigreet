@@ -3,23 +3,23 @@ use std::{error::Error, sync::Arc};
 use greetd_ipc::Request;
 use system_shutdown::{reboot, shutdown};
 use termion::event::Key;
-use tokio::sync::{mpsc::Sender, Mutex, RwLock};
+use tokio::sync::RwLock;
 
 use crate::{
   event::{Event, Events},
   info::write_last_session,
-  ipc::cancel,
+  ipc::Ipc,
   ui::{PowerOption, POWER_OPTIONS},
   Greeter, Mode,
 };
 
-pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, net_tx: Arc<Mutex<Sender<Request>>>) -> Result<(), Box<dyn Error>> {
+pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc) -> Result<(), Box<dyn Error>> {
   if let Some(Event::Input(input)) = events.next().await {
     let mut greeter = greeter.write().await;
 
     match input {
       Key::Esc => {
-        cancel(&mut greeter).await;
+        Ipc::cancel(&mut greeter).await;
         greeter.reset().await;
       }
 
@@ -100,7 +100,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, net_tx: 
           greeter.working = true;
           greeter.message = None;
 
-          let _ = net_tx.lock().await.send(Request::CreateSession { username: greeter.username.clone() }).await;
+          ipc.send(Request::CreateSession { username: greeter.username.clone() }).await;
           greeter.answer = String::new();
         }
 
@@ -108,9 +108,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, net_tx: 
           greeter.working = true;
           greeter.message = None;
 
-          let _ = net_tx
-            .lock()
-            .await
+          ipc
             .send(Request::PostAuthMessageResponse {
               response: Some(greeter.answer.clone()),
             })
@@ -172,7 +170,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, net_tx: 
 
       #[cfg(debug_assertions)]
       Key::Ctrl('x') => {
-        use crate::config::AuthStatus;
+        use crate::greeter::AuthStatus;
 
         crate::exit(&mut greeter, AuthStatus::Cancel).await;
       }

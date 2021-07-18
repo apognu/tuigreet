@@ -4,8 +4,8 @@ extern crate smart_default;
 #[macro_use]
 mod macros;
 
-mod config;
 mod event;
+mod greeter;
 mod info;
 mod ipc;
 mod keyboard;
@@ -14,34 +14,12 @@ mod ui;
 use std::{error::Error, io, process, sync::Arc};
 
 use greetd_ipc::Request;
-use i18n_embed::{
-  fluent::{fluent_language_loader, FluentLanguageLoader},
-  DesktopLanguageRequester, LanguageLoader,
-};
-use lazy_static::lazy_static;
-use rust_embed::RustEmbed;
 use termion::raw::IntoRawMode;
 use tokio::sync::RwLock;
 use tui::{backend::TermionBackend, Terminal};
 
-pub use self::config::*;
-use self::{event::Events, ipc::new_ipc};
-
-#[derive(RustEmbed)]
-#[folder = "contrib/locales"]
-struct Localizations;
-
-lazy_static! {
-  static ref MESSAGES: FluentLanguageLoader = {
-    let locales = Localizations;
-    let loader = fluent_language_loader!();
-    loader.load_languages(&locales, &[loader.fallback_language()]).unwrap();
-
-    let _ = i18n_embed::select(&loader, &locales, &DesktopLanguageRequester::requested_languages());
-
-    loader
-  };
-}
+pub use self::greeter::*;
+use self::{event::Events, ipc::Ipc};
 
 #[tokio::main]
 async fn main() {
@@ -64,43 +42,48 @@ async fn run() -> Result<(), Box<dyn Error>> {
   terminal.clear()?;
 
   let mut events = Events::new().await;
-
-  let (ipc_rx, ipc_tx) = new_ipc();
+  let ipc = Ipc::new();
 
   if greeter.remember && !greeter.username.is_empty() {
-    let _ = ipc_tx.lock().await.send(Request::CreateSession { username: greeter.username.clone() }).await;
+    ipc.send(Request::CreateSession { username: greeter.username.clone() }).await;
   }
 
   let greeter = Arc::new(RwLock::new(greeter));
 
   tokio::task::spawn({
     let greeter = greeter.clone();
-    let (ipc_rx, ipc_tx) = (ipc_rx.clone(), ipc_tx.clone());
+    let mut ipc = ipc.clone();
 
     async move {
       loop {
-        let _ = ipc::handle(greeter.clone(), ipc_tx.clone(), ipc_rx.clone()).await;
+        let _ = ipc.handle(greeter.clone()).await;
       }
     }
   });
 
   loop {
-    greeter.read().await.exit?;
+    if let Some(ref mut rx) = greeter.write().await.exit_rx {
+      if let Ok(status) = rx.try_recv() {
+        return Err(status.into());
+      }
+    }
 
     ui::draw(greeter.clone(), &mut terminal).await?;
-    keyboard::handle(greeter.clone(), &mut events, ipc_tx.clone()).await?;
+    keyboard::handle(greeter.clone(), &mut events, ipc.clone()).await?;
   }
 }
 
 pub async fn exit(mut greeter: &mut Greeter, status: AuthStatus) {
   match status {
     AuthStatus::Success => {}
-    AuthStatus::Cancel | AuthStatus::Failure => ipc::cancel(&mut greeter).await,
+    AuthStatus::Cancel | AuthStatus::Failure => Ipc::cancel(&mut greeter).await,
   }
 
   clear_screen();
 
-  greeter.exit = Err(status);
+  if let Some(tx) = greeter.exit_tx.take() {
+    let _ = tx.send(status);
+  }
 }
 
 pub fn clear_screen() {

@@ -12,7 +12,10 @@ use getopts::{Matches, Options};
 use i18n_embed::DesktopLanguageRequester;
 use tokio::{
   net::UnixStream,
-  sync::{RwLock, RwLockWriteGuard},
+  sync::{
+    oneshot::{Receiver, Sender},
+    RwLock, RwLockWriteGuard,
+  },
 };
 use zeroize::Zeroize;
 
@@ -81,8 +84,8 @@ pub struct Greeter {
 
   pub working: bool,
   pub done: bool,
-  #[default(Ok(()))]
-  pub exit: Result<(), AuthStatus>,
+  pub exit_tx: Option<Sender<AuthStatus>>,
+  pub exit_rx: Option<Receiver<AuthStatus>>,
 }
 
 impl Drop for Greeter {
@@ -116,6 +119,10 @@ impl Greeter {
     }
 
     greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
+
+    let (exit_tx, exit_rx) = tokio::sync::oneshot::channel::<AuthStatus>();
+    greeter.exit_tx = Some(exit_tx);
+    greeter.exit_rx = Some(exit_rx);
 
     greeter
   }
