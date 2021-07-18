@@ -1,4 +1,5 @@
 mod command;
+mod i18n;
 mod power;
 mod prompt;
 mod sessions;
@@ -24,7 +25,10 @@ use tui::{
 
 use crate::{info::capslock_status, ui::util::titleize, Greeter, Mode};
 
-pub use self::power::{Option as PowerOption, OPTIONS as POWER_OPTIONS};
+pub use self::{
+  i18n::MESSAGES,
+  power::{Option as PowerOption, OPTIONS as POWER_OPTIONS},
+};
 
 const TITLEBAR_INDEX: usize = 1;
 const STATUSBAR_INDEX: usize = 3;
