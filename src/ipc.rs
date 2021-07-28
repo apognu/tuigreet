@@ -4,7 +4,7 @@ use greetd_ipc::{codec::SyncCodec, AuthMessageType, ErrorType, Request, Response
 
 use crate::{info::write_last_username, AuthStatus, Greeter, Mode};
 
-const AUTHENTICATION_FAILURE: &str = "Authenticated has failed, please try again.";
+const AUTHENTICATION_FAILURE: &str = "Authentication failed, please try again.";
 
 pub fn handle(greeter: &mut Greeter) -> Result<(), Box<dyn Error>> {
   if let Some(ref request) = greeter.request {
