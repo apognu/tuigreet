@@ -12,6 +12,7 @@ date = %a, %d %h %Y - %H:%M
 
 username = Username:
 wait = Please wait...
+failed = Authentication failed, please try again.
 
 new_command = New command:
 
