@@ -47,7 +47,11 @@ impl Ipc {
       let response = {
         request.write_to(&mut *stream.write().await).await?;
 
-        Response::read_from(&mut *stream.write().await).await?
+        let response = Response::read_from(&mut *stream.write().await).await?;
+
+        greeter.write().await.working = false;
+
+        response
       };
 
       self.parse_response(&mut *greeter.write().await, response).await?;
@@ -73,18 +77,20 @@ impl Ipc {
           greeter.set_prompt(&auth_message);
         }
 
-        AuthMessageType::Error => greeter.message = Some(auth_message),
+        AuthMessageType::Error => {
+          greeter.message = Some(auth_message);
+
+          self.send(Request::PostAuthMessageResponse { response: None }).await;
+        }
 
         AuthMessageType::Info => {
+          greeter.remove_prompt();
+
           if let Some(message) = &mut greeter.message {
-            message.push_str(&auth_message.trim_end());
             message.push('\n');
+            message.push_str(&auth_message.trim_end());
           } else {
             greeter.message = Some(auth_message.trim_end().to_string());
-
-            if let Some(message) = &mut greeter.message {
-              message.push('\n');
-            }
           }
 
           self.send(Request::PostAuthMessageResponse { response: None }).await;
@@ -101,7 +107,15 @@ impl Ipc {
         } else if let Some(command) = &greeter.command {
           greeter.done = true;
 
+          #[cfg(not(debug_assertions))]
           self.send(Request::StartSession { cmd: vec![command.clone()] }).await;
+
+          #[cfg(debug_assertions)]
+          {
+            let _ = command;
+
+            crate::exit(&mut greeter, AuthStatus::Success).await;
+          }
         }
       }
 

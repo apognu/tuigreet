@@ -70,7 +70,7 @@ pub struct Greeter {
   pub selected_power_option: usize,
 
   pub username: String,
-  pub prompt: String,
+  pub prompt: Option<String>,
   pub answer: String,
   pub secret: bool,
 
@@ -300,7 +300,18 @@ impl Greeter {
   }
 
   pub fn set_prompt(&mut self, prompt: &str) {
-    self.prompt = if prompt.ends_with(' ') { prompt.into() } else { format!("{} ", prompt) };
+    self.prompt = if prompt.ends_with(' ') { Some(prompt.into()) } else { Some(format!("{} ", prompt)) };
+  }
+
+  pub fn remove_prompt(&mut self) {
+    self.prompt = None;
+  }
+
+  pub fn prompt_width(&self) -> usize {
+    match &self.prompt {
+      None => 0,
+      Some(prompt) => prompt.chars().count(),
+    }
   }
 }
 

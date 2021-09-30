@@ -23,7 +23,11 @@ use tui::{
   Terminal,
 };
 
-use crate::{info::capslock_status, ui::util::titleize, Greeter, Mode};
+use crate::{
+  info::capslock_status,
+  ui::util::{should_hide_cursor, titleize},
+  Greeter, Mode,
+};
 
 pub use self::{
   i18n::MESSAGES,
@@ -40,7 +44,7 @@ type Term = Terminal<TermionBackend<RawTerminal<io::Stdout>>>;
 pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<(), Box<dyn Error>> {
   let mut greeter = greeter.write().await;
 
-  let hide_cursor = if greeter.working || greeter.mode == Mode::Sessions {
+  let hide_cursor = if should_hide_cursor(&greeter) {
     terminal.hide_cursor()?;
     true
   } else {
@@ -143,9 +147,12 @@ where
   Span::from(titleize(&text.into()))
 }
 
-fn prompt_value<'s, S>(text: S) -> Span<'s>
+fn prompt_value<'s, S>(text: Option<S>) -> Span<'s>
 where
   S: Into<String>,
 {
-  Span::styled(text.into(), Style::default().add_modifier(Modifier::BOLD))
+  match text {
+    Some(text) => Span::styled(text.into(), Style::default().add_modifier(Modifier::BOLD)),
+    None => Span::from(""),
+  }
 }

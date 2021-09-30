@@ -4,7 +4,7 @@ use termion::raw::RawTerminal;
 use tui::{
   backend::TermionBackend,
   layout::{Alignment, Constraint, Direction, Layout, Rect},
-  text::Span,
+  text::{Span, Text},
   widgets::{Block, BorderType, Borders, Paragraph},
   Frame,
 };
@@ -56,7 +56,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
   }
 
-  let username_text = prompt_value(fl!("username"));
+  let username_text = prompt_value(Some(fl!("username")));
   let username_label = Paragraph::new(username_text);
 
   let username_value_text = Span::from(greeter.username.clone());
@@ -70,12 +70,13 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
         Rect::new(
           1 + chunks[USERNAME_INDEX].x + fl!("username").len() as u16,
           chunks[USERNAME_INDEX].y,
-          get_input_width(&greeter, &fl!("username")),
+          get_input_width(&greeter, &Some(fl!("username"))),
           1,
         ),
       );
 
-      let answer_text = if greeter.working { Span::from(fl!("wait")) } else { prompt_value(&greeter.prompt) };
+      let answer_text = if greeter.working { Span::from(fl!("wait")) } else { prompt_value(greeter.prompt.as_ref()) };
+
       let answer_label = Paragraph::new(answer_text);
 
       if greeter.mode == Mode::Password || greeter.previous_mode == Mode::Password {
@@ -94,7 +95,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
           f.render_widget(
             answer_value,
             Rect::new(
-              chunks[ANSWER_INDEX].x + greeter.prompt.chars().count() as u16,
+              chunks[ANSWER_INDEX].x + greeter.prompt_width() as u16,
               chunks[ANSWER_INDEX].y,
               get_input_width(&greeter, &greeter.prompt),
               1,
@@ -104,7 +105,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
       }
 
       if let Some(message) = message {
-        let message_text = Span::from(message);
+        let message_text = Text::from(message);
         let message = Paragraph::new(message_text).alignment(Alignment::Center);
 
         f.render_widget(message, Rect::new(x, y + height, width, message_height));
@@ -127,9 +128,9 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
       let offset = get_cursor_offset(&mut greeter, answer.chars().count());
 
       if greeter.secret && !greeter.asterisks {
-        Ok((1 + cursor.x + greeter.prompt.chars().count() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
+        Ok((1 + cursor.x + greeter.prompt_width() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
       } else {
-        Ok((1 + cursor.x + greeter.prompt.chars().count() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
+        Ok((1 + cursor.x + greeter.prompt_width() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
       }
     }
 

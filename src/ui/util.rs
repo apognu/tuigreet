@@ -4,6 +4,10 @@ pub fn titleize(message: &str) -> String {
   format!(" {} ", message)
 }
 
+pub fn should_hide_cursor(greeter: &Greeter) -> bool {
+  greeter.working || (greeter.mode == Mode::Password && greeter.prompt.is_none()) || greeter.mode == Mode::Sessions
+}
+
 pub fn get_height(greeter: &Greeter) -> u16 {
   let (_, greeting_height) = get_greeting_height(&greeter, 1, 0);
   let container_padding = greeter.container_padding();
@@ -11,7 +15,10 @@ pub fn get_height(greeter: &Greeter) -> u16 {
 
   let initial = match greeter.mode {
     Mode::Username | Mode::Command => (2 * container_padding) + 1,
-    Mode::Password => (2 * container_padding) + prompt_padding + 2,
+    Mode::Password => match greeter.prompt {
+      Some(_) => (2 * container_padding) + prompt_padding + 2,
+      None => (2 * container_padding) + 1,
+    },
     Mode::Sessions | Mode::Power => (2 * container_padding),
   };
 
@@ -21,8 +28,13 @@ pub fn get_height(greeter: &Greeter) -> u16 {
   }
 }
 
-pub fn get_input_width(greeter: &Greeter, label: &str) -> u16 {
-  greeter.width() - label.chars().count() as u16 - 4 - 1
+pub fn get_input_width(greeter: &Greeter, label: &Option<String>) -> u16 {
+  let label_width = match label {
+    None => 0,
+    Some(label) => label.chars().count(),
+  };
+
+  greeter.width() - label_width as u16 - 4 - 1
 }
 
 pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
