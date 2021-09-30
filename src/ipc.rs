@@ -88,7 +88,7 @@ impl Ipc {
 
           if let Some(message) = &mut greeter.message {
             message.push('\n');
-            message.push_str(&auth_message.trim_end());
+            message.push_str(auth_message.trim_end());
           } else {
             greeter.message = Some(auth_message.trim_end().to_string());
           }

@@ -9,7 +9,7 @@ pub fn should_hide_cursor(greeter: &Greeter) -> bool {
 }
 
 pub fn get_height(greeter: &Greeter) -> u16 {
-  let (_, greeting_height) = get_greeting_height(&greeter, 1, 0);
+  let (_, greeting_height) = get_greeting_height(greeter, 1, 0);
   let container_padding = greeter.container_padding();
   let prompt_padding = greeter.prompt_padding();
 

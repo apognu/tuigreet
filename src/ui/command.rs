@@ -16,7 +16,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
   let size = f.size();
 
   let width = greeter.width();
-  let height = get_height(&greeter);
+  let height = get_height(greeter);
   let container_padding = greeter.container_padding();
   let x = (size.width - width) / 2;
   let y = (size.height - height) / 2;
@@ -43,7 +43,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
   f.render_widget(command_label, chunks[0]);
   f.render_widget(
     command_value,
-    Rect::new(1 + chunks[0].x + fl!("new_command").len() as u16, chunks[0].y, get_input_width(&greeter, &Some(fl!("new_command"))), 1),
+    Rect::new(1 + chunks[0].x + fl!("new_command").len() as u16, chunks[0].y, get_input_width(greeter, &Some(fl!("new_command"))), 1),
   );
 
   let new_command = greeter.new_command.clone();

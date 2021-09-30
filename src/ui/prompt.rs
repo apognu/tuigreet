@@ -20,7 +20,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
   let size = f.size();
 
   let width = greeter.width();
-  let height = get_height(&greeter);
+  let height = get_height(greeter);
   let container_padding = greeter.container_padding();
   let prompt_padding = greeter.prompt_padding();
   let x = (size.width - width) / 2;
@@ -34,8 +34,8 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
 
   f.render_widget(block, container);
 
-  let (message, message_height) = get_message_height(&greeter, container_padding, 1);
-  let (greeting, greeting_height) = get_greeting_height(&greeter, container_padding, 0);
+  let (message, message_height) = get_message_height(greeter, container_padding, 1);
+  let (greeting, greeting_height) = get_greeting_height(greeter, container_padding, 0);
 
   let username_padding = if greeter.mode == Mode::Username && prompt_padding == 0 { 1 } else { prompt_padding };
   let answer_padding = if prompt_padding == 0 { 1 } else { prompt_padding };
@@ -70,7 +70,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
         Rect::new(
           1 + chunks[USERNAME_INDEX].x + fl!("username").len() as u16,
           chunks[USERNAME_INDEX].y,
-          get_input_width(&greeter, &Some(fl!("username"))),
+          get_input_width(greeter, &Some(fl!("username"))),
           1,
         ),
       );
@@ -97,7 +97,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTermi
             Rect::new(
               chunks[ANSWER_INDEX].x + greeter.prompt_width() as u16,
               chunks[ANSWER_INDEX].y,
-              get_input_width(&greeter, &greeter.prompt),
+              get_input_width(greeter, &greeter.prompt),
               1,
             ),
           );

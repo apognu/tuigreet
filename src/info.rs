@@ -29,11 +29,11 @@ pub fn get_issue() -> Option<String> {
       issue
         .replace("\\S", "Linux")
         .replace("\\l", &format!("tty{}", vtnr))
-        .replace("\\s", &uts.sysname())
-        .replace("\\r", &uts.release())
-        .replace("\\v", &uts.version())
-        .replace("\\n", &uts.nodename())
-        .replace("\\m", &uts.machine())
+        .replace("\\s", uts.sysname())
+        .replace("\\r", uts.release())
+        .replace("\\v", uts.version())
+        .replace("\\n", uts.nodename())
+        .replace("\\m", uts.machine())
         .replace("\\\\", "\\"),
     );
   }
