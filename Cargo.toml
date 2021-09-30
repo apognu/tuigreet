@@ -8,7 +8,7 @@ build = "build.rs"
 [dependencies]
 chrono = { version = "^0.4.19", features = ["unstable-locales"] }
 getopts = "^0.2.21"
-greetd_ipc = { git = "https://git.sr.ht/~kennylevinsen/greetd", features = ["tokio-codec"] }
+greetd_ipc = { version = "0.8.0", features = ["tokio-codec"] }
 i18n-embed = { version = "^0.12.1", features = ["desktop-requester", "fluent-system"] }
 i18n-embed-fl = "^0.5.0"
 lazy_static = "^1.4.0"
