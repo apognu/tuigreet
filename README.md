@@ -29,6 +29,10 @@ Options:
                         padding inside the main prompt container (default: 1)
         --prompt-padding PADDING
                         padding between prompt rows (default: 1)
+        --power-shutdown 'CMD [ARGS]...'
+                        command to run to shut down the system
+        --power-reboot 'CMD [ARGS]...'
+                        command to run to reboot the system
 ```
 
 ## Usage

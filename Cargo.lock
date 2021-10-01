@@ -833,15 +833,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "system_shutdown"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "035e081d603551d8d78db27d2232913269c749ea67648c369100049820406a14"
-dependencies = [
- "winapi",
-]
-
-[[package]]
 name = "termion"
 version = "1.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -965,7 +956,6 @@ dependencies = [
  "rust-embed",
  "rust-ini",
  "smart-default",
- "system_shutdown",
  "termion",
  "textwrap",
  "tokio",

@@ -9,6 +9,7 @@ mod greeter;
 mod info;
 mod ipc;
 mod keyboard;
+mod power;
 mod ui;
 
 use std::{error::Error, io, process, sync::Arc};

@@ -12,19 +12,14 @@ use tui::{
 };
 
 use super::util::*;
-use crate::Greeter;
-
-pub enum Option {
-  Shutdown,
-  Reboot,
-}
+use crate::{power::PowerOption, Greeter};
 
 lazy_static! {
-  pub static ref OPTIONS: [(Option, String); 2] = {
+  pub static ref OPTIONS: [(PowerOption, String); 2] = {
     let shutdown = fl!("shutdown");
     let reboot = fl!("reboot");
 
-    [(Option::Shutdown, shutdown), (Option::Reboot, reboot)]
+    [(PowerOption::Shutdown, shutdown), (PowerOption::Reboot, reboot)]
   };
 }
 

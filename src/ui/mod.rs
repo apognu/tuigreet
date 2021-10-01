@@ -29,10 +29,7 @@ use crate::{
   Greeter, Mode,
 };
 
-pub use self::{
-  i18n::MESSAGES,
-  power::{Option as PowerOption, OPTIONS as POWER_OPTIONS},
-};
+pub use self::{i18n::MESSAGES, power::OPTIONS as POWER_OPTIONS};
 
 const TITLEBAR_INDEX: usize = 1;
 const STATUSBAR_INDEX: usize = 3;

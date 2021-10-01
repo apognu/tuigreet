@@ -1,4 +1,5 @@
 use std::{
+  collections::HashMap,
   convert::TryInto,
   env,
   error::Error,
@@ -19,7 +20,10 @@ use tokio::{
 };
 use zeroize::Zeroize;
 
-use crate::info::{get_issue, get_last_session, get_last_username};
+use crate::{
+  info::{get_issue, get_last_session, get_last_username},
+  power::PowerOption,
+};
 
 const DEFAULT_LOCALE: Locale = Locale::en_US;
 const DEFAULT_ASTERISKS_CHAR: char = '*';
@@ -81,6 +85,8 @@ pub struct Greeter {
   pub asterisks_char: char,
   pub greeting: Option<String>,
   pub message: Option<String>,
+
+  pub power_commands: HashMap<PowerOption, String>,
 
   pub working: bool,
   pub done: bool,
@@ -241,6 +247,9 @@ impl Greeter {
     opts.optopt("", "container-padding", "padding inside the main prompt container (default: 1)", "PADDING");
     opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
 
+    opts.optopt("", "power-shutdown", "command to run to shut down the system", "'CMD [ARGS]...'");
+    opts.optopt("", "power-reboot", "command to run to reboot the system", "'CMD [ARGS]...'");
+
     self.config = match opts.parse(&env::args().collect::<Vec<String>>()) {
       Ok(matches) => Some(matches),
 
@@ -294,6 +303,13 @@ impl Greeter {
 
     if self.config().opt_present("issue") {
       self.greeting = get_issue();
+    }
+
+    if let Some(command) = self.config().opt_str("power-shutdown") {
+      self.power_commands.insert(PowerOption::Shutdown, command);
+    }
+    if let Some(command) = self.config().opt_str("power-reboot") {
+      self.power_commands.insert(PowerOption::Reboot, command);
     }
 
     self.connect().await;

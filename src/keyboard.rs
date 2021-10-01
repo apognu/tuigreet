@@ -1,7 +1,6 @@
 use std::{error::Error, sync::Arc};
 
 use greetd_ipc::Request;
-use system_shutdown::{reboot, shutdown};
 use termion::event::Key;
 use tokio::sync::RwLock;
 
@@ -9,7 +8,8 @@ use crate::{
   event::{Event, Events},
   info::write_last_session,
   ipc::Ipc,
-  ui::{PowerOption, POWER_OPTIONS},
+  power::power,
+  ui::POWER_OPTIONS,
   Greeter, Mode,
 };
 
@@ -148,10 +148,13 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Power => {
-          let _ = match POWER_OPTIONS[greeter.selected_power_option] {
-            (PowerOption::Shutdown, _) => shutdown(),
-            (PowerOption::Reboot, _) => reboot(),
-          };
+          if let Some((option, _)) = POWER_OPTIONS.get(greeter.selected_power_option) {
+            match power(&greeter, *option) {
+              Ok(status) if status.success() => {}
+              Ok(status) => greeter.message = Some(format!("Command exited with {}", status)),
+              Err(err) => greeter.message = Some(format!("Command failed: {}", err)),
+            }
+          }
 
           greeter.mode = greeter.previous_mode;
         }
