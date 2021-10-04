@@ -33,6 +33,8 @@ Options:
                         command to run to shut down the system
         --power-reboot 'CMD [ARGS]...'
                         command to run to reboot the system
+        --power-no-setsid
+                        do not prefix power commands with setsid
 ```
 
 ## Usage

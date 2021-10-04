@@ -5,7 +5,7 @@ pub fn titleize(message: &str) -> String {
 }
 
 pub fn should_hide_cursor(greeter: &Greeter) -> bool {
-  greeter.working || (greeter.mode == Mode::Password && greeter.prompt.is_none()) || greeter.mode == Mode::Sessions || greeter.mode == Mode::Power
+  greeter.working || (greeter.mode == Mode::Password && greeter.prompt.is_none()) || greeter.mode == Mode::Sessions || greeter.mode == Mode::Power || greeter.mode == Mode::Processing
 }
 
 pub fn get_height(greeter: &Greeter) -> u16 {
@@ -19,11 +19,11 @@ pub fn get_height(greeter: &Greeter) -> u16 {
       Some(_) => (2 * container_padding) + prompt_padding + 2,
       None => (2 * container_padding) + 1,
     },
-    Mode::Sessions | Mode::Power => (2 * container_padding),
+    Mode::Sessions | Mode::Power | Mode::Processing => (2 * container_padding),
   };
 
   match greeter.mode {
-    Mode::Command | Mode::Sessions | Mode::Power => initial,
+    Mode::Command | Mode::Sessions | Mode::Power | Mode::Processing => initial,
     _ => initial + greeting_height,
   }
 }

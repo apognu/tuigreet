@@ -8,7 +8,7 @@ action_command = Change command
 action_session = Choose session
 action_power = Power
 
-date = %a, %d %h %Y - %H:%M
+date = %a, %d %h %Y - %H:%M:%S
 
 username = Username:
 wait = Please wait...

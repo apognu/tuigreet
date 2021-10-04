@@ -13,6 +13,7 @@ use getopts::{Matches, Options};
 use i18n_embed::DesktopLanguageRequester;
 use tokio::{
   net::UnixStream,
+  process::Command,
   sync::{
     oneshot::{Receiver, Sender},
     RwLock, RwLockWriteGuard,
@@ -43,7 +44,7 @@ impl Display for AuthStatus {
 
 impl Error for AuthStatus {}
 
-#[derive(SmartDefault, Copy, Clone, PartialEq)]
+#[derive(SmartDefault, Debug, Copy, Clone, PartialEq)]
 pub enum Mode {
   #[default]
   Username,
@@ -51,6 +52,7 @@ pub enum Mode {
   Command,
   Sessions,
   Power,
+  Processing,
 }
 
 #[derive(SmartDefault)]
@@ -87,6 +89,8 @@ pub struct Greeter {
   pub message: Option<String>,
 
   pub power_commands: HashMap<PowerOption, String>,
+  pub power_command: Option<Command>,
+  pub power_setsid: bool,
 
   pub working: bool,
   pub done: bool,
@@ -249,6 +253,7 @@ impl Greeter {
 
     opts.optopt("", "power-shutdown", "command to run to shut down the system", "'CMD [ARGS]...'");
     opts.optopt("", "power-reboot", "command to run to reboot the system", "'CMD [ARGS]...'");
+    opts.optflag("", "power-no-setsid", "do not prefix power commands with setsid");
 
     self.config = match opts.parse(&env::args().collect::<Vec<String>>()) {
       Ok(matches) => Some(matches),
@@ -311,6 +316,8 @@ impl Greeter {
     if let Some(command) = self.config().opt_str("power-reboot") {
       self.power_commands.insert(PowerOption::Reboot, command);
     }
+
+    self.power_setsid = !self.config().opt_present("power-no-setsid");
 
     self.connect().await;
   }

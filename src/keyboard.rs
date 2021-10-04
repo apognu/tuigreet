@@ -149,15 +149,13 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
 
         Mode::Power => {
           if let Some((option, _)) = POWER_OPTIONS.get(greeter.selected_power_option) {
-            match power(&greeter, *option) {
-              Ok(status) if status.success() => {}
-              Ok(status) => greeter.message = Some(format!("Command exited with {}", status)),
-              Err(err) => greeter.message = Some(format!("Command failed: {}", err)),
-            }
+            power(&mut greeter, *option);
           }
 
           greeter.mode = greeter.previous_mode;
         }
+
+        Mode::Processing => {}
       },
 
       Key::Char(c) => insert_key(&mut greeter, c).await,
@@ -190,7 +188,7 @@ async fn insert_key(greeter: &mut Greeter, c: char) {
     Mode::Username => greeter.username.clone(),
     Mode::Password => greeter.answer.clone(),
     Mode::Command => greeter.new_command.clone(),
-    Mode::Sessions | Mode::Power => return,
+    Mode::Sessions | Mode::Power | Mode::Processing => return,
   };
 
   let index = (value.chars().count() as i16 + greeter.cursor_offset) as usize;
@@ -213,7 +211,7 @@ async fn delete_key(greeter: &mut Greeter, key: Key) {
     Mode::Username => greeter.username.clone(),
     Mode::Password => greeter.answer.clone(),
     Mode::Command => greeter.new_command.clone(),
-    Mode::Sessions | Mode::Power => return,
+    Mode::Sessions | Mode::Power | Mode::Processing => return,
   };
 
   let index = match key {
@@ -232,7 +230,7 @@ async fn delete_key(greeter: &mut Greeter, key: Key) {
       Mode::Username => greeter.username = value,
       Mode::Password => greeter.answer = value,
       Mode::Command => greeter.new_command = value,
-      Mode::Sessions | Mode::Power => return,
+      Mode::Sessions | Mode::Power | Mode::Processing => return,
     };
 
     if let Key::Delete = key {

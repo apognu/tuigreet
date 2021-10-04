@@ -1,7 +1,6 @@
-use std::{
-  io,
-  process::{Command, ExitStatus, Stdio},
-};
+use std::process::Stdio;
+
+use tokio::process::Command;
 
 use crate::Greeter;
 
@@ -11,8 +10,8 @@ pub enum PowerOption {
   Reboot,
 }
 
-pub fn power(greeter: &Greeter, option: PowerOption) -> Result<ExitStatus, io::Error> {
-  let mut command = match greeter.power_commands.get(&option) {
+pub fn power(greeter: &mut Greeter, option: PowerOption) {
+  let command = match greeter.power_commands.get(&option) {
     None => {
       let mut command = Command::new("shutdown");
 
@@ -25,15 +24,30 @@ pub fn power(greeter: &Greeter, option: PowerOption) -> Result<ExitStatus, io::E
       command
     }
 
-    Some(command) => {
-      let mut args: Vec<&str> = command.split(' ').collect();
-      let exe = args.remove(0);
+    Some(args) => {
+      let mut command = match greeter.power_setsid {
+        true => {
+          let mut command = Command::new("setsid");
+          command.args(args.split(' '));
+          command
+        }
 
-      let mut command = Command::new(exe);
-      command.args(args);
+        false => {
+          let mut args = args.split(' ');
+
+          let mut command = Command::new(args.next().unwrap_or_default());
+          command.args(args);
+          command
+        }
+      };
+
+      command.stdin(Stdio::null());
+      command.stdout(Stdio::null());
+      command.stderr(Stdio::null());
+
       command
     }
   };
 
-  command.stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).env_clear().status()
+  greeter.power_command = Some(command);
 }

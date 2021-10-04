@@ -1,6 +1,7 @@
 mod command;
 mod i18n;
 mod power;
+mod processing;
 mod prompt;
 mod sessions;
 mod util;
@@ -111,6 +112,7 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
       Mode::Command => self::command::draw(&mut greeter, &mut f).ok(),
       Mode::Sessions => self::sessions::draw(&mut greeter, &mut f).ok(),
       Mode::Power => self::power::draw(&mut greeter, &mut f).ok(),
+      Mode::Processing => self::processing::draw(&mut greeter, &mut f).ok(),
       _ => self::prompt::draw(&mut greeter, &mut f).ok(),
     };
 
