@@ -66,9 +66,25 @@ tuigreet - A graphical console greeter for greetd
 *--prompt-padding ROWS*
 	Add spacing between form fields.
 
+*--power-shutdown CMD [ARGS]...*
+	Customize the command run when instructed to shut down the machine. This must
+	be a non-interactive command (sudo cannot prompt for a password, for example).
+
+*--power-reboot CMD [ARGS]...*
+	Customize the command run when instructed to reboot the machine. This must be
+	a non-interactive command (sudo cannot prompt for a password, for example).
+
+*--power-no-setsid*
+	Do not prefix power commands with *setsid*, which is used to detach it from
+	current TTY.
+
+
 # AUTHORS
 
 Maintained by Antoine POPINEAU <antoine@popineau.eu>.
+
+Contributed to by great people at
+https://github.com/apognu/tuigreet/graphs/contributors.
 
 # DEVELOPMENT
 

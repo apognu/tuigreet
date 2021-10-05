@@ -144,3 +144,18 @@ Then refer to your wrapper script in a custom desktop file (in a directory decla
 Name=Wayland Gnome
 Exec=/path/to/my/wrapper.sh
 ```
+
+### Power management
+
+Two power actions are possible from `tuigreet`, shutting down (through `shutdown -h now`) and rebooting (with `shutdown -r now`) the machine. This requires that those commands be executable by regular users, which is not the case on some distros.
+
+To alleviate this, there are two options that can be used to customize the commands that are run: `--power-shutdown` and `--power-reboot`. The provided commands must be non-interactive, meaning they will not be able to print anything or prompt for anything. If you need to use `sudo` or `doas`, they will need to be configured to run passwordless for those specific commands.
+
+An example for `/etc/greetd/config.toml`:
+
+```
+[default_session]
+command = "tuigreet --power-shutdown 'sudo systemctl poweroff'"
+```
+
+Note that, by default, all commands are prefixed with `setsid` to completely detach the command from our TTY. If you would prefer to run the commands as is, or if `setsid` does not exist on your system, you can use `--power-no-setsid`.
