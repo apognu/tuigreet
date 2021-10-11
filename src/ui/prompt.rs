@@ -1,21 +1,22 @@
-use std::{error::Error, io};
+use std::error::Error;
 
 use tui::{
-  backend::CrosstermBackend,
   layout::{Alignment, Constraint, Direction, Layout, Rect},
   text::{Span, Text},
   widgets::{Block, BorderType, Borders, Paragraph},
-  Frame,
 };
 
-use super::{prompt_value, util::*};
-use crate::{info::get_hostname, Greeter, Mode};
+use crate::{
+  info::get_hostname,
+  ui::{prompt_value, util::*, Frame},
+  Greeter, Mode,
+};
 
 const GREETING_INDEX: usize = 0;
 const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 2;
 
-pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, CrosstermBackend<io::Stdout>>) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(mut greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();

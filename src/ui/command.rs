@@ -1,17 +1,18 @@
-use std::{error::Error, io};
+use std::error::Error;
 
 use tui::{
-  backend::CrosstermBackend,
   layout::{Constraint, Direction, Layout, Rect},
   text::Span,
   widgets::{Block, BorderType, Borders, Paragraph},
-  Frame,
 };
 
-use super::prompt_value;
-use crate::{ui::util::*, Greeter};
+use crate::{
+  ui::util::*,
+  ui::{prompt_value, Frame},
+  Greeter,
+};
 
-pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, CrosstermBackend<io::Stdout>>) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(mut greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();

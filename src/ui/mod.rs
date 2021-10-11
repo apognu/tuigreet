@@ -20,7 +20,7 @@ use tui::{
   style::{Modifier, Style},
   text::{Span, Spans},
   widgets::Paragraph,
-  Terminal,
+  Frame as CrosstermFrame, Terminal,
 };
 
 use crate::{
@@ -36,7 +36,9 @@ const STATUSBAR_INDEX: usize = 3;
 const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
 
-type Term = Terminal<CrosstermBackend<io::Stdout>>;
+pub(super) type Backend = CrosstermBackend<io::Stdout>;
+pub(super) type Term = Terminal<Backend>;
+pub(super) type Frame<'a> = CrosstermFrame<'a, Backend>;
 
 pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<(), Box<dyn Error>> {
   let mut greeter = greeter.write().await;

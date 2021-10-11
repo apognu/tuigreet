@@ -1,17 +1,18 @@
-use std::{error::Error, io};
+use std::error::Error;
 
 use lazy_static::lazy_static;
 use tui::{
-  backend::CrosstermBackend,
   layout::Rect,
   style::{Modifier, Style},
   text::Span,
   widgets::{Block, BorderType, Borders, Paragraph},
-  Frame,
 };
 
-use super::util::*;
-use crate::{power::PowerOption, Greeter};
+use crate::{
+  power::PowerOption,
+  ui::{util::*, Frame},
+  Greeter,
+};
 
 lazy_static! {
   pub static ref OPTIONS: [(PowerOption, String); 2] = {
@@ -22,7 +23,7 @@ lazy_static! {
   };
 }
 
-pub fn draw(greeter: &mut Greeter, f: &mut Frame<'_, CrosstermBackend<io::Stdout>>) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(greeter: &mut Greeter, f: &mut Frame<'_>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();
