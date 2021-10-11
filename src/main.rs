@@ -14,10 +14,13 @@ mod ui;
 
 use std::{error::Error, io, process, sync::Arc};
 
+use crossterm::{
+  execute,
+  terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen},
+};
 use greetd_ipc::Request;
-use termion::raw::IntoRawMode;
 use tokio::sync::RwLock;
-use tui::{backend::TermionBackend, Terminal};
+use tui::{backend::CrosstermBackend, Terminal};
 
 pub use self::greeter::*;
 use self::{event::Events, ipc::Ipc};
@@ -36,8 +39,13 @@ async fn main() {
 async fn run() -> Result<(), Box<dyn Error>> {
   let greeter = Greeter::new().await;
 
-  let stdout = io::stdout().into_raw_mode()?;
-  let backend = TermionBackend::new(stdout);
+  enable_raw_mode()?;
+
+  let mut stdout = io::stdout();
+
+  execute!(stdout, EnterAlternateScreen)?;
+
+  let backend = CrosstermBackend::new(stdout);
   let mut terminal = Terminal::new(backend)?;
 
   terminal.clear()?;
@@ -94,10 +102,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
   });
 
   loop {
-    if let Some(ref mut rx) = greeter.write().await.exit_rx {
-      if let Ok(status) = rx.try_recv() {
-        return Err(status.into());
-      }
+    if let Some(status) = greeter.read().await.exit {
+      return Err(status.into());
     }
 
     ui::draw(greeter.clone(), &mut terminal).await?;
@@ -112,14 +118,13 @@ pub async fn exit(mut greeter: &mut Greeter, status: AuthStatus) {
   }
 
   clear_screen();
+  let _ = disable_raw_mode();
 
-  if let Some(tx) = greeter.exit_tx.take() {
-    let _ = tx.send(status);
-  }
+  greeter.exit = Some(status);
 }
 
 pub fn clear_screen() {
-  let backend = TermionBackend::new(io::stdout());
+  let backend = CrosstermBackend::new(io::stdout());
 
   if let Ok(mut terminal) = Terminal::new(backend) {
     let _ = terminal.clear();
@@ -130,7 +135,10 @@ pub fn clear_screen() {
 pub fn log(msg: &str) {
   use std::io::Write;
 
+  let time = chrono::Utc::now();
+
   let mut file = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/tuigreet.log").unwrap();
+  file.write_all(format!("{:?} - ", time).as_ref()).unwrap();
   file.write_all(msg.as_ref()).unwrap();
   file.write_all("\n".as_bytes()).unwrap();
 }

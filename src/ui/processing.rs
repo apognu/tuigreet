@@ -1,8 +1,7 @@
 use std::{error::Error, io};
 
-use termion::raw::RawTerminal;
 use tui::{
-  backend::TermionBackend,
+  backend::CrosstermBackend,
   layout::{Alignment, Constraint, Direction, Layout, Rect},
   text::Span,
   widgets::{Block, BorderType, Borders, Paragraph},
@@ -12,7 +11,7 @@ use tui::{
 use super::util::*;
 use crate::Greeter;
 
-pub fn draw(greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(greeter: &mut Greeter, f: &mut Frame<'_, CrosstermBackend<io::Stdout>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();

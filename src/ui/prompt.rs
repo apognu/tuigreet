@@ -1,8 +1,7 @@
 use std::{error::Error, io};
 
-use termion::raw::RawTerminal;
 use tui::{
-  backend::TermionBackend,
+  backend::CrosstermBackend,
   layout::{Alignment, Constraint, Direction, Layout, Rect},
   text::{Span, Text},
   widgets::{Block, BorderType, Borders, Paragraph},
@@ -16,7 +15,7 @@ const GREETING_INDEX: usize = 0;
 const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 2;
 
-pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(mut greeter: &mut Greeter, f: &mut Frame<'_, CrosstermBackend<io::Stdout>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();

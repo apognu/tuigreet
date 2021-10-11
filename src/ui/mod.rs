@@ -13,10 +13,9 @@ use std::{
 };
 
 use chrono::prelude::*;
-use termion::raw::RawTerminal;
 use tokio::sync::RwLock;
 use tui::{
-  backend::TermionBackend,
+  backend::CrosstermBackend,
   layout::{Alignment, Constraint, Direction, Layout},
   style::{Modifier, Style},
   text::{Span, Spans},
@@ -37,7 +36,7 @@ const STATUSBAR_INDEX: usize = 3;
 const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
 
-type Term = Terminal<TermionBackend<RawTerminal<io::Stdout>>>;
+type Term = Terminal<CrosstermBackend<io::Stdout>>;
 
 pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<(), Box<dyn Error>> {
   let mut greeter = greeter.write().await;

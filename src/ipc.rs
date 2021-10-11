@@ -106,6 +106,7 @@ impl Ipc {
           crate::exit(&mut greeter, AuthStatus::Success).await;
         } else if let Some(command) = &greeter.command {
           greeter.done = true;
+          greeter.mode = Mode::Processing;
 
           #[cfg(not(debug_assertions))]
           self.send(Request::StartSession { cmd: vec![command.clone()] }).await;

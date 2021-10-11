@@ -1,9 +1,8 @@
 use std::{error::Error, io};
 
 use lazy_static::lazy_static;
-use termion::raw::RawTerminal;
 use tui::{
-  backend::TermionBackend,
+  backend::CrosstermBackend,
   layout::Rect,
   style::{Modifier, Style},
   text::Span,
@@ -23,7 +22,7 @@ lazy_static! {
   };
 }
 
-pub fn draw(greeter: &mut Greeter, f: &mut Frame<'_, TermionBackend<RawTerminal<io::Stdout>>>) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(greeter: &mut Greeter, f: &mut Frame<'_, CrosstermBackend<io::Stdout>>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();
