@@ -1,8 +1,8 @@
-use std::process::Stdio;
+use std::{process::Stdio, sync::Arc};
 
-use tokio::process::Command;
+use tokio::{process::Command, sync::RwLock};
 
-use crate::Greeter;
+use crate::{Greeter, Mode};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PowerOption {
@@ -50,4 +50,25 @@ pub fn power(greeter: &mut Greeter, option: PowerOption) {
   };
 
   greeter.power_command = Some(command);
+}
+
+pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) {
+  greeter.write().await.mode = Mode::Processing;
+
+  let message = match tokio::spawn(async move { command.status().await }).await {
+    Ok(result) => match result {
+      Ok(status) if status.success() => None,
+      Ok(status) => Some(format!("Command exited with {}", status)),
+      Err(err) => Some(format!("Command failed: {}", err)),
+    },
+
+    Err(_) => Some("Command failed".to_string()),
+  };
+
+  let mode = greeter.read().await.previous_mode;
+
+  let mut greeter = greeter.write().await;
+
+  greeter.mode = mode;
+  greeter.message = message;
 }

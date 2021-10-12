@@ -38,11 +38,9 @@ async fn main() {
 
 async fn run() -> Result<(), Box<dyn Error>> {
   let greeter = Greeter::new().await;
-
-  enable_raw_mode()?;
-
   let mut stdout = io::stdout();
 
+  enable_raw_mode()?;
   execute!(stdout, EnterAlternateScreen)?;
 
   let backend = CrosstermBackend::new(stdout);
@@ -75,27 +73,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
     async move {
       loop {
-        let command = greeter.write().await.power_command.take();
-
-        if let Some(mut command) = command {
-          greeter.write().await.mode = Mode::Processing;
-
-          let message = match tokio::spawn(async move { command.status().await }).await {
-            Ok(result) => match result {
-              Ok(status) if status.success() => None,
-              Ok(status) => Some(format!("Command exited with {}", status)),
-              Err(err) => Some(format!("Command failed: {}", err)),
-            },
-
-            Err(_) => Some("Command failed".to_string()),
-          };
-
-          let mode = greeter.read().await.previous_mode;
-
-          let mut greeter = greeter.write().await;
-
-          greeter.mode = mode;
-          greeter.message = message;
+        if let Some(command) = greeter.write().await.power_command.take() {
+          power::run(&greeter, command).await;
         }
       }
     }
