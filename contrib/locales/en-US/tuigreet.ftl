@@ -19,5 +19,8 @@ new_command = New command:
 shutdown = Shut down
 reboot = Reboot
 
+command_exited = Command exited with
+command_failed = Command failed
+
 status_command = CMD
 status_caps = CAPS LOCK

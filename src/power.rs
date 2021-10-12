@@ -58,11 +58,11 @@ pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) {
   let message = match tokio::spawn(async move { command.status().await }).await {
     Ok(result) => match result {
       Ok(status) if status.success() => None,
-      Ok(status) => Some(format!("Command exited with {}", status)),
-      Err(err) => Some(format!("Command failed: {}", err)),
+      Ok(status) => Some(format!("{} {}", fl!("command_exited"), status)),
+      Err(err) => Some(format!("{}: {}", fl!("command_failed"), err)),
     },
 
-    Err(_) => Some("Command failed".to_string()),
+    Err(_) => Some(fl!("command_failed")),
   };
 
   let mode = greeter.read().await.previous_mode;

@@ -19,5 +19,8 @@ command = Nouvelle commande :
 shutdown = Eteindre
 reboot = Redémarrer
 
+command_exited = La commande a retourné
+command_failed = Echec de la commande
+
 status_command = CMD
 status_caps = VERR. MAJ.
