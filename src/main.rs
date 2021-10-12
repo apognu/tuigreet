@@ -73,7 +73,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
     async move {
       loop {
-        if let Some(command) = greeter.write().await.power_command.take() {
+        let command = greeter.write().await.power_command.take();
+
+        if let Some(command) = command {
           power::run(&greeter, command).await;
         }
       }
