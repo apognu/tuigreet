@@ -3,7 +3,7 @@ use std::{
   error::Error,
   fs, io,
   path::{Path, PathBuf},
-  process::{Command, Output},
+  process::Command,
 };
 
 use ini::Ini;
@@ -86,15 +86,11 @@ where
 }
 
 pub fn capslock_status() -> bool {
-  match command("kbdinfo", &["gkbled", "capslock"]) {
+  let mut command = Command::new("kbdinfo");
+  command.args(["gkbled", "capslock"]);
+
+  match command.output() {
     Ok(output) => output.status.code() == Some(0),
     Err(_) => false,
   }
-}
-
-pub fn command<S>(name: S, args: &[&str]) -> io::Result<Output>
-where
-  S: Into<String>,
-{
-  Command::new(name.into()).args(args).output()
 }

@@ -72,13 +72,15 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
       f.render_widget(time, chunks[TITLEBAR_INDEX]);
     }
 
+    let status_block_size = (size.width - (2 * greeter.window_padding())) / 2;
+
     let status_chunks = Layout::default()
       .direction(Direction::Horizontal)
       .constraints(
         [
           Constraint::Length(greeter.window_padding()),
-          Constraint::Percentage(50),
-          Constraint::Percentage(50),
+          Constraint::Length(status_block_size),
+          Constraint::Length(status_block_size),
           Constraint::Length(greeter.window_padding()),
         ]
         .as_ref(),
