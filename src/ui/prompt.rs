@@ -59,7 +59,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<
   let username_text = prompt_value(Some(fl!("username")));
   let username_label = Paragraph::new(username_text);
 
-  let username_value_text = Span::from(greeter.username.clone());
+  let username_value_text = Span::from(greeter.username.as_str());
   let username_value = Paragraph::new(username_value_text);
 
   match greeter.mode {
@@ -117,15 +117,15 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<
 
   match greeter.mode {
     Mode::Username => {
-      let username = greeter.username.clone();
-      let offset = get_cursor_offset(&mut greeter, username.chars().count());
+      let username_length = greeter.username.chars().count();
+      let offset = get_cursor_offset(&mut greeter, username_length);
 
       Ok((2 + cursor.x + fl!("username").len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
     }
 
     Mode::Password => {
-      let answer = greeter.answer.clone();
-      let offset = get_cursor_offset(&mut greeter, answer.chars().count());
+      let answer_length = greeter.answer.chars().count();
+      let offset = get_cursor_offset(&mut greeter, answer_length);
 
       if greeter.secret && !greeter.asterisks {
         Ok((1 + cursor.x + greeter.prompt_width() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))

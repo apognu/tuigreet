@@ -108,8 +108,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
       } => {
         let value = {
           match greeter.mode {
-            Mode::Username => greeter.username.clone(),
-            _ => greeter.answer.clone(),
+            Mode::Username => &greeter.username,
+            _ => &greeter.answer,
           }
         };
 
@@ -144,10 +144,10 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Command => {
-          let cmd = greeter.command.clone();
+          let cmd = &greeter.command;
 
-          greeter.command = Some(greeter.new_command.clone());
           greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == cmd.as_ref()).unwrap_or(0);
+          greeter.command = Some(greeter.new_command.clone());
 
           if greeter.remember_session {
             write_last_session(&greeter.new_command);
@@ -163,11 +163,11 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
           };
 
           if let Some(command) = session {
-            greeter.command = Some(command.clone());
-
             if greeter.remember_session {
               write_last_session(&command);
             }
+
+            greeter.command = Some(command);
           }
 
           greeter.mode = greeter.previous_mode;
@@ -197,9 +197,9 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
 
 async fn insert_key(greeter: &mut Greeter, c: char) {
   let value = match greeter.mode {
-    Mode::Username => greeter.username.clone(),
-    Mode::Password => greeter.answer.clone(),
-    Mode::Command => greeter.new_command.clone(),
+    Mode::Username => &greeter.username,
+    Mode::Password => &greeter.answer,
+    Mode::Command => &greeter.new_command,
     Mode::Sessions | Mode::Power | Mode::Processing => return,
   };
 
@@ -220,9 +220,9 @@ async fn insert_key(greeter: &mut Greeter, c: char) {
 
 async fn delete_key(greeter: &mut Greeter, key: KeyCode) {
   let value = match greeter.mode {
-    Mode::Username => greeter.username.clone(),
-    Mode::Password => greeter.answer.clone(),
-    Mode::Command => greeter.new_command.clone(),
+    Mode::Username => &greeter.username,
+    Mode::Password => &greeter.answer,
+    Mode::Command => &greeter.new_command,
     Mode::Sessions | Mode::Power | Mode::Processing => return,
   };
 
