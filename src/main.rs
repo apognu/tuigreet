@@ -78,6 +78,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
         if let Some(command) = command {
           power::run(&greeter, command).await;
         }
+        
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await
       }
     }
   });
