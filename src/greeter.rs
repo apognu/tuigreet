@@ -14,7 +14,7 @@ use i18n_embed::DesktopLanguageRequester;
 use tokio::{
   net::UnixStream,
   process::Command,
-  sync::{RwLock, RwLockWriteGuard},
+  sync::{Notify, RwLock, RwLockWriteGuard},
 };
 use zeroize::Zeroize;
 
@@ -87,6 +87,7 @@ pub struct Greeter {
 
   pub power_commands: HashMap<PowerOption, String>,
   pub power_command: Option<Command>,
+  pub power_command_notify: Arc<Notify>,
   pub power_setsid: bool,
 
   pub working: bool,

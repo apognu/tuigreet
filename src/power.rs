@@ -50,6 +50,7 @@ pub fn power(greeter: &mut Greeter, option: PowerOption) {
   };
 
   greeter.power_command = Some(command);
+  greeter.power_command_notify.notify_one();
 }
 
 pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) {

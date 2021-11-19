@@ -70,16 +70,17 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
   tokio::task::spawn({
     let greeter = greeter.clone();
+    let notify = greeter.read().await.power_command_notify.clone();
 
     async move {
       loop {
+        notify.notified().await;
+
         let command = greeter.write().await.power_command.take();
 
         if let Some(command) = command {
           power::run(&greeter, command).await;
         }
-        
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await
       }
     }
   });
