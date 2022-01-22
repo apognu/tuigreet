@@ -16,7 +16,7 @@ const GREETING_INDEX: usize = 0;
 const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 2;
 
-pub fn draw(mut greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();
@@ -118,14 +118,14 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<
   match greeter.mode {
     Mode::Username => {
       let username_length = greeter.username.chars().count();
-      let offset = get_cursor_offset(&mut greeter, username_length);
+      let offset = get_cursor_offset(greeter, username_length);
 
       Ok((2 + cursor.x + fl!("username").len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
     }
 
     Mode::Password => {
       let answer_length = greeter.answer.chars().count();
-      let offset = get_cursor_offset(&mut greeter, answer_length);
+      let offset = get_cursor_offset(greeter, answer_length);
 
       if greeter.secret && !greeter.asterisks {
         Ok((1 + cursor.x + greeter.prompt_width() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))

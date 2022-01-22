@@ -12,7 +12,7 @@ use crate::{
   Greeter,
 };
 
-pub fn draw(mut greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
+pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
 
   let width = greeter.width();
@@ -47,7 +47,7 @@ pub fn draw(mut greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<
   );
 
   let new_command = greeter.new_command.clone();
-  let offset = get_cursor_offset(&mut greeter, new_command.chars().count());
+  let offset = get_cursor_offset(greeter, new_command.chars().count());
 
   Ok((2 + cursor.x + fl!("new_command").len() as u16 + offset as u16, cursor.y + 1))
 }

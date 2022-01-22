@@ -60,7 +60,7 @@ impl Ipc {
     Ok(())
   }
 
-  async fn parse_response(&mut self, mut greeter: &mut Greeter, response: Response) -> Result<(), Box<dyn Error>> {
+  async fn parse_response(&mut self, greeter: &mut Greeter, response: Response) -> Result<(), Box<dyn Error>> {
     match response {
       Response::AuthMessage { auth_message_type, auth_message } => match auth_message_type {
         AuthMessageType::Secret => {
@@ -103,7 +103,7 @@ impl Ipc {
             write_last_username(&greeter.username);
           }
 
-          crate::exit(&mut greeter, AuthStatus::Success).await;
+          crate::exit(greeter, AuthStatus::Success).await;
         } else if let Some(command) = &greeter.command {
           greeter.done = true;
           greeter.mode = Mode::Processing;
@@ -115,13 +115,13 @@ impl Ipc {
           {
             let _ = command;
 
-            crate::exit(&mut greeter, AuthStatus::Success).await;
+            crate::exit(greeter, AuthStatus::Success).await;
           }
         }
       }
 
       Response::Error { error_type, description } => {
-        Ipc::cancel(&mut greeter).await;
+        Ipc::cancel(greeter).await;
 
         match error_type {
           ErrorType::AuthError => {

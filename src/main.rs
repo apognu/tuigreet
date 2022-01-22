@@ -95,10 +95,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
   }
 }
 
-pub async fn exit(mut greeter: &mut Greeter, status: AuthStatus) {
+pub async fn exit(greeter: &mut Greeter, status: AuthStatus) {
   match status {
     AuthStatus::Success => {}
-    AuthStatus::Cancel | AuthStatus::Failure => Ipc::cancel(&mut greeter).await,
+    AuthStatus::Cancel | AuthStatus::Failure => Ipc::cancel(greeter).await,
   }
 
   clear_screen();

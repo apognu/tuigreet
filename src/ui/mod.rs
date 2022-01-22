@@ -50,7 +50,7 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
     false
   };
 
-  terminal.draw(|mut f| {
+  terminal.draw(|f| {
     let size = f.size();
     let chunks = Layout::default()
       .constraints(
@@ -112,11 +112,11 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
     }
 
     let cursor = match greeter.mode {
-      Mode::Command => self::command::draw(&mut greeter, &mut f).ok(),
-      Mode::Sessions => self::sessions::draw(&mut greeter, &mut f).ok(),
-      Mode::Power => self::power::draw(&mut greeter, &mut f).ok(),
-      Mode::Processing => self::processing::draw(&mut greeter, &mut f).ok(),
-      _ => self::prompt::draw(&mut greeter, &mut f).ok(),
+      Mode::Command => self::command::draw(&mut greeter, f).ok(),
+      Mode::Sessions => self::sessions::draw(&mut greeter, f).ok(),
+      Mode::Power => self::power::draw(&mut greeter, f).ok(),
+      Mode::Processing => self::processing::draw(&mut greeter, f).ok(),
+      _ => self::prompt::draw(&mut greeter, f).ok(),
     };
 
     if !hide_cursor {
