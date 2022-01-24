@@ -57,6 +57,14 @@ pub fn write_last_session(session: &str) {
   let _ = fs::write(LAST_SESSION, session);
 }
 
+pub fn get_last_user_session(username: &str) -> Result<String, io::Error> {
+  fs::read_to_string(&format!("{}-{}", LAST_SESSION, username))
+}
+
+pub fn write_last_user_session(username: &str, session: &str) {
+  let _ = fs::write(&format!("{}-{}", LAST_SESSION, username), session);
+}
+
 pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn Error>> {
   let sessions = match greeter.sessions_path {
     Some(ref dirs) => env::split_paths(&dirs).collect(),

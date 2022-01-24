@@ -19,7 +19,7 @@ use tokio::{
 use zeroize::Zeroize;
 
 use crate::{
-  info::{get_issue, get_last_session, get_last_username},
+  info::{get_issue, get_last_session, get_last_user_session, get_last_username},
   power::PowerOption,
 };
 
@@ -79,6 +79,7 @@ pub struct Greeter {
 
   pub remember: bool,
   pub remember_session: bool,
+  pub remember_user_session: bool,
   pub asterisks: bool,
   #[default(DEFAULT_ASTERISKS_CHAR)]
   pub asterisks_char: char,
@@ -116,7 +117,15 @@ impl Greeter {
     }
 
     if greeter.remember {
-      greeter.username = get_last_username().unwrap_or_default().trim().to_string();
+      if let Ok(username) = get_last_username() {
+        greeter.username = username.clone();
+
+        if greeter.remember_user_session {
+          if let Ok(command) = get_last_user_session(&username) {
+            greeter.command = Some(command);
+          }
+        }
+      }
     }
 
     if greeter.remember_session {
@@ -238,6 +247,7 @@ impl Greeter {
     opts.optflag("t", "time", "display the current date and time");
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "remember-session", "remember last selected session");
+    opts.optflag("", "remember-user-session", "remember last selected session for each user");
     opts.optflag("", "asterisks", "display asterisks when a secret is typed");
     opts.optopt("", "asterisks-char", "character to be used to redact secrets (default: *)", "CHAR");
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
@@ -291,8 +301,20 @@ impl Greeter {
       self.asterisks_char = value.chars().next().unwrap();
     }
 
+    if self.config().opt_present("remember-session") && self.config().opt_present("remember-user-session") {
+      eprintln!("Only one of --remember-session and --remember-user-session may be used at the same time");
+      print_usage(opts);
+      process::exit(1);
+    }
+    if self.config().opt_present("remember-user-session") && !self.config().opt_present("remember") {
+      eprintln!("--remember-session must be used with --remember");
+      print_usage(opts);
+      process::exit(1);
+    }
+
     self.remember = self.config().opt_present("remember");
     self.remember_session = self.config().opt_present("remember-session");
+    self.remember_user_session = self.config().opt_present("remember-user-session");
     self.asterisks = self.config().opt_present("asterisks");
     self.greeting = self.option("greeting");
     self.command = self.option("cmd");

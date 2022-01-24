@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 
 use crate::{
   event::{Event, Events},
-  info::write_last_session,
+  info::{get_last_user_session, write_last_session},
   ipc::Ipc,
   power::power,
   ui::POWER_OPTIONS,
@@ -128,6 +128,13 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
 
           ipc.send(Request::CreateSession { username: greeter.username.clone() }).await;
           greeter.answer = String::new();
+
+          if greeter.remember_user_session {
+            if let Ok(command) = get_last_user_session(&greeter.username) {
+              greeter.selected_session = greeter.sessions.iter().position(|(_, cmd)| Some(cmd) == Some(&command)).unwrap_or(0);
+              greeter.command = Some(command);
+            }
+          }
         }
 
         Mode::Password => {

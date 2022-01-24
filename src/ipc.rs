@@ -6,7 +6,10 @@ use tokio::sync::{
   Mutex, RwLock,
 };
 
-use crate::{info::write_last_username, AuthStatus, Greeter, Mode};
+use crate::{
+  info::{write_last_user_session, write_last_username},
+  AuthStatus, Greeter, Mode,
+};
 
 #[derive(Clone)]
 pub struct Ipc(Arc<IpcHandle>);
@@ -101,6 +104,12 @@ impl Ipc {
         if greeter.done {
           if greeter.remember {
             write_last_username(&greeter.username);
+
+            if greeter.remember_user_session {
+              if let Some(command) = &greeter.command {
+                write_last_user_session(&greeter.username, command);
+              }
+            }
           }
 
           crate::exit(greeter, AuthStatus::Success).await;
