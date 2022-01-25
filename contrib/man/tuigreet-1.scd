@@ -50,7 +50,7 @@ tuigreet - A graphical console greeter for greetd
 	option on subsequent runs.
 
 *--remember-user-session*
-  Remember the last opened session, per user (requires *--remember*).
+	Remember the last opened session, per user (requires *--remember*).
 
 *--asterisks*
 	Add visual feedback when typing secrets, as one asterisk character for every
