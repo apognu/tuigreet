@@ -56,8 +56,15 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
   }
 
-  let username_text = prompt_value(Some(fl!("username")));
-  let username_label = Paragraph::new(username_text);
+  let username_label = if greeter.user_menu && greeter.username.is_empty() {
+    let prompt_text = Span::from(fl!("select_user"));
+
+    Paragraph::new(prompt_text).alignment(Alignment::Center)
+  } else {
+    let username_text = prompt_value(Some(fl!("username")));
+
+    Paragraph::new(username_text)
+  };
 
   let username_value_text = Span::from(greeter.username.as_str());
   let username_value = Paragraph::new(username_value_text);
@@ -65,15 +72,18 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   match greeter.mode {
     Mode::Username | Mode::Password => {
       f.render_widget(username_label, chunks[USERNAME_INDEX]);
-      f.render_widget(
-        username_value,
-        Rect::new(
-          1 + chunks[USERNAME_INDEX].x + fl!("username").len() as u16,
-          chunks[USERNAME_INDEX].y,
-          get_input_width(greeter, &Some(fl!("username"))),
-          1,
-        ),
-      );
+
+      if !greeter.user_menu || !greeter.username.is_empty() {
+        f.render_widget(
+          username_value,
+          Rect::new(
+            1 + chunks[USERNAME_INDEX].x + fl!("username").len() as u16,
+            chunks[USERNAME_INDEX].y,
+            get_input_width(greeter, &Some(fl!("username"))),
+            1,
+          ),
+        );
+      }
 
       let answer_text = if greeter.working { Span::from(fl!("wait")) } else { prompt_value(greeter.prompt.as_ref()) };
 

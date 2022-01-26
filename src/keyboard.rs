@@ -48,7 +48,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
 
       KeyEvent { code: KeyCode::F(2), .. } => {
         greeter.previous_mode = match greeter.mode {
-          Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
+          Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
           _ => greeter.mode,
         };
 
@@ -58,7 +58,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
 
       KeyEvent { code: KeyCode::F(3), .. } => {
         greeter.previous_mode = match greeter.mode {
-          Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
+          Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
           _ => greeter.mode,
         };
 
@@ -67,7 +67,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
 
       KeyEvent { code: KeyCode::F(12), .. } => {
         greeter.previous_mode = match greeter.mode {
-          Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
+          Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
           _ => greeter.mode,
         };
 
@@ -75,6 +75,12 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
       }
 
       KeyEvent { code: KeyCode::Up, .. } => {
+        if let Mode::Users = greeter.mode {
+          if greeter.selected_user > 0 {
+            greeter.selected_user -= 1;
+          }
+        }
+
         if let Mode::Sessions = greeter.mode {
           if greeter.selected_session > 0 {
             greeter.selected_session -= 1;
@@ -89,6 +95,12 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
       }
 
       KeyEvent { code: KeyCode::Down, .. } => {
+        if let Mode::Users = greeter.mode {
+          if greeter.selected_user < greeter.users.len() - 1 {
+            greeter.selected_user += 1;
+          }
+        }
+
         if let Mode::Sessions = greeter.mode {
           if greeter.selected_session < greeter.sessions.len() - 1 {
             greeter.selected_session += 1;
@@ -121,21 +133,24 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         modifiers: KeyModifiers::CONTROL,
       } => greeter.cursor_offset = 0,
 
-      KeyEvent { code: KeyCode::Enter, .. } | KeyEvent { code: KeyCode::Char('\t'), .. } => match greeter.mode {
-        Mode::Username => {
-          greeter.working = true;
-          greeter.message = None;
+      KeyEvent { code: KeyCode::Tab, .. } => match greeter.mode {
+        Mode::Username if !greeter.username.is_empty() => validate_username(&mut greeter, &ipc).await,
+        _ => {}
+      },
 
-          ipc.send(Request::CreateSession { username: greeter.username.clone() }).await;
-          greeter.answer = String::new();
+      KeyEvent { code: KeyCode::Enter, .. } => match greeter.mode {
+        Mode::Username if !greeter.username.is_empty() => validate_username(&mut greeter, &ipc).await,
 
-          if greeter.remember_user_session {
-            if let Ok(command) = get_last_user_session(&greeter.username) {
-              greeter.selected_session = greeter.sessions.iter().position(|(_, cmd)| Some(cmd) == Some(&command)).unwrap_or(0);
-              greeter.command = Some(command);
-            }
-          }
+        Mode::Username if greeter.user_menu => {
+          greeter.previous_mode = match greeter.mode {
+            Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
+            _ => greeter.mode,
+          };
+
+          greeter.mode = Mode::Users;
         }
+
+        Mode::Username => {}
 
         Mode::Password => {
           greeter.working = true;
@@ -161,6 +176,16 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
           }
 
           greeter.mode = greeter.previous_mode;
+        }
+
+        Mode::Users => {
+          let username = greeter.users.get(greeter.selected_user).cloned();
+
+          if let Some((username, _)) = username {
+            greeter.username = username;
+          }
+
+          validate_username(&mut greeter, &ipc).await;
         }
 
         Mode::Sessions => {
@@ -207,7 +232,7 @@ async fn insert_key(greeter: &mut Greeter, c: char) {
     Mode::Username => &greeter.username,
     Mode::Password => &greeter.answer,
     Mode::Command => &greeter.new_command,
-    Mode::Sessions | Mode::Power | Mode::Processing => return,
+    Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => return,
   };
 
   let index = (value.chars().count() as i16 + greeter.cursor_offset) as usize;
@@ -230,7 +255,7 @@ async fn delete_key(greeter: &mut Greeter, key: KeyCode) {
     Mode::Username => &greeter.username,
     Mode::Password => &greeter.answer,
     Mode::Command => &greeter.new_command,
-    Mode::Sessions | Mode::Power | Mode::Processing => return,
+    Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => return,
   };
 
   let index = match key {
@@ -249,11 +274,26 @@ async fn delete_key(greeter: &mut Greeter, key: KeyCode) {
       Mode::Username => greeter.username = value,
       Mode::Password => greeter.answer = value,
       Mode::Command => greeter.new_command = value,
-      Mode::Sessions | Mode::Power | Mode::Processing => return,
+      Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => return,
     };
 
     if let KeyCode::Delete = key {
       greeter.cursor_offset += 1;
+    }
+  }
+}
+
+async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
+  greeter.working = true;
+  greeter.message = None;
+
+  ipc.send(Request::CreateSession { username: greeter.username.clone() }).await;
+  greeter.answer = String::new();
+
+  if greeter.remember_user_session {
+    if let Ok(command) = get_last_user_session(&greeter.username) {
+      greeter.selected_session = greeter.sessions.iter().position(|(_, cmd)| Some(cmd) == Some(&command)).unwrap_or(0);
+      greeter.command = Some(command);
     }
   }
 }

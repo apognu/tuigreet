@@ -22,7 +22,7 @@ use tokio::{
 use zeroize::Zeroize;
 
 use crate::{
-  info::{get_issue, get_last_session, get_last_user_session, get_last_username},
+  info::{get_issue, get_last_session, get_last_user_session, get_last_username, get_users},
   power::PowerOption,
 };
 
@@ -49,6 +49,7 @@ pub enum Mode {
   #[default]
   Username,
   Password,
+  Users,
   Command,
   Sessions,
   Power,
@@ -67,6 +68,8 @@ pub struct Greeter {
   pub previous_mode: Mode,
   pub cursor_offset: i16,
 
+  pub users: Vec<(String, Option<String>)>,
+  pub selected_user: usize,
   pub command: Option<String>,
   pub new_command: String,
   pub sessions_path: Option<String>,
@@ -80,6 +83,7 @@ pub struct Greeter {
   pub answer: String,
   pub secret: bool,
 
+  pub user_menu: bool,
   pub remember: bool,
   pub remember_session: bool,
   pub remember_user_session: bool,
@@ -252,6 +256,7 @@ impl Greeter {
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "remember-session", "remember last selected session");
     opts.optflag("", "remember-user-session", "remember last selected session for each user");
+    opts.optflag("", "user-menu", "allow graphical selection of users from a menu");
     opts.optflag("", "asterisks", "display asterisks when a secret is typed");
     opts.optopt("", "asterisks-char", "character to be used to redact secrets (default: *)", "CHAR");
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
@@ -310,6 +315,11 @@ impl Greeter {
         eprintln!("Invalid strftime format provided in --time-format");
         process::exit(1);
       }
+    }
+
+    if self.config().opt_present("user-menu") {
+      self.user_menu = true;
+      self.users = get_users();
     }
 
     if self.config().opt_present("remember-session") && self.config().opt_present("remember-user-session") {

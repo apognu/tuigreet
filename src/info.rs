@@ -1,7 +1,8 @@
 use std::{
   env,
   error::Error,
-  fs, io,
+  fs::{self, File},
+  io::{self, BufRead, BufReader},
   path::{Path, PathBuf},
   process::Command,
 };
@@ -63,6 +64,72 @@ pub fn get_last_user_session(username: &str) -> Result<String, io::Error> {
 
 pub fn write_last_user_session(username: &str, session: &str) {
   let _ = fs::write(&format!("{}-{}", LAST_SESSION, username), session);
+}
+
+pub fn get_users() -> Vec<(String, Option<String>)> {
+  match File::open("/etc/passwd") {
+    Err(_) => vec![],
+    Ok(file) => {
+      let file = BufReader::new(file);
+      let (uid_min, uid_max) = get_min_max_uids();
+
+      let users: Vec<(String, Option<String>)> = file
+        .lines()
+        .filter_map(|line| {
+          line
+            .map(|line| {
+              let mut split = line.splitn(7, ':');
+              let username = split.next();
+              let uid = split.nth(1);
+              let name = split.nth(1);
+
+              match uid.map(|uid| uid.parse::<u16>()) {
+                Some(Ok(uid)) => match (username, name) {
+                  (Some(username), Some("")) => Some((uid, username.to_string(), None)),
+                  (Some(username), Some(name)) => Some((uid, username.to_string(), Some(name.to_string()))),
+                  _ => None,
+                },
+
+                _ => None,
+              }
+            })
+            .ok()
+            .flatten()
+            .filter(|(uid, _, _)| uid >= &uid_min && uid <= &uid_max)
+            .map(|(_, username, name)| (username, name))
+        })
+        .collect();
+
+      users
+    }
+  }
+}
+
+fn get_min_max_uids() -> (u16, u16) {
+  let default = (1000, 60000);
+
+  match File::open("/etc/login.defs") {
+    Err(_) => default,
+    Ok(file) => {
+      let file = BufReader::new(file);
+
+      let uids: (u16, u16) = file.lines().fold(default, |acc, line| {
+        line
+          .map(|line| {
+            let mut tokens = line.split_whitespace();
+
+            match (tokens.next(), tokens.next()) {
+              (Some("UID_MIN"), Some(value)) => (value.parse::<u16>().unwrap_or(acc.0), acc.1),
+              (Some("UID_MAX"), Some(value)) => (acc.0, value.parse::<u16>().unwrap_or(acc.1)),
+              _ => acc,
+            }
+          })
+          .unwrap_or(acc)
+      });
+
+      uids
+    }
+  }
 }
 
 pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn Error>> {

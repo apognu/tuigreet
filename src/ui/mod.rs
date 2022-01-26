@@ -4,6 +4,7 @@ mod power;
 mod processing;
 mod prompt;
 mod sessions;
+mod users;
 mod util;
 
 use std::{
@@ -115,6 +116,7 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
       Mode::Command => self::command::draw(&mut greeter, f).ok(),
       Mode::Sessions => self::sessions::draw(&mut greeter, f).ok(),
       Mode::Power => self::power::draw(&mut greeter, f).ok(),
+      Mode::Users => self::users::draw(&mut greeter, f).ok(),
       Mode::Processing => self::processing::draw(&mut greeter, f).ok(),
       _ => self::prompt::draw(&mut greeter, f).ok(),
     };

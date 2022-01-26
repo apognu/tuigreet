@@ -45,6 +45,9 @@ tuigreet - A graphical console greeter for greetd
 	Configure a custom strftime-compliant format string for the current date
 	and time.
 
+*--user-menu*
+	Allow selecting a user from a graphical menu.
+
 *-r, --remember*
 	Remember the username of the last successfully opened session, so the
 	username field will be pre-filled on the next run.
