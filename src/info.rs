@@ -71,11 +71,15 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn 
     None => vec![PathBuf::from(X_SESSIONS), PathBuf::from(WAYLAND_SESSIONS)],
   };
 
-  let files = sessions
+  let mut files = sessions
     .iter()
     .flat_map(fs::read_dir)
     .flat_map(|directory| directory.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path()))).flatten())
     .collect::<Vec<_>>();
+
+  if let Some(command) = &greeter.command {
+    files.insert(0, (command.clone(), command.clone()));
+  }
 
   Ok(files)
 }
