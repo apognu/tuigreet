@@ -11,7 +11,7 @@ pub enum PowerOption {
 }
 
 pub fn power(greeter: &mut Greeter, option: PowerOption) {
-  let command = match greeter.power_commands.get(&option) {
+  let mut command = match greeter.power_commands.get(&option) {
     None => {
       let mut command = Command::new("shutdown");
 
@@ -25,7 +25,7 @@ pub fn power(greeter: &mut Greeter, option: PowerOption) {
     }
 
     Some(args) => {
-      let mut command = match greeter.power_setsid {
+      let command = match greeter.power_setsid {
         true => {
           let mut command = Command::new("setsid");
           command.args(args.split(' '));
@@ -41,13 +41,13 @@ pub fn power(greeter: &mut Greeter, option: PowerOption) {
         }
       };
 
-      command.stdin(Stdio::null());
-      command.stdout(Stdio::null());
-      command.stderr(Stdio::null());
-
       command
     }
   };
+
+  command.stdin(Stdio::null());
+  command.stdout(Stdio::null());
+  command.stderr(Stdio::null());
 
   greeter.power_command = Some(command);
   greeter.power_command_notify.notify_one();
@@ -56,14 +56,18 @@ pub fn power(greeter: &mut Greeter, option: PowerOption) {
 pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) {
   greeter.write().await.mode = Mode::Processing;
 
-  let message = match tokio::spawn(async move { command.status().await }).await {
-    Ok(result) => match result {
-      Ok(status) if status.success() => None,
-      Ok(status) => Some(format!("{} {}", fl!("command_exited"), status)),
-      Err(err) => Some(format!("{}: {}", fl!("command_failed"), err)),
+  let message = match command.output().await {
+    Ok(result) => match (result.status, result.stderr) {
+      (status, _) if status.success() => None,
+      (status, output) => {
+        let status = format!("{} {}", fl!("command_exited"), status);
+        let output = String::from_utf8(output).unwrap_or_default();
+
+        Some(format!("{}\n{}", status, output))
+      }
     },
 
-    Err(_) => Some(fl!("command_failed")),
+    Err(err) => Some(format!("{}: {}", fl!("command_failed"), err)),
   };
 
   let mode = greeter.read().await.previous_mode;
