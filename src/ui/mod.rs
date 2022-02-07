@@ -132,7 +132,12 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
 }
 
 fn get_time(greeter: &Greeter) -> String {
-  Local::now().format_localized(&fl!("date"), greeter.locale).to_string()
+  let format = match greeter.config().opt_str("time-format") {
+    Some(format) => format,
+    None => fl!("date"),
+  };
+
+  Local::now().format_localized(&format, greeter.locale).to_string()
 }
 
 fn status_label<'s, S>(text: S) -> Span<'s>

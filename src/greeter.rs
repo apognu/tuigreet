@@ -8,7 +8,10 @@ use std::{
   sync::Arc,
 };
 
-use chrono::Locale;
+use chrono::{
+  format::{Item, StrftimeItems},
+  Locale,
+};
 use getopts::{Matches, Options};
 use i18n_embed::DesktopLanguageRequester;
 use tokio::{
@@ -245,6 +248,7 @@ impl Greeter {
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
     opts.optflag("t", "time", "display the current date and time");
+    opts.optopt("", "time-format", "custom strftime format for displaying date and time", "FORMAT");
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "remember-session", "remember last selected session");
     opts.optflag("", "remember-user-session", "remember last selected session for each user");
@@ -299,6 +303,13 @@ impl Greeter {
       }
 
       self.asterisks_char = value.chars().next().unwrap();
+    }
+
+    if let Some(format) = self.config().opt_str("time-format") {
+      if StrftimeItems::new(&format).any(|item| item == Item::Error) {
+        eprintln!("Invalid strftime format provided in --time-format");
+        process::exit(1);
+      }
     }
 
     if self.config().opt_present("remember-session") && self.config().opt_present("remember-user-session") {
