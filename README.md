@@ -24,6 +24,11 @@ Options:
                         remember last selected session
         --remember-user-session
                         remember last selected session for each user
+        --user-menu     allow graphical selection of users from a menu
+        --user-menu-min-uid UID
+                        minimum UID to display in the user selection menu
+        --user-menu-max-uid UID
+                        maximum UID to display in the user selection menu
         --asterisks     display asterisks when a secret is typed
         --asterisks-char CHAR
                         character to be used to redact secrets (default: *)

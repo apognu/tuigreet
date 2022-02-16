@@ -17,6 +17,9 @@ const WAYLAND_SESSIONS: &str = "/usr/share/wayland-sessions";
 const LAST_USERNAME: &str = "/var/cache/tuigreet/lastuser";
 const LAST_SESSION: &str = "/var/cache/tuigreet/lastsession";
 
+const DEFAULT_MIN_UID: u16 = 1000;
+const DEFAULT_MAX_UID: u16 = 60000;
+
 pub fn get_hostname() -> String {
   utsname::uname().nodename().to_string()
 }
@@ -66,12 +69,11 @@ pub fn write_last_user_session(username: &str, session: &str) {
   let _ = fs::write(&format!("{}-{}", LAST_SESSION, username), session);
 }
 
-pub fn get_users() -> Vec<(String, Option<String>)> {
+pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<(String, Option<String>)> {
   match File::open("/etc/passwd") {
     Err(_) => vec![],
     Ok(file) => {
       let file = BufReader::new(file);
-      let (uid_min, uid_max) = get_min_max_uids();
 
       let users: Vec<(String, Option<String>)> = file
         .lines()
@@ -95,7 +97,7 @@ pub fn get_users() -> Vec<(String, Option<String>)> {
             })
             .ok()
             .flatten()
-            .filter(|(uid, _, _)| uid >= &uid_min && uid <= &uid_max)
+            .filter(|(uid, _, _)| uid >= &min_uid && uid <= &max_uid)
             .map(|(_, username, name)| (username, name))
         })
         .collect();
@@ -105,8 +107,13 @@ pub fn get_users() -> Vec<(String, Option<String>)> {
   }
 }
 
-fn get_min_max_uids() -> (u16, u16) {
-  let default = (1000, 60000);
+pub fn get_min_max_uids(min_uid: Option<u16>, max_uid: Option<u16>) -> (u16, u16) {
+  if let (Some(min_uid), Some(max_uid)) = (min_uid, max_uid) {
+    return (min_uid, max_uid);
+  }
+
+  let overrides = (min_uid, max_uid);
+  let default = (min_uid.unwrap_or(DEFAULT_MIN_UID), max_uid.unwrap_or(DEFAULT_MAX_UID));
 
   match File::open("/etc/login.defs") {
     Err(_) => default,
@@ -118,9 +125,9 @@ fn get_min_max_uids() -> (u16, u16) {
           .map(|line| {
             let mut tokens = line.split_whitespace();
 
-            match (tokens.next(), tokens.next()) {
-              (Some("UID_MIN"), Some(value)) => (value.parse::<u16>().unwrap_or(acc.0), acc.1),
-              (Some("UID_MAX"), Some(value)) => (acc.0, value.parse::<u16>().unwrap_or(acc.1)),
+            match (overrides, tokens.next(), tokens.next()) {
+              ((None, _), Some("UID_MIN"), Some(value)) => (value.parse::<u16>().unwrap_or(acc.0), acc.1),
+              ((_, None), Some("UID_MAX"), Some(value)) => (acc.0, value.parse::<u16>().unwrap_or(acc.1)),
               _ => acc,
             }
           })

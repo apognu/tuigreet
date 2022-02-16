@@ -22,7 +22,7 @@ use tokio::{
 use zeroize::Zeroize;
 
 use crate::{
-  info::{get_issue, get_last_session, get_last_user_session, get_last_username, get_users},
+  info::{get_issue, get_last_session, get_last_user_session, get_last_username, get_min_max_uids, get_users},
   power::PowerOption,
 };
 
@@ -84,6 +84,7 @@ pub struct Greeter {
   pub secret: bool,
 
   pub user_menu: bool,
+
   pub remember: bool,
   pub remember_session: bool,
   pub remember_user_session: bool,
@@ -257,6 +258,8 @@ impl Greeter {
     opts.optflag("", "remember-session", "remember last selected session");
     opts.optflag("", "remember-user-session", "remember last selected session for each user");
     opts.optflag("", "user-menu", "allow graphical selection of users from a menu");
+    opts.optopt("", "user-menu-min-uid", "minimum UID to display in the user selection menu", "UID");
+    opts.optopt("", "user-menu-max-uid", "maximum UID to display in the user selection menu", "UID");
     opts.optflag("", "asterisks", "display asterisks when a secret is typed");
     opts.optopt("", "asterisks-char", "character to be used to redact secrets (default: *)", "CHAR");
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
@@ -319,7 +322,17 @@ impl Greeter {
 
     if self.config().opt_present("user-menu") {
       self.user_menu = true;
-      self.users = get_users();
+
+      let min_uid = self.config().opt_str("user-menu-min-uid").map(|uid| uid.parse::<u16>().ok()).flatten();
+      let max_uid = self.config().opt_str("user-menu-max-uid").map(|uid| uid.parse::<u16>().ok()).flatten();
+      let (min_uid, max_uid) = get_min_max_uids(min_uid, max_uid);
+
+      if min_uid >= max_uid {
+        eprintln!("Minimum UID ({min_uid}) must be less than maximum UID ({max_uid})");
+        process::exit(1);
+      }
+
+      self.users = get_users(min_uid, max_uid);
     }
 
     if self.config().opt_present("remember-session") && self.config().opt_present("remember-user-session") {

@@ -48,6 +48,12 @@ tuigreet - A graphical console greeter for greetd
 *--user-menu*
 	Allow selecting a user from a graphical menu.
 
+*--user-menu-min-uid*
+	Minimum UID of the users to display in the selection menu.
+
+*--user-menu-max-uid*
+	Maximum UID of the users to display in the selection menu.
+
 *-r, --remember*
 	Remember the username of the last successfully opened session, so the
 	username field will be pre-filled on the next run.
