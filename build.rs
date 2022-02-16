@@ -7,7 +7,7 @@ fn main() {
     env!("CARGO_PKG_VERSION").to_string()
   };
 
-  println!("cargo:rustc-env=VERSION={}", version);
+  println!("cargo:rustc-env=VERSION={version}");
   println!("cargo:rustc-env=TARGET={}", env::var("TARGET").unwrap());
 }
 

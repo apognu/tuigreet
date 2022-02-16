@@ -27,7 +27,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   for (index, (username, name)) in greeter.users.iter().enumerate() {
     let name = match name {
-      Some(name) => format!("{} ({})", name, username),
+      Some(name) => format!("{name} ({username})"),
       None => username.clone(),
     };
 

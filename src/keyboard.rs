@@ -181,8 +181,9 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         Mode::Users => {
           let username = greeter.users.get(greeter.selected_user).cloned();
 
-          if let Some((username, _)) = username {
+          if let Some((username, name)) = username {
             greeter.username = username;
+            greeter.username_mask = name;
           }
 
           validate_username(&mut greeter, &ipc).await;

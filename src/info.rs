@@ -14,7 +14,8 @@ use crate::Greeter;
 
 const X_SESSIONS: &str = "/usr/share/xsessions";
 const WAYLAND_SESSIONS: &str = "/usr/share/wayland-sessions";
-const LAST_USERNAME: &str = "/var/cache/tuigreet/lastuser";
+const LAST_USER_USERNAME: &str = "/var/cache/tuigreet/lastuser";
+const LAST_USER_NAME: &str = "/var/cache/tuigreet/lastuser-name";
 const LAST_SESSION: &str = "/var/cache/tuigreet/lastsession";
 
 const DEFAULT_MIN_UID: u16 = 1000;
@@ -32,7 +33,7 @@ pub fn get_issue() -> Option<String> {
     return Some(
       issue
         .replace("\\S", "Linux")
-        .replace("\\l", &format!("tty{}", vtnr))
+        .replace("\\l", &format!("tty{vtnr}"))
         .replace("\\s", uts.sysname())
         .replace("\\r", uts.release())
         .replace("\\v", uts.version())
@@ -45,12 +46,22 @@ pub fn get_issue() -> Option<String> {
   None
 }
 
-pub fn get_last_username() -> Result<String, io::Error> {
-  fs::read_to_string(LAST_USERNAME)
+pub fn get_last_user_username() -> Result<String, io::Error> {
+  fs::read_to_string(LAST_USER_USERNAME)
 }
 
-pub fn write_last_username(username: &str) {
-  let _ = fs::write(LAST_USERNAME, username);
+pub fn get_last_user_name() -> Option<String> {
+  fs::read_to_string(LAST_USER_NAME).ok()
+}
+
+pub fn write_last_username(username: &str, name: Option<&str>) {
+  let _ = fs::write(LAST_USER_USERNAME, username);
+
+  if let Some(name) = name {
+    let _ = fs::write(LAST_USER_NAME, name);
+  } else {
+    let _ = fs::remove_file(LAST_USER_NAME);
+  }
 }
 
 pub fn get_last_session() -> Result<String, io::Error> {
@@ -62,11 +73,11 @@ pub fn write_last_session(session: &str) {
 }
 
 pub fn get_last_user_session(username: &str) -> Result<String, io::Error> {
-  fs::read_to_string(&format!("{}-{}", LAST_SESSION, username))
+  fs::read_to_string(&format!("{LAST_SESSION}-{username}"))
 }
 
 pub fn write_last_user_session(username: &str, session: &str) {
-  let _ = fs::write(&format!("{}-{}", LAST_SESSION, username), session);
+  let _ = fs::write(&format!("{LAST_SESSION}-{username}"), session);
 }
 
 pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<(String, Option<String>)> {

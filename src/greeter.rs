@@ -22,7 +22,7 @@ use tokio::{
 use zeroize::Zeroize;
 
 use crate::{
-  info::{get_issue, get_last_session, get_last_user_session, get_last_username, get_min_max_uids, get_users},
+  info::{get_issue, get_last_session, get_last_user_name, get_last_user_session, get_last_user_username, get_min_max_uids, get_users},
   power::PowerOption,
 };
 
@@ -79,6 +79,7 @@ pub struct Greeter {
   pub selected_power_option: usize,
 
   pub username: String,
+  pub username_mask: Option<String>,
   pub prompt: Option<String>,
   pub answer: String,
   pub secret: bool,
@@ -125,8 +126,9 @@ impl Greeter {
     }
 
     if greeter.remember {
-      if let Ok(username) = get_last_username() {
+      if let Ok(username) = get_last_user_username() {
         greeter.username = username.clone();
+        greeter.username_mask = get_last_user_name();
 
         if greeter.remember_user_session {
           if let Ok(command) = get_last_user_session(&username) {
@@ -150,6 +152,7 @@ impl Greeter {
   fn scrub(&mut self, scrub_message: bool) {
     self.prompt.zeroize();
     self.username.zeroize();
+    self.username_mask.zeroize();
     self.answer.zeroize();
 
     if scrub_message {
@@ -172,7 +175,7 @@ impl Greeter {
       Ok(stream) => self.stream = Some(Arc::new(RwLock::new(stream))),
 
       Err(err) => {
-        eprintln!("{}", err);
+        eprintln!("{err}");
         process::exit(1);
       }
     }
@@ -234,7 +237,7 @@ impl Greeter {
     let locale = DesktopLanguageRequester::requested_languages()
       .into_iter()
       .next()
-      .and_then(|locale| locale.region.map(|region| format!("{}_{}", locale.language, region)))
+      .and_then(|locale| locale.region.map(|region| format!("{}_{region}", locale.language)))
       .and_then(|id| id.as_str().try_into().ok());
 
     if let Some(locale) = locale {
@@ -274,7 +277,7 @@ impl Greeter {
       Ok(matches) => Some(matches),
 
       Err(err) => {
-        eprintln!("{}", err);
+        eprintln!("{err}");
         print_usage(opts);
         process::exit(1);
       }
@@ -372,7 +375,7 @@ impl Greeter {
   }
 
   pub fn set_prompt(&mut self, prompt: &str) {
-    self.prompt = if prompt.ends_with(' ') { Some(prompt.into()) } else { Some(format!("{} ", prompt)) };
+    self.prompt = if prompt.ends_with(' ') { Some(prompt.into()) } else { Some(format!("{prompt} ")) };
   }
 
   pub fn remove_prompt(&mut self) {

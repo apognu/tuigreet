@@ -60,14 +60,14 @@ pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) {
     Ok(result) => match (result.status, result.stderr) {
       (status, _) if status.success() => None,
       (status, output) => {
-        let status = format!("{} {}", fl!("command_exited"), status);
+        let status = format!("{} {status}", fl!("command_exited"));
         let output = String::from_utf8(output).unwrap_or_default();
 
-        Some(format!("{}\n{}", status, output))
+        Some(format!("{status}\n{output}"))
       }
     },
 
-    Err(err) => Some(format!("{}: {}", fl!("command_failed"), err)),
+    Err(err) => Some(format!("{}: {err}", fl!("command_failed"))),
   };
 
   let mode = greeter.read().await.previous_mode;

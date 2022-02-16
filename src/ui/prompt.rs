@@ -66,7 +66,8 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     Paragraph::new(username_text)
   };
 
-  let username_value_text = Span::from(greeter.username.as_str());
+  let username = greeter.username_mask.as_deref().unwrap_or_else(|| greeter.username.as_ref());
+  let username_value_text = Span::from(username);
   let username_value = Paragraph::new(username_value_text);
 
   match greeter.mode {

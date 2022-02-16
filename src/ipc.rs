@@ -103,7 +103,7 @@ impl Ipc {
       Response::Success => {
         if greeter.done {
           if greeter.remember {
-            write_last_username(&greeter.username);
+            write_last_username(&greeter.username, greeter.username_mask.as_deref());
 
             if greeter.remember_user_session {
               if let Some(command) = &greeter.command {

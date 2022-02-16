@@ -1,7 +1,7 @@
 use crate::{Greeter, Mode};
 
 pub fn titleize(message: &str) -> String {
-  format!(" {} ", message)
+  format!(" {message} ")
 }
 
 pub fn should_hide_cursor(greeter: &Greeter) -> bool {
