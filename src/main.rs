@@ -111,6 +111,7 @@ pub fn clear_screen() {
   let backend = CrosstermBackend::new(io::stdout());
 
   if let Ok(mut terminal) = Terminal::new(backend) {
+    let _ = terminal.hide_cursor();
     let _ = terminal.clear();
   }
 }
