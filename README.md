@@ -92,13 +92,13 @@ On NixOS `greetd` and `tuigreet` both available via `<nixpkgs>` main repository.
 Please refer to the snippet below for the minimal `tuigreet` configuration:
 
 ```nix
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 {
   services.greetd = {
     enable = true;
     settings = {
       default_session = {
-        command = "${lib.makeBinPath [pkgs.greetd.tuigreet] }/tuigreet --time --cmd sway";
+        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd sway";
         user = "greeter";
       };
     };
