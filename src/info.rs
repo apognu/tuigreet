@@ -22,7 +22,10 @@ const DEFAULT_MIN_UID: u16 = 1000;
 const DEFAULT_MAX_UID: u16 = 60000;
 
 pub fn get_hostname() -> String {
-  utsname::uname().nodename().to_string()
+  match utsname::uname() {
+    Ok(uts) => uts.nodename().to_str().unwrap_or("").to_string(),
+    _ => String::new(),
+  }
 }
 
 pub fn get_issue() -> Option<String> {
@@ -30,17 +33,21 @@ pub fn get_issue() -> Option<String> {
   let uts = utsname::uname();
 
   if let Ok(issue) = fs::read_to_string("/etc/issue") {
-    return Some(
-      issue
-        .replace("\\S", "Linux")
-        .replace("\\l", &format!("tty{vtnr}"))
-        .replace("\\s", uts.sysname())
-        .replace("\\r", uts.release())
-        .replace("\\v", uts.version())
-        .replace("\\n", uts.nodename())
-        .replace("\\m", uts.machine())
-        .replace("\\\\", "\\"),
-    );
+    let issue = issue.replace("\\S", "Linux").replace("\\l", &format!("tty{vtnr}"));
+
+    return match uts {
+      Ok(uts) => Some(
+        issue
+          .replace("\\s", uts.sysname().to_str().unwrap_or(""))
+          .replace("\\r", uts.release().to_str().unwrap_or(""))
+          .replace("\\v", uts.version().to_str().unwrap_or(""))
+          .replace("\\n", uts.nodename().to_str().unwrap_or(""))
+          .replace("\\m", uts.machine().to_str().unwrap_or(""))
+          .replace("\\\\", "\\"),
+      ),
+
+      _ => Some(issue),
+    };
   }
 
   None

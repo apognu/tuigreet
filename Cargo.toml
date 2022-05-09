@@ -14,8 +14,8 @@ greetd_ipc = { version = "^0.8", features = ["tokio-codec"] }
 i18n-embed = { version = "^0.13", features = ["desktop-requester", "fluent-system"] }
 i18n-embed-fl = "^0.6"
 lazy_static = "^1.4"
-nix = "^0.23"
-tui = { version = "^0.17", default-features = false, features = ["crossterm"] }
+nix = "^0.24"
+tui = { version = "^0.18", default-features = false, features = ["crossterm"] }
 rust-embed = "^6.2"
 rust-ini = "^0.18"
 smart-default = "^0.6"
