@@ -13,16 +13,16 @@ date = %a %d %h %Y - %H:%M
 
 select_user = Appuyez sur Entrée pour choisir un utilisateur ou tapez son nom...
 username = Nom d'utilisateur :
-wait = Veillez patienter...
+wait = Veuillez patienter...
 failed = Erreur d'authentification, veuillez réessayer.
 
 command = Nouvelle commande :
 
-shutdown = Eteindre
+shutdown = Éteindre
 reboot = Redémarrer
 
 command_exited = La commande a retourné
-command_failed = Echec de la commande
+command_failed = Échec de la commande
 
 status_command = CMD
 status_caps = VERR. MAJ.
