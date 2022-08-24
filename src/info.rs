@@ -166,7 +166,7 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn 
   let mut files = sessions
     .iter()
     .flat_map(fs::read_dir)
-    .flat_map(|directory| directory.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path()))).flatten())
+    .flat_map(|directory| directory.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path(), entry.path().parent().unwrap().ends_with("xsessions")))).flatten())
     .collect::<Vec<_>>();
 
   if let Some(command) = &greeter.command {
@@ -176,7 +176,7 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn 
   Ok(files)
 }
 
-fn load_desktop_file<P>(path: P) -> Result<(String, String), Box<dyn Error>>
+fn load_desktop_file<P>(path: P, needs_xorg: bool) -> Result<(String, String), Box<dyn Error>>
 where
   P: AsRef<Path>,
 {
@@ -185,7 +185,9 @@ where
 
   let name = section.get("Name").ok_or("no Name property in desktop file")?;
   let exec = section.get("Exec").ok_or("no Exec property in desktop file")?;
-
+  if needs_xorg {
+    return Ok((name.to_string(), "startx ".to_owned() + &exec.to_string()))
+  }
   Ok((name.to_string(), exec.to_string()))
 }
 
