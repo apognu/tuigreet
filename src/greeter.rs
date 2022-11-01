@@ -127,12 +127,14 @@ impl Greeter {
 
     if greeter.remember {
       if let Ok(username) = get_last_user_username() {
-        greeter.username = username.clone();
-        greeter.username_mask = get_last_user_name();
+        if !username.is_empty() {
+          greeter.username = username.clone();
+          greeter.username_mask = get_last_user_name();
 
-        if greeter.remember_user_session {
-          if let Ok(command) = get_last_user_session(&username) {
-            greeter.command = Some(command);
+          if greeter.remember_user_session {
+            if let Ok(command) = get_last_user_session(&username) {
+              greeter.command = Some(command);
+            }
           }
         }
       }
