@@ -14,8 +14,7 @@ use std::{
 };
 
 use chrono::prelude::*;
-use tokio::sync::RwLock;
-use tui::{
+use ratatui::{
   backend::CrosstermBackend,
   layout::{Alignment, Constraint, Direction, Layout},
   style::{Modifier, Style},
@@ -23,6 +22,7 @@ use tui::{
   widgets::Paragraph,
   Frame as CrosstermFrame, Terminal,
 };
+use tokio::sync::RwLock;
 
 use crate::{
   info::capslock_status,

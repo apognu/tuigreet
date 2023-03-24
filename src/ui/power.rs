@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use lazy_static::lazy_static;
-use tui::{
+use ratatui::{
   layout::Rect,
   style::{Modifier, Style},
   text::Span,

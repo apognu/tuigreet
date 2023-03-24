@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use tui::{
+use ratatui::{
   layout::Rect,
   style::{Modifier, Style},
   text::Span,

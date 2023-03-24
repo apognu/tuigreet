@@ -19,8 +19,8 @@ use crossterm::{
   terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen},
 };
 use greetd_ipc::Request;
+use ratatui::{backend::CrosstermBackend, Terminal};
 use tokio::sync::RwLock;
-use tui::{backend::CrosstermBackend, Terminal};
 
 pub use self::greeter::*;
 use self::{event::Events, ipc::Ipc};
