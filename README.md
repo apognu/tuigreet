@@ -68,15 +68,16 @@ $ cargo build --release
 # mv target/release/tuigreet /usr/local/bin/tuigreet
 ```
 
-### From AUR
+### From Arch Linux
 
-On ArchLinux, `tuigreet` is available on [AUR](https://aur.archlinux.org/packages/greetd-tuigreet) and is installable through your preferred AUR helper:
+On ArchLinux, `tuigreet` is available from the [extra](https://archlinux.org/packages/extra/x86_64/greetd-tuigreet/) repo and is installable through pacman:
 
 ```
-$ yay -S greetd-tuigreet
+$ pacman -S greetd-tuigreet
 ```
 
-Two more distributions are available: `greetd-tuigreet-bin` is the precompiled release for the latest tagged release of `tuigreet` and `greetd-tuigreet-git` is a rolling release always following the `master` branch of this repository.
+Two more distributions are available from the [AUR](https://aur.archlinux.org/packages?O=0&K=tuigreet): `greetd-tuigreet-bin` is the precompiled release for the latest tagged release of `tuigreet` and `greetd-tuigreet-git` is a rolling release always following the `master` branch of this repository.
+Those can be installed via your preferred AUR helper.
 
 ### From Gentoo
 
