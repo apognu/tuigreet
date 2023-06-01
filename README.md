@@ -68,6 +68,14 @@ $ cargo build --release
 # mv target/release/tuigreet /usr/local/bin/tuigreet
 ```
 
+Cache directory must be created for `--remember*` features to work. The directory must be owned by the user running the greeter.
+
+```
+# mkdir /var/cache/tuigreet
+# chown greeter:greeter /var/cache/tuigreet
+# chmod 0755 /var/cache/tuigreet
+```
+
 ### From AUR
 
 On ArchLinux, `tuigreet` is available on [AUR](https://aur.archlinux.org/packages/greetd-tuigreet) and is installable through your preferred AUR helper:
