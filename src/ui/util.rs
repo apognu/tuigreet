@@ -26,7 +26,7 @@ pub fn get_height(greeter: &Greeter) -> u16 {
       Some(_) => (2 * container_padding) + prompt_padding + 2,
       None => (2 * container_padding) + 1,
     },
-    Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => (2 * container_padding),
+    Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => 2 * container_padding,
   };
 
   match greeter.mode {
