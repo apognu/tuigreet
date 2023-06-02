@@ -42,7 +42,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
 
       KeyEvent { code: KeyCode::Esc, .. } => {
         Ipc::cancel(&mut greeter).await;
-        greeter.reset().await;
+        greeter.reset(false).await;
       }
 
       KeyEvent { code: KeyCode::Left, .. } => greeter.cursor_offset -= 1,

@@ -140,14 +140,16 @@ impl Ipc {
         match error_type {
           ErrorType::AuthError => {
             greeter.message = Some(fl!("failed"));
+            self.send(Request::CreateSession { username: greeter.username.clone() }).await;
+            greeter.reset(true).await;
           }
 
           ErrorType::Error => {
             greeter.message = Some(description);
+            greeter.reset(false).await;
           }
         }
 
-        greeter.reset().await;
       }
     }
 

@@ -107,7 +107,7 @@ pub struct Greeter {
 
 impl Drop for Greeter {
   fn drop(&mut self) {
-    self.scrub(true);
+    self.scrub(true, false);
   }
 }
 
@@ -149,24 +149,33 @@ impl Greeter {
     greeter
   }
 
-  fn scrub(&mut self, scrub_message: bool) {
-    self.prompt.zeroize();
-    self.username.zeroize();
-    self.username_mask.zeroize();
+  fn scrub(&mut self, scrub_message: bool, soft: bool) {
     self.answer.zeroize();
+    self.prompt.zeroize();
+
+    if !soft {
+      self.username.zeroize();
+      self.username_mask.zeroize();
+    }
 
     if scrub_message {
       self.message.zeroize();
     }
   }
 
-  pub async fn reset(&mut self) {
-    self.mode = Mode::Username;
-    self.previous_mode = Mode::Username;
+  pub async fn reset(&mut self, soft: bool) {
+    if soft {
+        self.mode = Mode::Password;
+        self.previous_mode = Mode::Password;
+    } else {
+        self.mode = Mode::Username;
+        self.previous_mode = Mode::Username;
+    }
+
     self.working = false;
     self.done = false;
 
-    self.scrub(false);
+    self.scrub(false, soft);
     self.connect().await;
   }
 
