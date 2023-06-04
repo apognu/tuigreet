@@ -10,7 +10,7 @@ use std::{
 use ini::Ini;
 use nix::sys::utsname;
 
-use crate::Greeter;
+use crate::{Greeter, Session};
 
 const X_SESSIONS: &str = "/usr/share/xsessions";
 const WAYLAND_SESSIONS: &str = "/usr/share/wayland-sessions";
@@ -179,7 +179,7 @@ pub fn get_min_max_uids(min_uid: Option<u16>, max_uid: Option<u16>) -> (u16, u16
   }
 }
 
-pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn Error>> {
+pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
   let sessions = match greeter.sessions_path {
     Some(ref dirs) => env::split_paths(&dirs).collect(),
     None => vec![PathBuf::from(X_SESSIONS), PathBuf::from(WAYLAND_SESSIONS)],
@@ -192,13 +192,19 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<(String, String)>, Box<dyn 
     .collect::<Vec<_>>();
 
   if let Some(command) = &greeter.command {
-    files.insert(0, (command.clone(), command.clone()));
+    files.insert(
+      0,
+      Session {
+        name: command.clone(),
+        command: command.clone(),
+      },
+    );
   }
 
   Ok(files)
 }
 
-fn load_desktop_file<P>(path: P) -> Result<(String, String), Box<dyn Error>>
+fn load_desktop_file<P>(path: P) -> Result<Session, Box<dyn Error>>
 where
   P: AsRef<Path>,
 {
@@ -208,7 +214,10 @@ where
   let name = section.get("Name").ok_or("no Name property in desktop file")?;
   let exec = section.get("Exec").ok_or("no Exec property in desktop file")?;
 
-  Ok((name.to_string(), exec.to_string()))
+  Ok(Session {
+    name: name.to_string(),
+    command: exec.to_string(),
+  })
 }
 
 pub fn capslock_status() -> bool {

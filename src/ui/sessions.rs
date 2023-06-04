@@ -21,8 +21,8 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let title = Span::from(titleize(&fl!("title_session")));
   let block = Block::default().title(title).borders(Borders::ALL).border_type(BorderType::Plain);
 
-  for (index, (name, _)) in greeter.sessions.iter().enumerate() {
-    let name = format!("{:1$}", name, greeter.width() as usize - 4);
+  for (index, session) in greeter.sessions.iter().enumerate() {
+    let name = format!("{:1$}", session.name, greeter.width() as usize - 4);
 
     let frame = Rect::new(x + 2, y + 2 + index as u16, width - 4, 1);
     let option_text = get_option(greeter, name, index);
