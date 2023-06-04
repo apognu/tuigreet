@@ -57,6 +57,12 @@ pub enum Mode {
 }
 
 #[derive(SmartDefault)]
+pub struct Session {
+  pub name: String,
+  pub command: String,
+}
+
+#[derive(SmartDefault)]
 pub struct Greeter {
   #[default(DEFAULT_LOCALE)]
   pub locale: Locale,
@@ -73,7 +79,7 @@ pub struct Greeter {
   pub command: Option<String>,
   pub new_command: String,
   pub sessions_path: Option<String>,
-  pub sessions: Vec<(String, String)>,
+  pub sessions: Vec<Session>,
   pub selected_session: usize,
 
   pub selected_power_option: usize,
@@ -119,7 +125,7 @@ impl Greeter {
     greeter.parse_options().await;
     greeter.sessions = crate::info::get_sessions(&greeter).unwrap_or_default();
 
-    if let Some((_, command)) = greeter.sessions.get(0) {
+    if let Some(Session { command, .. }) = greeter.sessions.get(0) {
       if greeter.command.is_none() {
         greeter.command = Some(command.clone());
       }
@@ -144,7 +150,7 @@ impl Greeter {
       }
     }
 
-    greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == greeter.command.as_ref()).unwrap_or(0);
+    greeter.selected_session = greeter.sessions.iter().position(|Session { command, .. }| Some(command) == greeter.command.as_ref()).unwrap_or(0);
 
     greeter
   }

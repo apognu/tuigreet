@@ -10,7 +10,7 @@ use crate::{
   ipc::Ipc,
   power::power,
   ui::POWER_OPTIONS,
-  Greeter, Mode,
+  Greeter, Mode, Session,
 };
 
 pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc) -> Result<(), Box<dyn Error>> {
@@ -172,7 +172,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         Mode::Command => {
           let cmd = &greeter.command;
 
-          greeter.selected_session = greeter.sessions.iter().position(|(_, command)| Some(command) == cmd.as_ref()).unwrap_or(0);
+          greeter.selected_session = greeter.sessions.iter().position(|Session { command, .. }| Some(command) == cmd.as_ref()).unwrap_or(0);
           greeter.command = Some(greeter.new_command.clone());
 
           if greeter.remember_session {
@@ -194,17 +194,14 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Sessions => {
-          let session = match greeter.sessions.get(greeter.selected_session) {
-            Some((_, command)) => Some(command.clone()),
-            _ => None,
-          };
+          let session = greeter.sessions.get(greeter.selected_session);
 
-          if let Some(command) = session {
+          if let Some(Session { command, .. }) = session {
             if greeter.remember_session {
-              write_last_session(&command);
+              write_last_session(command);
             }
 
-            greeter.command = Some(command);
+            greeter.command = Some(command.clone());
           }
 
           greeter.mode = greeter.previous_mode;
@@ -297,7 +294,7 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
 
   if greeter.remember_user_session {
     if let Ok(command) = get_last_user_session(&greeter.username) {
-      greeter.selected_session = greeter.sessions.iter().position(|(_, cmd)| Some(cmd) == Some(&command)).unwrap_or(0);
+      greeter.selected_session = greeter.sessions.iter().position(|session| session.command == command).unwrap_or(0);
       greeter.command = Some(command);
     }
   }
