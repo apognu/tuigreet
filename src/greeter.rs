@@ -4,6 +4,7 @@ use std::{
   env,
   error::Error,
   fmt::{self, Display},
+  path::PathBuf,
   process,
   sync::Arc,
 };
@@ -99,7 +100,7 @@ pub struct Greeter {
   pub selected_user: usize,
   pub command: Option<String>,
   pub new_command: String,
-  pub sessions_path: Option<String>,
+  pub session_paths: Vec<(PathBuf, SessionType)>,
   pub sessions: Vec<Session>,
   pub selected_session: usize,
 
@@ -287,7 +288,8 @@ impl Greeter {
     opts.optflag("h", "help", "show this usage information");
     opts.optflag("v", "version", "print version information");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
-    opts.optopt("s", "sessions", "colon-separated list of session paths", "DIRS");
+    opts.optopt("s", "sessions", "colon-separated list of Wayland session paths", "DIRS");
+    opts.optopt("x", "xsessions", "colon-separated list of X11 session paths", "DIRS");
     opts.optopt("w", "width", "width of the main prompt (default: 80)", "WIDTH");
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
@@ -392,7 +394,13 @@ impl Greeter {
     self.greeting = self.option("greeting");
     self.command = self.option("cmd");
 
-    self.sessions_path = self.option("sessions");
+    if let Some(dirs) = self.option("sessions") {
+      self.session_paths.extend(env::split_paths(&dirs).map(|dir| (dir, SessionType::Wayland)));
+    }
+
+    if let Some(dirs) = self.option("xsessions") {
+      self.session_paths.extend(env::split_paths(&dirs).map(|dir| (dir, SessionType::X11)));
+    }
 
     if self.config().opt_present("issue") {
       self.greeting = get_issue();

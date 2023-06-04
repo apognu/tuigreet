@@ -8,18 +8,29 @@ use std::{
 };
 
 use ini::Ini;
+use lazy_static::lazy_static;
 use nix::sys::utsname;
 
 use crate::{Greeter, Session, SessionType};
 
-const X_SESSIONS: &str = "/usr/share/xsessions";
-const WAYLAND_SESSIONS: &str = "/usr/share/wayland-sessions";
 const LAST_USER_USERNAME: &str = "/var/cache/tuigreet/lastuser";
 const LAST_USER_NAME: &str = "/var/cache/tuigreet/lastuser-name";
 const LAST_SESSION: &str = "/var/cache/tuigreet/lastsession";
 
 const DEFAULT_MIN_UID: u16 = 1000;
 const DEFAULT_MAX_UID: u16 = 60000;
+
+lazy_static! {
+  static ref XDG_DATA_DIRS: Vec<PathBuf> = {
+    let value = env::var("XDG_DATA_DIRS").unwrap_or("/usr/local/share:/usr/share".to_string());
+    env::split_paths(&value).filter(|p| p.is_absolute()).collect()
+  };
+  static ref DEFAULT_SESSION_PATHS: Vec<(PathBuf, SessionType)> = XDG_DATA_DIRS
+    .iter()
+    .map(|p| (p.join("wayland-sessions"), SessionType::Wayland))
+    .chain(XDG_DATA_DIRS.iter().map(|p| (p.join("xsessions"), SessionType::X11)))
+    .collect();
+}
 
 pub fn get_hostname() -> String {
   match utsname::uname() {
@@ -180,32 +191,30 @@ pub fn get_min_max_uids(min_uid: Option<u16>, max_uid: Option<u16>) -> (u16, u16
 }
 
 pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
-  let sessions = match greeter.sessions_path {
-    Some(ref dirs) => env::split_paths(&dirs).collect(),
-    None => vec![PathBuf::from(X_SESSIONS), PathBuf::from(WAYLAND_SESSIONS)],
+  let paths = if greeter.session_paths.is_empty() {
+    DEFAULT_SESSION_PATHS.as_ref()
+  } else {
+    &greeter.session_paths
   };
 
-  let mut files = sessions
-    .iter()
-    .flat_map(fs::read_dir)
-    .flat_map(|directory| directory.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path()))).flatten())
-    .collect::<Vec<_>>();
+  let mut files = match &greeter.command {
+    Some(command) => vec![Session {
+      name: command.clone(),
+      command: command.clone(),
+      session_type: SessionType::default(),
+    }],
+    _ => vec![],
+  };
 
-  if let Some(command) = &greeter.command {
-    files.insert(
-      0,
-      Session {
-        name: command.clone(),
-        command: command.clone(),
-        session_type: SessionType::default(),
-      },
-    );
+  for (path, session_type) in paths.iter() {
+    if let Ok(entries) = fs::read_dir(path) {
+      files.extend(entries.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path(), *session_type))).flatten());
+    }
   }
-
   Ok(files)
 }
 
-fn load_desktop_file<P>(path: P) -> Result<Session, Box<dyn Error>>
+fn load_desktop_file<P>(path: P, session_type: SessionType) -> Result<Session, Box<dyn Error>>
 where
   P: AsRef<Path>,
 {
@@ -218,7 +227,7 @@ where
   Ok(Session {
     name: name.to_string(),
     command: exec.to_string(),
-    session_type: SessionType::default(),
+    session_type,
   })
 }
 

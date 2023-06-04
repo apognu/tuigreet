@@ -21,9 +21,12 @@ tuigreet - A graphical console greeter for greetd
 	overridden by manual selection within *tuigreet*.
 
 *-s, --sessions DIR1[:DIR2]...*
-	Location of desktop-files to be used as session definitions. By default,
-	sessions are fetched from */usr/share/xsessions* and
-	*/usr/share/wayland-sessions*.
+	Location of desktop-files to be used as Wayland session definitions. By
+	default, Wayland sessions are fetched from */usr/share/wayland-sessions*.
+
+*-x, --xsessions DIR1[:DIR2]...*
+	Location of desktop-files to be used as X11 session definitions. By
+	default, X11 sessions are fetched from */usr/share/xsessions*.
 
 *-w, --width COLS*
 	Number of columns the main prompt area should take on the screen.
