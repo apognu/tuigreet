@@ -8,7 +8,7 @@ use tokio::sync::{
 
 use crate::{
   info::{write_last_user_session, write_last_username},
-  AuthStatus, Greeter, Mode,
+  AuthStatus, Greeter, Mode, Session, SessionType,
 };
 
 #[derive(Clone)]
@@ -117,17 +117,22 @@ impl Ipc {
           greeter.done = true;
           greeter.mode = Mode::Processing;
 
+          let session = greeter.sessions.get(greeter.selected_session).filter(|s| &s.command == command);
+          let mut env = vec![];
+
+          if let Some(Session { session_type, .. }) = session {
+            if *session_type != SessionType::None {
+              env.push(format!("XDG_SESSION_TYPE={}", session_type.to_xdg_session_type()));
+            }
+          }
+
           #[cfg(not(debug_assertions))]
-          self
-            .send(Request::StartSession {
-              cmd: vec![command.clone()],
-              env: vec![],
-            })
-            .await;
+          self.send(Request::StartSession { cmd: vec![command.clone()], env }).await;
 
           #[cfg(debug_assertions)]
           {
             let _ = command;
+            let _ = env;
 
             crate::exit(greeter, AuthStatus::Success).await;
           }

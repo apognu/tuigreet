@@ -10,7 +10,7 @@ use std::{
 use ini::Ini;
 use nix::sys::utsname;
 
-use crate::{Greeter, Session};
+use crate::{Greeter, Session, SessionType};
 
 const X_SESSIONS: &str = "/usr/share/xsessions";
 const WAYLAND_SESSIONS: &str = "/usr/share/wayland-sessions";
@@ -197,6 +197,7 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
       Session {
         name: command.clone(),
         command: command.clone(),
+        session_type: SessionType::default(),
       },
     );
   }
@@ -217,6 +218,7 @@ where
   Ok(Session {
     name: name.to_string(),
     command: exec.to_string(),
+    session_type: SessionType::default(),
   })
 }
 

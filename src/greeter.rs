@@ -56,10 +56,31 @@ pub enum Mode {
   Processing,
 }
 
+#[derive(SmartDefault, Debug, Copy, Clone, PartialEq)]
+pub enum SessionType {
+  X11,
+  Wayland,
+  TTY,
+  #[default]
+  None,
+}
+
+impl SessionType {
+  pub fn to_xdg_session_type(&self) -> &'static str {
+    match self {
+      SessionType::X11 => "x11",
+      SessionType::Wayland => "wayland",
+      SessionType::TTY => "tty",
+      SessionType::None => "unspecified",
+    }
+  }
+}
+
 #[derive(SmartDefault)]
 pub struct Session {
   pub name: String,
   pub command: String,
+  pub session_type: SessionType,
 }
 
 #[derive(SmartDefault)]
