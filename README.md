@@ -11,7 +11,9 @@ Options:
     -h, --help          show this usage information
     -v, --version       print version information
     -c, --cmd COMMAND   command to run
-    -s, --sessions DIRS colon-separated list of session paths
+    -s, --sessions DIRS colon-separated list of Wayland session paths
+    -x, --xsessions DIRS
+                        colon-separated list of X11 session paths
     -w, --width WIDTH   width of the main prompt (default: 80)
     -i, --issue         show the host's issue file
     -g, --greeting GREETING
