@@ -28,6 +28,11 @@ tuigreet - A graphical console greeter for greetd
 	Location of desktop-files to be used as X11 session definitions. By
 	default, X11 sessions are fetched from */usr/share/xsessions*.
 
+*--xsession-wrapper 'CMD [ARGS]...'*
+	Specify a wrapper command to initialize X server and launch X11 sessions.
+	By default, *startx /usr/bin/env* will be prepended to all X11 session
+	commands.
+
 *-w, --width COLS*
 	Number of columns the main prompt area should take on the screen.
 
