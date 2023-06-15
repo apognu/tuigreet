@@ -14,6 +14,9 @@ Options:
     -s, --sessions DIRS colon-separated list of Wayland session paths
     -x, --xsessions DIRS
                         colon-separated list of X11 session paths
+        --xsession-wrapper 'CMD [ARGS]...'
+                        wrapper command to initialize X server and launch X11
+                        sessions (default: startx /usr/bin/env)
     -w, --width WIDTH   width of the main prompt (default: 80)
     -i, --issue         show the host's issue file
     -g, --greeting GREETING

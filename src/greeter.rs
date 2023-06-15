@@ -29,6 +29,9 @@ use crate::{
 
 const DEFAULT_LOCALE: Locale = Locale::en_US;
 const DEFAULT_ASTERISKS_CHAR: char = '*';
+// `startx` wants an absolute path to the executable as a first argument.
+// We don't want to resolve the session command in the greeter though, so it should be additionally wrapped with a known noop command (like `/usr/bin/env`).
+const DEFAULT_XSESSION_WRAPPER: &str = "startx /usr/bin/env";
 
 #[derive(Debug, Copy, Clone)]
 pub enum AuthStatus {
@@ -103,6 +106,7 @@ pub struct Greeter {
   pub session_paths: Vec<(PathBuf, SessionType)>,
   pub sessions: Vec<Session>,
   pub selected_session: usize,
+  pub xsession_wrapper: Option<String>,
 
   pub selected_power_option: usize,
 
@@ -285,11 +289,14 @@ impl Greeter {
   async fn parse_options(&mut self) {
     let mut opts = Options::new();
 
+    let xsession_wrapper_desc = format!("wrapper command to initialize X server and launch X11 sessions (default: {DEFAULT_XSESSION_WRAPPER})");
+
     opts.optflag("h", "help", "show this usage information");
     opts.optflag("v", "version", "print version information");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
     opts.optopt("s", "sessions", "colon-separated list of Wayland session paths", "DIRS");
     opts.optopt("x", "xsessions", "colon-separated list of X11 session paths", "DIRS");
+    opts.optopt("", "xsession-wrapper", xsession_wrapper_desc.as_str(), "'CMD [ARGS]...'");
     opts.optopt("w", "width", "width of the main prompt (default: 80)", "WIDTH");
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
@@ -401,6 +408,8 @@ impl Greeter {
     if let Some(dirs) = self.option("xsessions") {
       self.session_paths.extend(env::split_paths(&dirs).map(|dir| (dir, SessionType::X11)));
     }
+
+    self.xsession_wrapper = self.option("xsession-wrapper").or_else(|| Some(DEFAULT_XSESSION_WRAPPER.to_string()));
 
     if self.config().opt_present("issue") {
       self.greeting = get_issue();
