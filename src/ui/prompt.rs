@@ -95,7 +95,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
         if !greeter.secret || greeter.asterisks {
           let value = if greeter.secret && greeter.asterisks {
-            greeter.asterisks_char.to_string().repeat(greeter.answer.len())
+            greeter.asterisks_char.to_string().repeat(greeter.answer.chars().count())
           } else {
             greeter.answer.clone()
           };
