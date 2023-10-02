@@ -18,7 +18,7 @@ tuigreet - A graphical console greeter for greetd
 
 *-c, --cmd CMD*
 	Specify which command to run on successful authentication. This can be
-	overriden by manual selection within *tuigreet*.
+	overridden by manual selection within *tuigreet*.
 
 *-s, --sessions DIR1[:DIR2]...*
 	Location of desktop-files to be used as session definitions. By default,
