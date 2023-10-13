@@ -21,6 +21,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
       KeyEvent {
         code: KeyCode::Char('u'),
         modifiers: KeyModifiers::CONTROL,
+        ..
       } => match greeter.mode {
         Mode::Username => greeter.username = String::new(),
         Mode::Password => greeter.answer = String::new(),
@@ -32,6 +33,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
       KeyEvent {
         code: KeyCode::Char('x'),
         modifiers: KeyModifiers::CONTROL,
+        ..
       } => {
         use crate::greeter::AuthStatus;
 
@@ -117,6 +119,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
       KeyEvent {
         code: KeyCode::Char('a'),
         modifiers: KeyModifiers::CONTROL,
+        ..
       } => {
         let value = {
           match greeter.mode {
@@ -131,6 +134,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
       KeyEvent {
         code: KeyCode::Char('e'),
         modifiers: KeyModifiers::CONTROL,
+        ..
       } => greeter.cursor_offset = 0,
 
       KeyEvent { code: KeyCode::Tab, .. } => match greeter.mode {
