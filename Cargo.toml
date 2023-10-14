@@ -7,20 +7,30 @@ build = "build.rs"
 
 [dependencies]
 chrono = { version = "^0.4", features = ["unstable-locales"] }
-crossterm = { version = "^0.23", features = ["event-stream"] }
+crossterm = { version = "^0.27", features = ["event-stream"] }
 futures = "0.3"
 getopts = "^0.2"
-greetd_ipc = { version = "^0.8", features = ["tokio-codec"] }
-i18n-embed = { version = "^0.13", features = ["desktop-requester", "fluent-system"] }
-i18n-embed-fl = "^0.6"
+greetd_ipc = { version = "^0.9", features = ["tokio-codec"] }
+i18n-embed = { version = "^0.14", features = [
+  "desktop-requester",
+  "fluent-system",
+] }
+i18n-embed-fl = "^0.7"
 lazy_static = "^1.4"
-nix = "^0.24"
-tui = { version = "^0.18", default-features = false, features = ["crossterm"] }
-rust-embed = "^6.2"
-rust-ini = "^0.18"
-smart-default = "^0.6"
-textwrap = "^0.15"
-tokio = { version = "^1.2", default_features = false, features = ["macros", "rt-multi-thread", "net", "sync", "time", "process"] }
+nix = { version = "^0.27", features = ["feature"] }
+tui = { version = "^0.19", default-features = false, features = ["crossterm"] }
+rust-embed = "^8.0"
+rust-ini = "^0.19"
+smart-default = "^0.7"
+textwrap = "^0.16"
+tokio = { version = "^1.2", default_features = false, features = [
+  "macros",
+  "rt-multi-thread",
+  "net",
+  "sync",
+  "time",
+  "process",
+] }
 unic-langid = "^0.9"
 zeroize = "^1.3"
 

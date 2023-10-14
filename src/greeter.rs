@@ -273,7 +273,7 @@ impl Greeter {
     opts.optopt("", "power-reboot", "command to run to reboot the system", "'CMD [ARGS]...'");
     opts.optflag("", "power-no-setsid", "do not prefix power commands with setsid");
 
-    self.config = match opts.parse(&env::args().collect::<Vec<String>>()) {
+    self.config = match opts.parse(env::args().collect::<Vec<String>>()) {
       Ok(matches) => Some(matches),
 
       Err(err) => {

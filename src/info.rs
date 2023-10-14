@@ -80,11 +80,11 @@ pub fn write_last_session(session: &str) {
 }
 
 pub fn get_last_user_session(username: &str) -> Result<String, io::Error> {
-  fs::read_to_string(&format!("{LAST_SESSION}-{username}"))
+  fs::read_to_string(format!("{LAST_SESSION}-{username}"))
 }
 
 pub fn write_last_user_session(username: &str, session: &str) {
-  let _ = fs::write(&format!("{LAST_SESSION}-{username}"), session);
+  let _ = fs::write(format!("{LAST_SESSION}-{username}"), session);
 }
 
 pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<(String, Option<String>)> {
