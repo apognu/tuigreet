@@ -25,11 +25,7 @@ lazy_static! {
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame<'_>) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
-
-  let width = greeter.width();
-  let height: u16 = get_height(greeter) + OPTIONS.len() as u16;
-  let x = (size.width - width) / 2;
-  let y = (size.height - height) / 2;
+  let (x, y, width, height) = get_rect_bounds(greeter, size, OPTIONS.len());
 
   let container = Rect::new(x, y, width, height);
 
@@ -39,7 +35,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame<'_>) -> Result<(u16, u16), Box<
   for (index, (_, label)) in OPTIONS.iter().enumerate() {
     let name = format!("{:1$}", label, greeter.width() as usize - 4);
 
-    let frame = Rect::new(x + 2, y + 2 + index as u16, width, 1);
+    let frame = Rect::new(x + 2, y + 2 + index as u16, width - 4, 1);
     let option_text = get_option(greeter, name, index);
     let option = Paragraph::new(option_text);
 

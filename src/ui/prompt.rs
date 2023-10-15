@@ -18,13 +18,10 @@ const ANSWER_INDEX: usize = 2;
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
+  let (x, y, width, height) = get_rect_bounds(greeter, size, 0);
 
-  let width = greeter.width();
-  let height = get_height(greeter);
   let container_padding = greeter.container_padding();
   let prompt_padding = greeter.prompt_padding();
-  let x = (size.width - width) / 2;
-  let y = (size.height - height) / 2;
 
   let container = Rect::new(x, y, width, height);
   let frame = Rect::new(x + container_padding, y + container_padding, width - (2 * container_padding), height - (2 * container_padding));
@@ -80,7 +77,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
           Rect::new(
             1 + chunks[USERNAME_INDEX].x + fl!("username").len() as u16,
             chunks[USERNAME_INDEX].y,
-            get_input_width(greeter, &Some(fl!("username"))),
+            get_input_width(greeter, width, &Some(fl!("username"))),
             1,
           ),
         );
@@ -108,7 +105,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
             Rect::new(
               chunks[ANSWER_INDEX].x + greeter.prompt_width() as u16,
               chunks[ANSWER_INDEX].y,
-              get_input_width(greeter, &greeter.prompt),
+              get_input_width(greeter, width, &greeter.prompt),
               1,
             ),
           );

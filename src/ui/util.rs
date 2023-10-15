@@ -1,3 +1,5 @@
+use tui::prelude::Rect;
+
 use crate::{Greeter, Mode};
 
 pub fn titleize(message: &str) -> String {
@@ -35,13 +37,28 @@ pub fn get_height(greeter: &Greeter) -> u16 {
   }
 }
 
-pub fn get_input_width(greeter: &Greeter, label: &Option<String>) -> u16 {
+pub fn get_rect_bounds(greeter: &Greeter, area: Rect, items: usize) -> (u16, u16, u16, u16) {
+  let width = greeter.width();
+  let height: u16 = get_height(greeter) + items as u16;
+
+  let x = if width < area.width { (area.width - width) / 2 } else { 0 };
+  let y = if height < area.height { (area.height - height) / 2 } else { 0 };
+
+  let (x, width) = if (x + width) >= area.width { (0, area.width) } else { (x, width) };
+  let (y, height) = if (y + height) >= area.height { (0, area.height) } else { (y, height) };
+
+  (x, y, width, height)
+}
+
+pub fn get_input_width(greeter: &Greeter, width: u16, label: &Option<String>) -> u16 {
+  let width = std::cmp::min(greeter.width(), width);
+
   let label_width = match label {
     None => 0,
     Some(label) => label.chars().count(),
   };
 
-  greeter.width() - label_width as u16 - 4 - 1
+  width - label_width as u16 - 4 - 1
 }
 
 pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {

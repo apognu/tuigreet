@@ -14,12 +14,9 @@ use crate::{
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
+  let (x, y, width, height) = get_rect_bounds(greeter, size, 0);
 
-  let width = greeter.width();
-  let height = get_height(greeter);
   let container_padding = greeter.container_padding();
-  let x = (size.width - width) / 2;
-  let y = (size.height - height) / 2;
 
   let container = Rect::new(x, y, width, height);
   let frame = Rect::new(x + container_padding, y + container_padding, width - container_padding, height - container_padding);
@@ -43,7 +40,12 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   f.render_widget(command_label, chunks[0]);
   f.render_widget(
     command_value,
-    Rect::new(1 + chunks[0].x + fl!("new_command").len() as u16, chunks[0].y, get_input_width(greeter, &Some(fl!("new_command"))), 1),
+    Rect::new(
+      1 + chunks[0].x + fl!("new_command").len() as u16,
+      chunks[0].y,
+      get_input_width(greeter, width, &Some(fl!("new_command"))),
+      1,
+    ),
   );
 
   let new_command = greeter.new_command.clone();
