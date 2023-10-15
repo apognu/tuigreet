@@ -22,6 +22,8 @@ use greetd_ipc::Request;
 use tokio::sync::RwLock;
 use tui::{backend::CrosstermBackend, Terminal};
 
+use crate::event::Event;
+
 pub use self::greeter::*;
 use self::{event::Events, ipc::Ipc};
 
@@ -92,8 +94,11 @@ async fn run() -> Result<(), Box<dyn Error>> {
       return Err(status.into());
     }
 
-    ui::draw(greeter.clone(), &mut terminal).await?;
-    keyboard::handle(greeter.clone(), &mut events, ipc.clone()).await?;
+    match events.next().await {
+      Some(Event::Render) => ui::draw(greeter.clone(), &mut terminal).await?,
+      Some(Event::Key(key)) => keyboard::handle(greeter.clone(), key, ipc.clone()).await?,
+      Some(Event::Tick) | None => {}
+    }
   }
 }
 
