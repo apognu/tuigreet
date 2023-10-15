@@ -75,7 +75,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
         f.render_widget(
           username_value,
           Rect::new(
-            1 + chunks[USERNAME_INDEX].x + fl!("username").len() as u16,
+            1 + chunks[USERNAME_INDEX].x + fl!("username").chars().count() as u16,
             chunks[USERNAME_INDEX].y,
             get_input_width(greeter, width, &Some(fl!("username"))),
             1,
@@ -128,7 +128,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
       let username_length = greeter.username.chars().count();
       let offset = get_cursor_offset(greeter, username_length);
 
-      Ok((2 + cursor.x + fl!("username").len() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
+      Ok((2 + cursor.x + fl!("username").chars().count() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))
     }
 
     Mode::Password => {
