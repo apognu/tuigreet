@@ -18,12 +18,14 @@ i18n-embed = { version = "^0.14", features = [
 i18n-embed-fl = "^0.7"
 lazy_static = "^1.4"
 nix = { version = "^0.27", features = ["feature"] }
-tui = { version = "^0.19", default-features = false, features = ["crossterm"] }
+tui = { package = "ratatui", version = "^0.23", default-features = false, features = [
+  "crossterm",
+] }
 rust-embed = "^8.0"
 rust-ini = "^0.19"
 smart-default = "^0.7"
 textwrap = "^0.16"
-tokio = { version = "^1.2", default_features = false, features = [
+tokio = { version = "^1.2", default-features = false, features = [
   "macros",
   "rt-multi-thread",
   "net",

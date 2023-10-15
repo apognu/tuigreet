@@ -19,7 +19,7 @@ use tui::{
   backend::CrosstermBackend,
   layout::{Alignment, Constraint, Direction, Layout},
   style::{Modifier, Style},
-  text::{Span, Spans},
+  text::{Line, Span},
   widgets::Paragraph,
   Frame as CrosstermFrame, Terminal,
 };
@@ -83,7 +83,7 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
       .split(chunks[STATUSBAR_INDEX]);
 
     let command = greeter.command.clone().unwrap_or_else(|| "-".to_string());
-    let status_left_text = Spans::from(vec![
+    let status_left_text = Line::from(vec![
       status_label("ESC"),
       status_value(fl!("action_reset")),
       status_label("F2"),
