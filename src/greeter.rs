@@ -126,7 +126,7 @@ impl Greeter {
     }
 
     if greeter.remember {
-      if let Ok(username) = get_last_user_username() {
+      if let Some(username) = get_last_user_username() {
         greeter.username = username.clone();
         greeter.username_mask = get_last_user_name();
 
