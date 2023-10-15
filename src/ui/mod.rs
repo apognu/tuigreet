@@ -43,13 +43,7 @@ pub(super) type Frame<'a> = CrosstermFrame<'a, Backend>;
 
 pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<(), Box<dyn Error>> {
   let mut greeter = greeter.write().await;
-
-  let hide_cursor = if should_hide_cursor(&greeter) {
-    terminal.hide_cursor()?;
-    true
-  } else {
-    false
-  };
+  let hide_cursor = should_hide_cursor(&greeter);
 
   terminal.draw(|f| {
     let size = f.size();

@@ -16,7 +16,7 @@ use std::{error::Error, io, process, sync::Arc};
 
 use crossterm::{
   execute,
-  terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen},
+  terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use greetd_ipc::Request;
 use tokio::sync::RwLock;
@@ -39,6 +39,8 @@ async fn main() {
 async fn run() -> Result<(), Box<dyn Error>> {
   let greeter = Greeter::new().await;
   let mut stdout = io::stdout();
+
+  register_panic_handler();
 
   enable_raw_mode()?;
   execute!(stdout, EnterAlternateScreen)?;
@@ -102,9 +104,22 @@ pub async fn exit(greeter: &mut Greeter, status: AuthStatus) {
   }
 
   clear_screen();
+  let _ = execute!(io::stdout(), LeaveAlternateScreen);
   let _ = disable_raw_mode();
 
   greeter.exit = Some(status);
+}
+
+fn register_panic_handler() {
+  let hook = std::panic::take_hook();
+
+  std::panic::set_hook(Box::new(move |info| {
+    clear_screen();
+    let _ = execute!(io::stdout(), LeaveAlternateScreen);
+    let _ = disable_raw_mode();
+
+    hook(info);
+  }));
 }
 
 pub fn clear_screen() {

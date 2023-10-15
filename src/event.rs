@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crossterm::event::{Event as TermEvent, EventStream, KeyEvent};
 use futures::{future::FutureExt, StreamExt};
-use tokio::{sync::mpsc, time};
+use tokio::sync::mpsc;
 
 const TICK_RATE: u64 = 250;
 
@@ -17,21 +17,24 @@ pub struct Events {
 
 impl Events {
   pub async fn new() -> Events {
-    let mut stream = EventStream::new();
     let (tx, rx) = mpsc::channel(10);
 
     tokio::task::spawn(async move {
+      let mut stream = EventStream::new();
+      let mut interval = tokio::time::interval(Duration::from_millis(TICK_RATE));
+
       loop {
-        let timeout = time::sleep(Duration::from_millis(TICK_RATE));
+        let delay = interval.tick();
+        let event = stream.next().fuse();
 
         tokio::select! {
-          event = stream.next().fuse() => {
+          event = event => {
             if let Some(Ok(TermEvent::Key(event))) = event {
               let _ = tx.send(Event::Key(event)).await;
             }
           }
 
-          _ = timeout => { let _ = tx.send(Event::Tick).await; },
+          _ = delay => { let _ = tx.send(Event::Tick).await; },
         }
       }
     });
