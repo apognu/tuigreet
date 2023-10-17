@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 
 use crate::{
   event::{Event, Events},
-  info::{get_last_user_session, write_last_session},
+  info::{delete_last_session_path, get_last_user_session, get_last_user_session_path, write_last_session, write_last_session_path},
   ipc::Ipc,
   power::power,
   ui::POWER_OPTIONS,
@@ -177,6 +177,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
 
           if greeter.remember_session {
             write_last_session(&greeter.new_command);
+            delete_last_session_path();
           }
 
           greeter.mode = greeter.previous_mode;
@@ -194,11 +195,20 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Sessions => {
-          let session = greeter.sessions.get(greeter.selected_session);
+          let session = match greeter.sessions.get(greeter.selected_session) {
+            Some(Session { name, path, command, .. }) => Some((name.clone(), path.clone(), command.clone())),
+            _ => None,
+          };
 
-          if let Some(Session { command, .. }) = session {
+          if let Some((_, path, command)) = session {
+            greeter.session_path = path.clone();
+
             if greeter.remember_session {
-              write_last_session(command);
+              if let Some(path) = path {
+                write_last_session_path(&path);
+              }
+
+              write_last_session(&command);
             }
 
             greeter.command = Some(command.clone());
@@ -293,6 +303,10 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
   greeter.answer = String::new();
 
   if greeter.remember_user_session {
+    if let Ok(last_session) = get_last_user_session_path(&greeter.username) {
+      greeter.selected_session = greeter.sessions.iter().position(|Session { path, .. }| path.as_deref() == Some(last_session.as_ref())).unwrap_or(0);
+    }
+
     if let Ok(command) = get_last_user_session(&greeter.username) {
       greeter.selected_session = greeter.sessions.iter().position(|session| session.command == command).unwrap_or(0);
       greeter.command = Some(command);

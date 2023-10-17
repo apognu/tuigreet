@@ -16,6 +16,7 @@ use crate::{Greeter, Session, SessionType};
 const LAST_USER_USERNAME: &str = "/var/cache/tuigreet/lastuser";
 const LAST_USER_NAME: &str = "/var/cache/tuigreet/lastuser-name";
 const LAST_SESSION: &str = "/var/cache/tuigreet/lastsession";
+const LAST_SESSION_PATH: &str = "/var/cache/tuigreet/lastsession-path";
 
 const DEFAULT_MIN_UID: u16 = 1000;
 const DEFAULT_MAX_UID: u16 = 60000;
@@ -104,16 +105,42 @@ pub fn write_last_username(username: &str, name: Option<&str>) {
   }
 }
 
+pub fn get_last_session_path() -> Result<PathBuf, io::Error> {
+  Ok(PathBuf::from(fs::read_to_string(LAST_SESSION_PATH)?))
+}
+
 pub fn get_last_session() -> Result<String, io::Error> {
   fs::read_to_string(LAST_SESSION)
+}
+
+pub fn write_last_session_path<P>(session: &P)
+where
+  P: AsRef<Path>,
+{
+  let _ = fs::write(LAST_SESSION_PATH, session.as_ref().to_string_lossy().as_bytes());
 }
 
 pub fn write_last_session(session: &str) {
   let _ = fs::write(LAST_SESSION, session);
 }
 
+pub fn get_last_user_session_path(username: &str) -> Result<PathBuf, io::Error> {
+  Ok(PathBuf::from(fs::read_to_string(format!("{LAST_SESSION_PATH}-{username}"))?))
+}
+
 pub fn get_last_user_session(username: &str) -> Result<String, io::Error> {
   fs::read_to_string(format!("{LAST_SESSION}-{username}"))
+}
+
+pub fn write_last_user_session_path<P>(username: &str, session: P)
+where
+  P: AsRef<Path>,
+{
+  let _ = fs::write(format!("{LAST_SESSION_PATH}-{username}"), session.as_ref().to_string_lossy().as_bytes());
+}
+
+pub fn delete_last_session_path() {
+  let _ = fs::remove_file(LAST_SESSION_PATH);
 }
 
 pub fn write_last_user_session(username: &str, session: &str) {
@@ -202,6 +229,7 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
       name: command.clone(),
       command: command.clone(),
       session_type: SessionType::default(),
+      path: None,
     }],
     _ => vec![],
   };
@@ -218,7 +246,7 @@ fn load_desktop_file<P>(path: P, session_type: SessionType) -> Result<Session, B
 where
   P: AsRef<Path>,
 {
-  let desktop = Ini::load_from_file(path)?;
+  let desktop = Ini::load_from_file(path.as_ref())?;
   let section = desktop.section(Some("Desktop Entry")).ok_or("no Desktop Entry section in desktop file")?;
 
   let name = section.get("Name").ok_or("no Name property in desktop file")?;
@@ -228,6 +256,7 @@ where
     name: name.to_string(),
     command: exec.to_string(),
     session_type,
+    path: Some(path.as_ref().into()),
   })
 }
 
