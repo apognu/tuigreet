@@ -7,7 +7,7 @@ use tokio::sync::{
 };
 
 use crate::{
-  info::{write_last_user_session, write_last_username},
+  info::{write_last_user_session, write_last_user_session_path, write_last_username},
   AuthStatus, Greeter, Mode, Session, SessionType,
 };
 
@@ -109,6 +109,10 @@ impl Ipc {
               if let Some(command) = &greeter.command {
                 write_last_user_session(&greeter.username, command);
               }
+
+              if let Some(session_path) = &greeter.session_path {
+                write_last_user_session_path(&greeter.username, session_path);
+              }
             }
           }
 
@@ -161,7 +165,6 @@ impl Ipc {
             greeter.reset(false).await;
           }
         }
-
       }
     }
 

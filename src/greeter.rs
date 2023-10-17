@@ -23,7 +23,7 @@ use tokio::{
 use zeroize::Zeroize;
 
 use crate::{
-  info::{get_issue, get_last_session, get_last_user_name, get_last_user_session, get_last_user_username, get_min_max_uids, get_users},
+  info::{get_issue, get_last_session, get_last_session_path, get_last_user_name, get_last_user_session, get_last_user_session_path, get_last_user_username, get_min_max_uids, get_users},
   power::PowerOption,
 };
 
@@ -85,6 +85,7 @@ pub struct Session {
   pub name: String,
   pub command: String,
   pub session_type: SessionType,
+  pub path: Option<PathBuf>,
 }
 
 #[derive(SmartDefault)]
@@ -103,6 +104,7 @@ pub struct Greeter {
   pub selected_user: usize,
   pub command: Option<String>,
   pub new_command: String,
+  pub session_path: Option<PathBuf>,
   pub session_paths: Vec<(PathBuf, SessionType)>,
   pub sessions: Vec<Session>,
   pub selected_session: usize,
@@ -163,6 +165,10 @@ impl Greeter {
         greeter.username_mask = get_last_user_name();
 
         if greeter.remember_user_session {
+          if let Ok(session_path) = get_last_user_session_path(&username) {
+            greeter.session_path = Some(session_path);
+          }
+
           if let Ok(command) = get_last_user_session(&username) {
             greeter.command = Some(command);
           }
@@ -171,12 +177,16 @@ impl Greeter {
     }
 
     if greeter.remember_session {
-      if let Ok(session) = get_last_session() {
-        greeter.command = Some(session.trim().to_string());
+      if let Ok(session_path) = get_last_session_path() {
+        greeter.session_path = Some(session_path);
+      }
+
+      if let Ok(command) = get_last_session() {
+        greeter.command = Some(command.trim().to_string());
       }
     }
 
-    greeter.selected_session = greeter.sessions.iter().position(|Session { command, .. }| Some(command) == greeter.command.as_ref()).unwrap_or(0);
+    greeter.selected_session = greeter.sessions.iter().position(|Session { path, .. }| path.as_deref() == greeter.session_path.as_deref()).unwrap_or(0);
 
     greeter
   }
@@ -197,11 +207,11 @@ impl Greeter {
 
   pub async fn reset(&mut self, soft: bool) {
     if soft {
-        self.mode = Mode::Password;
-        self.previous_mode = Mode::Password;
+      self.mode = Mode::Password;
+      self.previous_mode = Mode::Password;
     } else {
-        self.mode = Mode::Username;
-        self.previous_mode = Mode::Username;
+      self.mode = Mode::Username;
+      self.previous_mode = Mode::Username;
     }
 
     self.working = false;
