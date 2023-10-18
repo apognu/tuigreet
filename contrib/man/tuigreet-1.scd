@@ -33,6 +33,9 @@ tuigreet - A graphical console greeter for greetd
 	By default, *startx /usr/bin/env* will be prepended to all X11 session
 	commands.
 
+*--no-xsession-wrapper*
+	Do not wrap commands for X11 sessions.
+
 *-w, --width COLS*
 	Number of columns the main prompt area should take on the screen.
 
