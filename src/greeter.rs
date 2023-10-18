@@ -297,6 +297,7 @@ impl Greeter {
     opts.optopt("s", "sessions", "colon-separated list of Wayland session paths", "DIRS");
     opts.optopt("x", "xsessions", "colon-separated list of X11 session paths", "DIRS");
     opts.optopt("", "xsession-wrapper", xsession_wrapper_desc.as_str(), "'CMD [ARGS]...'");
+    opts.optflag("", "no-xsession-wrapper", "do not wrap commands for X11 sessions");
     opts.optopt("w", "width", "width of the main prompt (default: 80)", "WIDTH");
     opts.optflag("i", "issue", "show the host's issue file");
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
@@ -409,7 +410,9 @@ impl Greeter {
       self.session_paths.extend(env::split_paths(&dirs).map(|dir| (dir, SessionType::X11)));
     }
 
-    self.xsession_wrapper = self.option("xsession-wrapper").or_else(|| Some(DEFAULT_XSESSION_WRAPPER.to_string()));
+    if !self.config().opt_present("no-xsession-wrapper") {
+      self.xsession_wrapper = self.option("xsession-wrapper").or_else(|| Some(DEFAULT_XSESSION_WRAPPER.to_string()));
+    }
 
     if self.config().opt_present("issue") {
       self.greeting = get_issue();

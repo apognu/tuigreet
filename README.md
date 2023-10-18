@@ -17,6 +17,8 @@ Options:
         --xsession-wrapper 'CMD [ARGS]...'
                         wrapper command to initialize X server and launch X11
                         sessions (default: startx /usr/bin/env)
+        --no-xsession-wrapper
+                        do not wrap commands for X11 sessions
     -w, --width WIDTH   width of the main prompt (default: 80)
     -i, --issue         show the host's issue file
     -g, --greeting GREETING
