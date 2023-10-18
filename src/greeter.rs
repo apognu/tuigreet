@@ -1,5 +1,4 @@
 use std::{
-  collections::HashMap,
   convert::TryInto,
   env,
   error::Error,
@@ -25,6 +24,12 @@ use zeroize::Zeroize;
 use crate::{
   info::{get_issue, get_last_session, get_last_session_path, get_last_user_name, get_last_user_session, get_last_user_session_path, get_last_user_username, get_min_max_uids, get_users},
   power::PowerOption,
+  ui::{
+    common::menu::Menu,
+    power::Power,
+    sessions::{Session, SessionType},
+    users::User,
+  },
 };
 
 const DEFAULT_LOCALE: Locale = Locale::en_US;
@@ -60,34 +65,6 @@ pub enum Mode {
   Processing,
 }
 
-#[derive(SmartDefault, Debug, Copy, Clone, PartialEq)]
-pub enum SessionType {
-  X11,
-  Wayland,
-  TTY,
-  #[default]
-  None,
-}
-
-impl SessionType {
-  pub fn to_xdg_session_type(&self) -> &'static str {
-    match self {
-      SessionType::X11 => "x11",
-      SessionType::Wayland => "wayland",
-      SessionType::TTY => "tty",
-      SessionType::None => "unspecified",
-    }
-  }
-}
-
-#[derive(SmartDefault, Clone)]
-pub struct Session {
-  pub name: String,
-  pub command: String,
-  pub session_type: SessionType,
-  pub path: Option<PathBuf>,
-}
-
 #[derive(SmartDefault)]
 pub struct Greeter {
   #[default(DEFAULT_LOCALE)]
@@ -100,17 +77,13 @@ pub struct Greeter {
   pub previous_mode: Mode,
   pub cursor_offset: i16,
 
-  pub users: Vec<(String, Option<String>)>,
-  pub selected_user: usize,
+  pub users: Menu<User>,
   pub command: Option<String>,
   pub new_command: String,
   pub session_path: Option<PathBuf>,
   pub session_paths: Vec<(PathBuf, SessionType)>,
-  pub sessions: Vec<Session>,
-  pub selected_session: usize,
+  pub sessions: Menu<Session>,
   pub xsession_wrapper: Option<String>,
-
-  pub selected_power_option: usize,
 
   pub username: String,
   pub username_mask: Option<String>,
@@ -129,7 +102,7 @@ pub struct Greeter {
   pub greeting: Option<String>,
   pub message: Option<String>,
 
-  pub power_commands: HashMap<PowerOption, String>,
+  pub power_commands: Menu<Power>,
   pub power_command: Option<Command>,
   pub power_command_notify: Arc<Notify>,
   pub power_setsid: bool,
@@ -150,10 +123,21 @@ impl Greeter {
     let mut greeter = Self::default();
 
     greeter.set_locale();
-    greeter.parse_options().await;
-    greeter.sessions = crate::info::get_sessions(&greeter).unwrap_or_default();
 
-    if let Some(Session { command, .. }) = greeter.sessions.get(0) {
+    greeter.power_commands = Menu {
+      title: fl!("title_power"),
+      options: Default::default(),
+      selected: 0,
+    };
+
+    greeter.parse_options().await;
+    greeter.sessions = Menu {
+      title: fl!("title_session"),
+      options: crate::info::get_sessions(&greeter).unwrap_or_default(),
+      selected: 0,
+    };
+
+    if let Some(Session { command, .. }) = greeter.sessions.options.get(0) {
       if greeter.command.is_none() {
         greeter.command = Some(command.clone());
       }
@@ -186,7 +170,12 @@ impl Greeter {
       }
     }
 
-    greeter.selected_session = greeter.sessions.iter().position(|Session { path, .. }| path.as_deref() == greeter.session_path.as_deref()).unwrap_or(0);
+    greeter.sessions.selected = greeter
+      .sessions
+      .options
+      .iter()
+      .position(|Session { path, .. }| path.as_deref() == greeter.session_path.as_deref())
+      .unwrap_or(0);
 
     greeter
   }
@@ -391,7 +380,11 @@ impl Greeter {
         process::exit(1);
       }
 
-      self.users = get_users(min_uid, max_uid);
+      self.users = Menu {
+        title: fl!("title_users"),
+        options: get_users(min_uid, max_uid),
+        selected: 0,
+      }
     }
 
     if self.config().opt_present("remember-session") && self.config().opt_present("remember-user-session") {
@@ -428,12 +421,17 @@ impl Greeter {
       self.greeting = get_issue();
     }
 
-    if let Some(command) = self.config().opt_str("power-shutdown") {
-      self.power_commands.insert(PowerOption::Shutdown, command);
-    }
-    if let Some(command) = self.config().opt_str("power-reboot") {
-      self.power_commands.insert(PowerOption::Reboot, command);
-    }
+    self.power_commands.options.push(Power {
+      action: PowerOption::Shutdown,
+      label: fl!("shutdown"),
+      command: self.config().opt_str("power-shutdown"),
+    });
+
+    self.power_commands.options.push(Power {
+      action: PowerOption::Reboot,
+      label: fl!("reboot"),
+      command: self.config().opt_str("power-reboot"),
+    });
 
     self.power_setsid = !self.config().opt_present("power-no-setsid");
 

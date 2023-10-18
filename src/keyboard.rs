@@ -9,8 +9,8 @@ use crate::{
   info::{delete_last_session_path, get_last_user_session, get_last_user_session_path, write_last_session, write_last_session_path},
   ipc::Ipc,
   power::power,
-  ui::POWER_OPTIONS,
-  Greeter, Mode, Session,
+  ui::{sessions::Session, users::User},
+  Greeter, Mode,
 };
 
 pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc) -> Result<(), Box<dyn Error>> {
@@ -84,40 +84,40 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
 
       KeyEvent { code: KeyCode::Up, .. } => {
         if let Mode::Users = greeter.mode {
-          if greeter.selected_user > 0 {
-            greeter.selected_user -= 1;
+          if greeter.users.selected > 0 {
+            greeter.users.selected -= 1;
           }
         }
 
         if let Mode::Sessions = greeter.mode {
-          if greeter.selected_session > 0 {
-            greeter.selected_session -= 1;
+          if greeter.sessions.selected > 0 {
+            greeter.sessions.selected -= 1;
           }
         }
 
         if let Mode::Power = greeter.mode {
-          if greeter.selected_power_option > 0 {
-            greeter.selected_power_option -= 1;
+          if greeter.power_commands.selected > 0 {
+            greeter.power_commands.selected -= 1;
           }
         }
       }
 
       KeyEvent { code: KeyCode::Down, .. } => {
         if let Mode::Users = greeter.mode {
-          if greeter.selected_user < greeter.users.len() - 1 {
-            greeter.selected_user += 1;
+          if greeter.users.selected < greeter.users.options.len() - 1 {
+            greeter.users.selected += 1;
           }
         }
 
         if let Mode::Sessions = greeter.mode {
-          if greeter.selected_session < greeter.sessions.len() - 1 {
-            greeter.selected_session += 1;
+          if greeter.sessions.selected < greeter.sessions.options.len() - 1 {
+            greeter.sessions.selected += 1;
           }
         }
 
         if let Mode::Power = greeter.mode {
-          if greeter.selected_power_option < POWER_OPTIONS.len() - 1 {
-            greeter.selected_power_option += 1;
+          if greeter.power_commands.selected < greeter.power_commands.options.len() - 1 {
+            greeter.power_commands.selected += 1;
           }
         }
       }
@@ -176,7 +176,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Command => {
-          greeter.selected_session = 0;
+          greeter.sessions.selected = 0;
           greeter.command = Some(greeter.new_command.clone());
 
           if greeter.remember_session {
@@ -188,9 +188,9 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Users => {
-          let username = greeter.users.get(greeter.selected_user).cloned();
+          let username = greeter.users.options.get(greeter.users.selected).cloned();
 
-          if let Some((username, name)) = username {
+          if let Some(User { username, name }) = username {
             greeter.username = username;
             greeter.username_mask = name;
           }
@@ -199,7 +199,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Sessions => {
-          let session = greeter.sessions.get(greeter.selected_session).cloned();
+          let session = greeter.sessions.options.get(greeter.sessions.selected).cloned();
 
           if let Some(Session { path, command, .. }) = session {
             if greeter.remember_session {
@@ -218,8 +218,10 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Power => {
-          if let Some((option, _)) = POWER_OPTIONS.get(greeter.selected_power_option) {
-            power(&mut greeter, *option);
+          let power_command = greeter.power_commands.options.get(greeter.power_commands.selected).cloned();
+
+          if let Some(command) = power_command {
+            power(&mut greeter, command.action);
           }
 
           greeter.mode = greeter.previous_mode;
@@ -304,7 +306,12 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
 
   if greeter.remember_user_session {
     if let Ok(last_session) = get_last_user_session_path(&greeter.username) {
-      greeter.selected_session = greeter.sessions.iter().position(|Session { path, .. }| path.as_deref() == Some(last_session.as_ref())).unwrap_or(0);
+      greeter.sessions.selected = greeter
+        .sessions
+        .options
+        .iter()
+        .position(|Session { path, .. }| path.as_deref() == Some(last_session.as_ref()))
+        .unwrap_or(0);
     }
 
     if let Ok(command) = get_last_user_session(&greeter.username) {

@@ -2,29 +2,20 @@ use std::{process::Stdio, sync::Arc};
 
 use tokio::{process::Command, sync::RwLock};
 
-use crate::{Greeter, Mode};
+use crate::{ui::power::Power, Greeter, Mode};
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(SmartDefault, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PowerOption {
+  #[default]
   Shutdown,
   Reboot,
 }
 
 pub fn power(greeter: &mut Greeter, option: PowerOption) {
-  let mut command = match greeter.power_commands.get(&option) {
-    None => {
-      let mut command = Command::new("shutdown");
+  let command = match greeter.power_commands.options.iter().find(|opt| opt.action == option) {
+    None => None,
 
-      match option {
-        PowerOption::Shutdown => command.arg("-h"),
-        PowerOption::Reboot => command.arg("-r"),
-      };
-
-      command.arg("now");
-      command
-    }
-
-    Some(args) => {
+    Some(Power { command: Some(args), .. }) => {
       let command = match greeter.power_setsid {
         true => {
           let mut command = Command::new("setsid");
@@ -41,16 +32,31 @@ pub fn power(greeter: &mut Greeter, option: PowerOption) {
         }
       };
 
-      command
+      Some(command)
+    }
+
+    Some(_) => {
+      let mut command = Command::new("shutdown");
+
+      match option {
+        PowerOption::Shutdown => command.arg("-h"),
+        PowerOption::Reboot => command.arg("-r"),
+      };
+
+      command.arg("now");
+
+      Some(command)
     }
   };
 
-  command.stdin(Stdio::null());
-  command.stdout(Stdio::null());
-  command.stderr(Stdio::null());
+  if let Some(mut command) = command {
+    command.stdin(Stdio::null());
+    command.stdout(Stdio::null());
+    command.stderr(Stdio::null());
 
-  greeter.power_command = Some(command);
-  greeter.power_command_notify.notify_one();
+    greeter.power_command = Some(command);
+    greeter.power_command_notify.notify_one();
+  }
 }
 
 pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) {

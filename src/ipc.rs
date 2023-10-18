@@ -8,7 +8,8 @@ use tokio::sync::{
 
 use crate::{
   info::{write_last_user_session, write_last_user_session_path, write_last_username},
-  AuthStatus, Greeter, Mode, Session, SessionType,
+  ui::sessions::{Session, SessionType},
+  AuthStatus, Greeter, Mode,
 };
 
 #[derive(Clone)]
@@ -121,7 +122,7 @@ impl Ipc {
           greeter.done = true;
           greeter.mode = Mode::Processing;
 
-          let session = greeter.sessions.get(greeter.selected_session).filter(|s| &s.command == command);
+          let session = greeter.sessions.options.get(greeter.sessions.selected).filter(|s| &s.command == command);
           let mut command = command.clone();
           let mut env = vec![];
 

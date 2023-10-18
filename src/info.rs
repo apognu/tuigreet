@@ -11,7 +11,13 @@ use ini::Ini;
 use lazy_static::lazy_static;
 use nix::sys::utsname;
 
-use crate::{Greeter, Session, SessionType};
+use crate::{
+  ui::{
+    sessions::{Session, SessionType},
+    users::User,
+  },
+  Greeter,
+};
 
 const LAST_USER_USERNAME: &str = "/var/cache/tuigreet/lastuser";
 const LAST_USER_NAME: &str = "/var/cache/tuigreet/lastuser-name";
@@ -147,13 +153,13 @@ pub fn write_last_user_session(username: &str, session: &str) {
   let _ = fs::write(format!("{LAST_SESSION}-{username}"), session);
 }
 
-pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<(String, Option<String>)> {
+pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<User> {
   match File::open("/etc/passwd") {
     Err(_) => vec![],
     Ok(file) => {
       let file = BufReader::new(file);
 
-      let users: Vec<(String, Option<String>)> = file
+      let users: Vec<User> = file
         .lines()
         .filter_map(|line| {
           line
@@ -176,7 +182,7 @@ pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<(String, Option<String>)> {
             .ok()
             .flatten()
             .filter(|(uid, _, _)| uid >= &min_uid && uid <= &max_uid)
-            .map(|(_, username, name)| (username, name))
+            .map(|(_, username, name)| User { username, name })
         })
         .collect();
 

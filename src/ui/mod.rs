@@ -1,10 +1,11 @@
 mod command;
+pub mod common;
 mod i18n;
-mod power;
+pub mod power;
 mod processing;
 mod prompt;
-mod sessions;
-mod users;
+pub mod sessions;
+pub mod users;
 mod util;
 
 use std::{
@@ -30,7 +31,7 @@ use crate::{
   Greeter, Mode,
 };
 
-pub use self::{i18n::MESSAGES, power::OPTIONS as POWER_OPTIONS};
+pub use self::i18n::MESSAGES;
 
 const TITLEBAR_INDEX: usize = 1;
 const STATUSBAR_INDEX: usize = 3;
@@ -109,9 +110,9 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
 
     let cursor = match greeter.mode {
       Mode::Command => self::command::draw(&mut greeter, f).ok(),
-      Mode::Sessions => self::sessions::draw(&mut greeter, f).ok(),
-      Mode::Power => self::power::draw(&mut greeter, f).ok(),
-      Mode::Users => self::users::draw(&mut greeter, f).ok(),
+      Mode::Sessions => greeter.sessions.draw(&greeter, f).ok(),
+      Mode::Power => greeter.power_commands.draw(&greeter, f).ok(),
+      Mode::Users => greeter.users.draw(&greeter, f).ok(),
       Mode::Processing => self::processing::draw(&mut greeter, f).ok(),
       _ => self::prompt::draw(&mut greeter, f).ok(),
     };
