@@ -80,7 +80,7 @@ impl SessionType {
   }
 }
 
-#[derive(SmartDefault)]
+#[derive(SmartDefault, Clone)]
 pub struct Session {
   pub name: String,
   pub command: String,

@@ -40,10 +40,16 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         crate::exit(&mut greeter, AuthStatus::Cancel).await;
       }
 
-      KeyEvent { code: KeyCode::Esc, .. } => {
-        Ipc::cancel(&mut greeter).await;
-        greeter.reset(false).await;
-      }
+      KeyEvent { code: KeyCode::Esc, .. } => match greeter.mode {
+        Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => {
+          greeter.mode = greeter.previous_mode;
+        }
+
+        _ => {
+          Ipc::cancel(&mut greeter).await;
+          greeter.reset(false).await;
+        }
+      },
 
       KeyEvent { code: KeyCode::Left, .. } => greeter.cursor_offset -= 1,
       KeyEvent { code: KeyCode::Right, .. } => greeter.cursor_offset += 1,
@@ -170,9 +176,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Command => {
-          let cmd = &greeter.command;
-
-          greeter.selected_session = greeter.sessions.iter().position(|Session { command, .. }| Some(command) == cmd.as_ref()).unwrap_or(0);
+          greeter.selected_session = 0;
           greeter.command = Some(greeter.new_command.clone());
 
           if greeter.remember_session {
@@ -195,22 +199,18 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Sessions => {
-          let session = match greeter.sessions.get(greeter.selected_session) {
-            Some(Session { name, path, command, .. }) => Some((name.clone(), path.clone(), command.clone())),
-            _ => None,
-          };
+          let session = greeter.sessions.get(greeter.selected_session).cloned();
 
-          if let Some((_, path, command)) = session {
-            greeter.session_path = path.clone();
-
+          if let Some(Session { path, command, .. }) = session {
             if greeter.remember_session {
-              if let Some(path) = path {
-                write_last_session_path(&path);
+              if let Some(ref path) = path {
+                write_last_session_path(path);
               }
 
               write_last_session(&command);
             }
 
+            greeter.session_path = path.clone();
             greeter.command = Some(command.clone());
           }
 
@@ -308,7 +308,6 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
     }
 
     if let Ok(command) = get_last_user_session(&greeter.username) {
-      greeter.selected_session = greeter.sessions.iter().position(|session| session.command == command).unwrap_or(0);
       greeter.command = Some(command);
     }
   }

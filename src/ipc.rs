@@ -145,7 +145,12 @@ impl Ipc {
             let _ = command;
             let _ = env;
 
-            crate::exit(greeter, AuthStatus::Success).await;
+            self
+              .send(Request::StartSession {
+                cmd: vec!["true".to_string()],
+                env: vec![],
+              })
+              .await;
           }
         }
       }
