@@ -128,7 +128,7 @@ impl Ipc {
 
           if let Some(Session { session_type, .. }) = session {
             if *session_type != SessionType::None {
-              env.push(format!("XDG_SESSION_TYPE={}", session_type.to_xdg_session_type()));
+              env.push(format!("XDG_SESSION_TYPE={}", session_type.as_xdg_session_type()));
             }
 
             if *session_type == SessionType::X11 {

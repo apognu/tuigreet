@@ -12,7 +12,7 @@ pub enum PowerOption {
 }
 
 pub fn power(greeter: &mut Greeter, option: PowerOption) {
-  let command = match greeter.power_commands.options.iter().find(|opt| opt.action == option) {
+  let command = match greeter.powers.options.iter().find(|opt| opt.action == option) {
     None => None,
 
     Some(Power { command: Some(args), .. }) => {

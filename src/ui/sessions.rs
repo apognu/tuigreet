@@ -6,17 +6,17 @@ use super::common::menu::MenuItem;
 pub enum SessionType {
   X11,
   Wayland,
-  TTY,
+  Tty,
   #[default]
   None,
 }
 
 impl SessionType {
-  pub fn to_xdg_session_type(&self) -> &'static str {
+  pub fn as_xdg_session_type(&self) -> &'static str {
     match self {
       SessionType::X11 => "x11",
       SessionType::Wayland => "wayland",
-      SessionType::TTY => "tty",
+      SessionType::Tty => "tty",
       SessionType::None => "unspecified",
     }
   }

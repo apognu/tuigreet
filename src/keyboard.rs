@@ -96,8 +96,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         if let Mode::Power = greeter.mode {
-          if greeter.power_commands.selected > 0 {
-            greeter.power_commands.selected -= 1;
+          if greeter.powers.selected > 0 {
+            greeter.powers.selected -= 1;
           }
         }
       }
@@ -116,8 +116,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         if let Mode::Power = greeter.mode {
-          if greeter.power_commands.selected < greeter.power_commands.options.len() - 1 {
-            greeter.power_commands.selected += 1;
+          if greeter.powers.selected < greeter.powers.options.len() - 1 {
+            greeter.powers.selected += 1;
           }
         }
       }
@@ -218,7 +218,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, events: &mut Events, ipc: Ipc
         }
 
         Mode::Power => {
-          let power_command = greeter.power_commands.options.get(greeter.power_commands.selected).cloned();
+          let power_command = greeter.powers.options.get(greeter.powers.selected).cloned();
 
           if let Some(command) = power_command {
             power(&mut greeter, command.action);

@@ -22,7 +22,9 @@ use tokio::{
 use zeroize::Zeroize;
 
 use crate::{
-  info::{get_issue, get_last_session, get_last_session_path, get_last_user_name, get_last_user_session, get_last_user_session_path, get_last_user_username, get_min_max_uids, get_users},
+  info::{
+    get_issue, get_last_session, get_last_session_path, get_last_user_name, get_last_user_session, get_last_user_session_path, get_last_user_username, get_min_max_uids, get_sessions, get_users,
+  },
   power::PowerOption,
   ui::{
     common::menu::Menu,
@@ -102,7 +104,7 @@ pub struct Greeter {
   pub greeting: Option<String>,
   pub message: Option<String>,
 
-  pub power_commands: Menu<Power>,
+  pub powers: Menu<Power>,
   pub power_command: Option<Command>,
   pub power_command_notify: Arc<Notify>,
   pub power_setsid: bool,
@@ -124,7 +126,7 @@ impl Greeter {
 
     greeter.set_locale();
 
-    greeter.power_commands = Menu {
+    greeter.powers = Menu {
       title: fl!("title_power"),
       options: Default::default(),
       selected: 0,
@@ -133,7 +135,7 @@ impl Greeter {
     greeter.parse_options().await;
     greeter.sessions = Menu {
       title: fl!("title_session"),
-      options: crate::info::get_sessions(&greeter).unwrap_or_default(),
+      options: get_sessions(&greeter).unwrap_or_default(),
       selected: 0,
     };
 
@@ -421,13 +423,13 @@ impl Greeter {
       self.greeting = get_issue();
     }
 
-    self.power_commands.options.push(Power {
+    self.powers.options.push(Power {
       action: PowerOption::Shutdown,
       label: fl!("shutdown"),
       command: self.config().opt_str("power-shutdown"),
     });
 
-    self.power_commands.options.push(Power {
+    self.powers.options.push(Power {
       action: PowerOption::Reboot,
       label: fl!("reboot"),
       command: self.config().opt_str("power-reboot"),

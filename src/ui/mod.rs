@@ -111,7 +111,7 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
     let cursor = match greeter.mode {
       Mode::Command => self::command::draw(&mut greeter, f).ok(),
       Mode::Sessions => greeter.sessions.draw(&greeter, f).ok(),
-      Mode::Power => greeter.power_commands.draw(&greeter, f).ok(),
+      Mode::Power => greeter.powers.draw(&greeter, f).ok(),
       Mode::Users => greeter.users.draw(&greeter, f).ok(),
       Mode::Processing => self::processing::draw(&mut greeter, f).ok(),
       _ => self::prompt::draw(&mut greeter, f).ok(),
