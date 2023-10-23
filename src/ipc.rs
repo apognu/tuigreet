@@ -135,7 +135,11 @@ impl Ipc {
               if let Some(ref wrap) = greeter.xsession_wrapper {
                 command = format!("{} {}", wrap, command);
               }
+            } else if let Some(ref wrap) = greeter.session_wrapper {
+              command = format!("{} {}", wrap, command);
             }
+          } else if let Some(ref wrap) = greeter.session_wrapper {
+            command = format!("{} {}", wrap, command);
           }
 
           #[cfg(not(debug_assertions))]

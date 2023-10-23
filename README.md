@@ -12,6 +12,8 @@ Options:
     -v, --version       print version information
     -c, --cmd COMMAND   command to run
     -s, --sessions DIRS colon-separated list of Wayland session paths
+        --session-wrapper 'CMD [ARGS]...'
+                        wrapper command to initialize the non-X11 session
     -x, --xsessions DIRS
                         colon-separated list of X11 session paths
         --xsession-wrapper 'CMD [ARGS]...'

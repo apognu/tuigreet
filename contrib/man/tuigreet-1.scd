@@ -24,6 +24,10 @@ tuigreet - A graphical console greeter for greetd
 	Location of desktop-files to be used as Wayland session definitions. By
 	default, Wayland sessions are fetched from */usr/share/wayland-sessions*.
 
+*--session-wrapper 'CMD [ARGS]...'*
+	Specify a wrapper command to execute instead of the session for non-X11
+	sessions. This command will receive the session command as its arguments.
+
 *-x, --xsessions DIR1[:DIR2]...*
 	Location of desktop-files to be used as X11 session definitions. By
 	default, X11 sessions are fetched from */usr/share/xsessions*.
