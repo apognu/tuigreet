@@ -85,6 +85,7 @@ pub struct Greeter {
   pub session_path: Option<PathBuf>,
   pub session_paths: Vec<(PathBuf, SessionType)>,
   pub sessions: Menu<Session>,
+  pub session_wrapper: Option<String>,
   pub xsession_wrapper: Option<String>,
 
   pub username: String,
@@ -296,6 +297,7 @@ impl Greeter {
     opts.optflag("v", "version", "print version information");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
     opts.optopt("s", "sessions", "colon-separated list of Wayland session paths", "DIRS");
+    opts.optopt("", "session-wrapper", "wrapper command to initialize the non-X11 session", "'CMD [ARGS]...'");
     opts.optopt("x", "xsessions", "colon-separated list of X11 session paths", "DIRS");
     opts.optopt("", "xsession-wrapper", xsession_wrapper_desc.as_str(), "'CMD [ARGS]...'");
     opts.optflag("", "no-xsession-wrapper", "do not wrap commands for X11 sessions");
@@ -413,6 +415,10 @@ impl Greeter {
 
     if let Some(dirs) = self.option("xsessions") {
       self.session_paths.extend(env::split_paths(&dirs).map(|dir| (dir, SessionType::X11)));
+    }
+
+    if self.option("session-wrapper").is_some() {
+      self.session_wrapper = self.option("session-wrapper");
     }
 
     if !self.config().opt_present("no-xsession-wrapper") {
