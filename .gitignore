@@ -1,2 +1,4 @@
 /target
 /contrib/man/*.roff
+
+.vscode/
