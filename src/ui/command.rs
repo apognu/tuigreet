@@ -34,7 +34,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   let command_label_text = prompt_value(Some(fl!("new_command")));
   let command_label = Paragraph::new(command_label_text);
-  let command_value_text = Span::from(greeter.new_command.clone());
+  let command_value_text = Span::from(greeter.buffer.clone());
   let command_value = Paragraph::new(command_value_text);
 
   f.render_widget(command_label, chunks[0]);
@@ -48,7 +48,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     ),
   );
 
-  let new_command = greeter.new_command.clone();
+  let new_command = greeter.buffer.clone();
   let offset = get_cursor_offset(greeter, new_command.chars().count());
 
   Ok((2 + cursor.x + fl!("new_command").chars().count() as u16 + offset as u16, cursor.y + 1))

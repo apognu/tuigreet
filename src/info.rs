@@ -234,15 +234,7 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
     &greeter.session_paths
   };
 
-  let mut files = match &greeter.command {
-    Some(command) => vec![Session {
-      name: command.clone(),
-      command: command.clone(),
-      session_type: SessionType::default(),
-      path: None,
-    }],
-    _ => vec![],
-  };
+  let mut files = vec![];
 
   for (path, session_type) in paths.iter() {
     if let Ok(entries) = fs::read_dir(path) {

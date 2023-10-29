@@ -84,7 +84,7 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
       )
       .split(chunks[STATUSBAR_INDEX]);
 
-    let command = greeter.command.clone().unwrap_or_else(|| "-".to_string());
+    let command = greeter.session_source.label(&greeter).unwrap_or("-");
     let status_left_text = Line::from(vec![
       status_label("ESC"),
       status_value(fl!("action_reset")),

@@ -29,7 +29,7 @@ use crate::{
   ui::{
     common::menu::Menu,
     power::Power,
-    sessions::{Session, SessionType},
+    sessions::{Session, SessionSource, SessionType},
     users::User,
   },
 };
@@ -55,6 +55,8 @@ impl Display for AuthStatus {
 
 impl Error for AuthStatus {}
 
+// A mode represents the large section of the software, usually screens to be
+// displayed, or the state of the application.
 #[derive(SmartDefault, Debug, Copy, Clone, PartialEq)]
 pub enum Mode {
   #[default]
@@ -75,43 +77,71 @@ pub struct Greeter {
   pub socket: String,
   pub stream: Option<Arc<RwLock<UnixStream>>>,
 
+  // Current mode of the application, will define what actions are permitted.
   pub mode: Mode,
+  // Mode the application will return to when exiting the current mode.
   pub previous_mode: Mode,
+  // Offset the cursor should be at from its base position for the current mode.
   pub cursor_offset: i16,
 
-  pub users: Menu<User>,
-  pub command: Option<String>,
-  pub new_command: String,
-  pub session_path: Option<PathBuf>,
+  // Buffer to be used as a temporary editing zone for the various modes.
+  pub buffer: String,
+
+  // Define the selected session and how to resolve it.
+  pub session_source: SessionSource,
+  // List of session files found on disk.
   pub session_paths: Vec<(PathBuf, SessionType)>,
+  // Menu for session selection.
   pub sessions: Menu<Session>,
+  // Wrapper command to prepend to non-X11 sessions.
   pub session_wrapper: Option<String>,
+  // Wrapper command to prepend to X11 sessions.
   pub xsession_wrapper: Option<String>,
 
-  pub username: String,
-  pub username_mask: Option<String>,
-  pub prompt: Option<String>,
-  pub answer: String,
-  pub secret: bool,
-
+  // Whether user menu is enabled.
   pub user_menu: bool,
-
-  pub remember: bool,
-  pub remember_session: bool,
-  pub remember_user_session: bool,
+  // Menu for user selection.
+  pub users: Menu<User>,
+  // Current username.
+  pub username: String,
+  // Value to display in place of the username (e.g. full name of the user).
+  pub username_mask: Option<String>,
+  // Prompt that should be displayed to ask for entry.
+  pub prompt: Option<String>,
+  // Whether the current edition prompt should be hidden.
+  pub secret: bool,
+  // Whether to display replacement characters for secret entries.
   pub asterisks: bool,
+  // Which character to use for secret entries.
   #[default(DEFAULT_ASTERISKS_CHAR)]
   pub asterisks_char: char,
+
+  // Whether last logged-in user should be remembered.
+  pub remember: bool,
+  // Whether last launched session (regardless of user) should be remembered.
+  pub remember_session: bool,
+  // Whether last launched session for the current user should be remembered.
+  pub remember_user_session: bool,
+
+  // Greeting message (MOTD) to use to welcome the user.
   pub greeting: Option<String>,
+  // Transaction message to show to the user.
   pub message: Option<String>,
 
+  // Menu for power options.
   pub powers: Menu<Power>,
+  // Power command that was selected.
   pub power_command: Option<Command>,
+  // Channel to notify of a power command selection.
   pub power_command_notify: Arc<Notify>,
+  // Whether to prefix the power commands with `setsid`.
   pub power_setsid: bool,
 
+  // The software is waiting for a response from `greetd`.
   pub working: bool,
+  // We are done working.
   pub done: bool,
+  // Should we exit?
   pub exit: Option<AuthStatus>,
 }
 
@@ -134,54 +164,55 @@ impl Greeter {
     };
 
     greeter.parse_options().await;
+
     greeter.sessions = Menu {
       title: fl!("title_session"),
       options: get_sessions(&greeter).unwrap_or_default(),
       selected: 0,
     };
 
-    if let Some(Session { command, .. }) = greeter.sessions.options.get(0) {
-      if greeter.command.is_none() {
-        greeter.command = Some(command.clone());
-      }
-    }
-
+    // If we should remember the last logged-in user.
     if greeter.remember {
       if let Some(username) = get_last_user_username() {
         greeter.username = username.clone();
         greeter.username_mask = get_last_user_name();
 
+        // If, on top of that, we should remember their last session.
         if greeter.remember_user_session {
-          if let Ok(session_path) = get_last_user_session_path(&username) {
-            greeter.session_path = Some(session_path);
+          if let Ok(ref session_path) = get_last_user_session_path(&username) {
+            // Set the selected menu option and the session source.
+            greeter.sessions.selected = greeter.sessions.options.iter().position(|Session { path, .. }| path.as_deref() == Some(session_path)).unwrap_or(0);
+            greeter.session_source = SessionSource::Session(greeter.sessions.selected);
           }
 
+          // See if we have the last free-form command from the user.
           if let Ok(command) = get_last_user_session(&username) {
-            greeter.command = Some(command);
+            greeter.session_source = SessionSource::Command(command);
           }
         }
       }
     }
 
+    // Same thing, but not user specific.
     if greeter.remember_session {
-      if let Ok(session_path) = get_last_session_path() {
-        greeter.session_path = Some(session_path.clone());
+      if let Ok(ref session_path) = get_last_session_path() {
+        greeter.sessions.selected = greeter.sessions.options.iter().position(|Session { path, .. }| path.as_deref() == Some(session_path)).unwrap_or(0);
+        greeter.session_source = SessionSource::Session(greeter.sessions.selected);
+      }
 
-        if let Some(session) = Session::from_path(&greeter, session_path) {
-          greeter.command = Some(session.command.clone());
-        }
-      } else if let Ok(command) = get_last_session() {
-        greeter.command = Some(command.trim().to_string());
+      if let Ok(command) = get_last_session() {
+        greeter.session_source = SessionSource::Command(command.trim().to_string());
       }
     }
-
-    greeter.sessions.selected = greeter.sessions.options.iter().position(|Session { path, .. }| path == &greeter.session_path).unwrap_or(0);
 
     greeter
   }
 
+  // Scrub memory of all data, unless `soft` is true, in which case, we will
+  // keep the username (can happen if a wrong password was entered, we want to
+  // give the user another chance, as PAM would).
   fn scrub(&mut self, scrub_message: bool, soft: bool) {
-    self.answer.zeroize();
+    self.buffer.zeroize();
     self.prompt.zeroize();
 
     if !soft {
@@ -194,6 +225,7 @@ impl Greeter {
     }
   }
 
+  // Reset the software to its initial state.
   pub async fn reset(&mut self, soft: bool) {
     if soft {
       self.mode = Mode::Password;
@@ -210,6 +242,7 @@ impl Greeter {
     self.connect().await;
   }
 
+  // Connect to `greetd` and return a strea we can safely write to.
   pub async fn connect(&mut self) {
     match UnixStream::connect(&self.socket).await {
       Ok(stream) => self.stream = Some(Arc::new(RwLock::new(stream))),
@@ -233,6 +266,8 @@ impl Greeter {
     self.config().opt_str(name)
   }
 
+  // Returns the width of the main window where content is displayed from the
+  // provided arguments.
   pub fn width(&self) -> u16 {
     if let Some(value) = self.option("width") {
       if let Ok(width) = value.parse::<u16>() {
@@ -243,6 +278,7 @@ impl Greeter {
     80
   }
 
+  // Returns the padding of the screen from the provided arguments.
   pub fn window_padding(&self) -> u16 {
     if let Some(value) = self.option("window-padding") {
       if let Ok(padding) = value.parse::<u16>() {
@@ -253,6 +289,8 @@ impl Greeter {
     0
   }
 
+  // Returns the padding of the main window where content is displayed from the
+  // provided arguments.
   pub fn container_padding(&self) -> u16 {
     if let Some(value) = self.option("container-padding") {
       if let Ok(padding) = value.parse::<u16>() {
@@ -263,6 +301,7 @@ impl Greeter {
     2
   }
 
+  // Returns the spacing between each prompt from the provided arguments.
   pub fn prompt_padding(&self) -> u16 {
     if let Some(value) = self.option("prompt-padding") {
       if let Ok(padding) = value.parse::<u16>() {
@@ -273,6 +312,7 @@ impl Greeter {
     1
   }
 
+  // Sets the locale that will be used for this invocation from environment.
   fn set_locale(&mut self) {
     let locale = DesktopLanguageRequester::requested_languages()
       .into_iter()
@@ -285,7 +325,7 @@ impl Greeter {
     }
   }
 
-  async fn parse_options(&mut self) {
+  pub fn options() -> Options {
     let mut opts = Options::new();
 
     let xsession_wrapper_desc = format!("wrapper command to initialize X server and launch X11 sessions (default: {DEFAULT_XSESSION_WRAPPER})");
@@ -318,6 +358,13 @@ impl Greeter {
     opts.optopt("", "power-shutdown", "command to run to shut down the system", "'CMD [ARGS]...'");
     opts.optopt("", "power-reboot", "command to run to reboot the system", "'CMD [ARGS]...'");
     opts.optflag("", "power-no-setsid", "do not prefix power commands with setsid");
+
+    opts
+  }
+
+  // Parses command line arguments to configured the software accordingly.
+  async fn parse_options(&mut self) {
+    let opts = Greeter::options();
 
     self.config = match opts.parse(env::args().collect::<Vec<String>>()) {
       Ok(matches) => Some(matches),
@@ -404,7 +451,11 @@ impl Greeter {
     self.remember_user_session = self.config().opt_present("remember-user-session");
     self.asterisks = self.config().opt_present("asterisks");
     self.greeting = self.option("greeting");
-    self.command = self.option("cmd");
+
+    // If the `--cmd` argument is provided, it will override the selected session.
+    if let Some(command) = self.option("cmd") {
+      self.session_source = SessionSource::Command(command);
+    }
 
     if let Some(dirs) = self.option("sessions") {
       self.session_paths.extend(env::split_paths(&dirs).map(|dir| (dir, SessionType::Wayland)));
@@ -451,6 +502,7 @@ impl Greeter {
     self.prompt = None;
   }
 
+  // Computes the size of the prompt to help determine where input should start.
   pub fn prompt_width(&self) -> usize {
     match &self.prompt {
       None => 0,
@@ -470,4 +522,38 @@ fn print_version() {
   println!();
   println!("This is free software, you are welcome to redistribute it under some conditions.");
   println!("There is NO WARRANTY, to the extent provided by law.");
+}
+
+#[cfg(test)]
+mod test {
+  use crate::Greeter;
+
+  #[test]
+  fn test_prompt_width() {
+    let mut greeter = Greeter::default();
+    greeter.prompt = None;
+
+    assert_eq!(greeter.prompt_width(), 0);
+
+    greeter.prompt = Some("Hello:".into());
+
+    assert_eq!(greeter.prompt_width(), 6);
+  }
+
+  #[test]
+  fn test_set_prompt() {
+    let mut greeter = Greeter::default();
+
+    greeter.set_prompt("Hello:");
+
+    assert_eq!(greeter.prompt, Some("Hello: ".into()));
+
+    greeter.set_prompt("Hello World: ");
+
+    assert_eq!(greeter.prompt, Some("Hello World: ".into()));
+
+    greeter.remove_prompt();
+
+    assert_eq!(greeter.prompt, None);
+  }
 }
