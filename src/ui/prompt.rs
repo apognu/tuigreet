@@ -92,9 +92,9 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
         if !greeter.secret || greeter.asterisks {
           let value = if greeter.secret && greeter.asterisks {
-            greeter.asterisks_char.to_string().repeat(greeter.answer.chars().count())
+            greeter.asterisks_char.to_string().repeat(greeter.buffer.chars().count())
           } else {
-            greeter.answer.clone()
+            greeter.buffer.clone()
           };
 
           let answer_value_text = Span::from(value);
@@ -132,7 +132,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     }
 
     Mode::Password => {
-      let answer_length = greeter.answer.chars().count();
+      let answer_length = greeter.buffer.chars().count();
       let offset = get_cursor_offset(greeter, answer_length);
 
       if greeter.secret && !greeter.asterisks {

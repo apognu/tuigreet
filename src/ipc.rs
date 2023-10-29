@@ -8,7 +8,7 @@ use tokio::sync::{
 
 use crate::{
   info::{delete_last_user_session_path, write_last_user_session, write_last_user_session_path, write_last_username},
-  ui::sessions::{Session, SessionType},
+  ui::sessions::{Session, SessionSource, SessionType},
   AuthStatus, Greeter, Mode,
 };
 
@@ -107,40 +107,49 @@ impl Ipc {
             write_last_username(&greeter.username, greeter.username_mask.as_deref());
 
             if greeter.remember_user_session {
-              if let Some(command) = &greeter.command {
-                write_last_user_session(&greeter.username, command);
-              }
+              match greeter.session_source {
+                SessionSource::Command(ref command) => {
+                  write_last_user_session(&greeter.username, command);
+                  delete_last_user_session_path(&greeter.username);
+                }
 
-              if let Some(session_path) = &greeter.session_path {
-                write_last_user_session_path(&greeter.username, session_path);
-              } else {
-                delete_last_user_session_path(&greeter.username);
+                SessionSource::Session(index) => {
+                  if let Some(Session { path: Some(session_path), .. }) = greeter.sessions.options.get(index) {
+                    write_last_user_session_path(&greeter.username, session_path);
+                  }
+                }
+
+                _ => {}
               }
             }
           }
 
           crate::exit(greeter, AuthStatus::Success).await;
-        } else if let Some(command) = &greeter.command {
-          greeter.done = true;
-          greeter.mode = Mode::Processing;
+        } else {
+          let command = greeter.session_source.command(greeter).map(str::to_string);
 
-          let session = Session::get_selected(greeter);
-          let (command, env) = wrap_session_command(greeter, session, command);
+          if let Some(command) = command {
+            greeter.done = true;
+            greeter.mode = Mode::Processing;
 
-          #[cfg(not(debug_assertions))]
-          self.send(Request::StartSession { cmd: vec![command.to_string()], env }).await;
+            let session = Session::get_selected(greeter);
+            let (command, env) = wrap_session_command(greeter, session, &command);
 
-          #[cfg(debug_assertions)]
-          {
-            let _ = command;
-            let _ = env;
+            #[cfg(not(debug_assertions))]
+            self.send(Request::StartSession { cmd: vec![command.to_string()], env }).await;
 
-            self
-              .send(Request::StartSession {
-                cmd: vec!["true".to_string()],
-                env: vec![],
-              })
-              .await;
+            #[cfg(debug_assertions)]
+            {
+              let _ = command;
+              let _ = env;
+
+              self
+                .send(Request::StartSession {
+                  cmd: vec!["true".to_string()],
+                  env: vec![],
+                })
+                .await;
+            }
           }
         }
       }
