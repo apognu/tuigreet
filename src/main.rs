@@ -18,6 +18,7 @@ use crossterm::{
   execute,
   terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use event::Event;
 use greetd_ipc::Request;
 use tokio::sync::RwLock;
 use tui::{backend::CrosstermBackend, Terminal};
@@ -92,8 +93,11 @@ async fn run() -> Result<(), Box<dyn Error>> {
       return Err(status.into());
     }
 
-    ui::draw(greeter.clone(), &mut terminal).await?;
-    keyboard::handle(greeter.clone(), &mut events, ipc.clone()).await?;
+    match events.next().await {
+      Some(Event::Render) => ui::draw(greeter.clone(), &mut terminal).await?,
+      Some(Event::Key(key)) => keyboard::handle(greeter.clone(), key, ipc.clone()).await?,
+      Some(Event::Tick) | None => {}
+    }
   }
 }
 
