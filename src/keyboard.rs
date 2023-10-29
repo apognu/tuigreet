@@ -175,6 +175,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
 
       Mode::Command => {
         greeter.sessions.selected = 0;
+        greeter.session_path = None;
         greeter.command = Some(greeter.new_command.clone());
 
         if greeter.remember_session {
@@ -303,12 +304,11 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
 
   if greeter.remember_user_session {
     if let Ok(last_session) = get_last_user_session_path(&greeter.username) {
-      greeter.sessions.selected = greeter
-        .sessions
-        .options
-        .iter()
-        .position(|Session { path, .. }| path.as_deref() == Some(last_session.as_ref()))
-        .unwrap_or(0);
+      if let Some(last_session) = Session::from_path(greeter, last_session).cloned() {
+        greeter.sessions.selected = greeter.sessions.options.iter().position(|sess| sess.path == last_session.path).unwrap_or(0);
+        greeter.session_path = last_session.path;
+        greeter.command = Some(last_session.command);
+      }
     }
 
     if let Ok(command) = get_last_user_session(&greeter.username) {

@@ -165,20 +165,17 @@ impl Greeter {
 
     if greeter.remember_session {
       if let Ok(session_path) = get_last_session_path() {
-        greeter.session_path = Some(session_path);
-      }
+        greeter.session_path = Some(session_path.clone());
 
-      if let Ok(command) = get_last_session() {
+        if let Some(session) = Session::from_path(&greeter, session_path) {
+          greeter.command = Some(session.command.clone());
+        }
+      } else if let Ok(command) = get_last_session() {
         greeter.command = Some(command.trim().to_string());
       }
     }
 
-    greeter.sessions.selected = greeter
-      .sessions
-      .options
-      .iter()
-      .position(|Session { path, .. }| path.as_deref() == greeter.session_path.as_deref())
-      .unwrap_or(0);
+    greeter.sessions.selected = greeter.sessions.options.iter().position(|Session { path, .. }| path == &greeter.session_path).unwrap_or(0);
 
     greeter
   }

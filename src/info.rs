@@ -112,11 +112,11 @@ pub fn write_last_username(username: &str, name: Option<&str>) {
 }
 
 pub fn get_last_session_path() -> Result<PathBuf, io::Error> {
-  Ok(PathBuf::from(fs::read_to_string(LAST_SESSION_PATH)?))
+  Ok(PathBuf::from(fs::read_to_string(LAST_SESSION_PATH)?.trim()))
 }
 
 pub fn get_last_session() -> Result<String, io::Error> {
-  fs::read_to_string(LAST_SESSION)
+  Ok(fs::read_to_string(LAST_SESSION)?.trim().to_string())
 }
 
 pub fn write_last_session_path<P>(session: &P)
@@ -131,11 +131,11 @@ pub fn write_last_session(session: &str) {
 }
 
 pub fn get_last_user_session_path(username: &str) -> Result<PathBuf, io::Error> {
-  Ok(PathBuf::from(fs::read_to_string(format!("{LAST_SESSION_PATH}-{username}"))?))
+  Ok(PathBuf::from(fs::read_to_string(format!("{LAST_SESSION_PATH}-{username}"))?.trim()))
 }
 
 pub fn get_last_user_session(username: &str) -> Result<String, io::Error> {
-  fs::read_to_string(format!("{LAST_SESSION}-{username}"))
+  Ok(fs::read_to_string(format!("{LAST_SESSION}-{username}"))?.trim().to_string())
 }
 
 pub fn write_last_user_session_path<P>(username: &str, session: P)
@@ -151,6 +151,10 @@ pub fn delete_last_session_path() {
 
 pub fn write_last_user_session(username: &str, session: &str) {
   let _ = fs::write(format!("{LAST_SESSION}-{username}"), session);
+}
+
+pub fn delete_last_user_session_path(username: &str) {
+  let _ = fs::remove_file(format!("{LAST_SESSION_PATH}-{username}"));
 }
 
 pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<User> {
