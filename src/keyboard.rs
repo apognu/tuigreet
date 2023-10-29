@@ -217,6 +217,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
 
           greeter.command = Some(command.clone());
         }
+
+        greeter.mode = greeter.previous_mode;
       }
 
       Mode::Power => {
