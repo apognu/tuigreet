@@ -1,4 +1,4 @@
-use std::{error::Error, sync::Arc};
+use std::{borrow::Cow, error::Error, sync::Arc};
 
 use greetd_ipc::{codec::TokioCodec, AuthMessageType, ErrorType, Request, Response};
 use tokio::sync::{
@@ -7,7 +7,7 @@ use tokio::sync::{
 };
 
 use crate::{
-  info::{write_last_user_session, write_last_user_session_path, write_last_username},
+  info::{delete_last_user_session_path, write_last_user_session, write_last_user_session_path, write_last_username},
   ui::sessions::{Session, SessionType},
   AuthStatus, Greeter, Mode,
 };
@@ -113,6 +113,8 @@ impl Ipc {
 
               if let Some(session_path) = &greeter.session_path {
                 write_last_user_session_path(&greeter.username, session_path);
+              } else {
+                delete_last_user_session_path(&greeter.username);
               }
             }
           }
@@ -122,28 +124,11 @@ impl Ipc {
           greeter.done = true;
           greeter.mode = Mode::Processing;
 
-          let session = greeter.sessions.options.get(greeter.sessions.selected).filter(|s| &s.command == command);
-          let mut command = command.clone();
-          let mut env = vec![];
-
-          if let Some(Session { session_type, .. }) = session {
-            if *session_type != SessionType::None {
-              env.push(format!("XDG_SESSION_TYPE={}", session_type.as_xdg_session_type()));
-            }
-
-            if *session_type == SessionType::X11 {
-              if let Some(ref wrap) = greeter.xsession_wrapper {
-                command = format!("{} {}", wrap, command);
-              }
-            } else if let Some(ref wrap) = greeter.session_wrapper {
-              command = format!("{} {}", wrap, command);
-            }
-          } else if let Some(ref wrap) = greeter.session_wrapper {
-            command = format!("{} {}", wrap, command);
-          }
+          let session = Session::get_selected(greeter);
+          let (command, env) = wrap_session_command(greeter, session, command);
 
           #[cfg(not(debug_assertions))]
-          self.send(Request::StartSession { cmd: vec![command], env }).await;
+          self.send(Request::StartSession { cmd: vec![command.to_string()], env }).await;
 
           #[cfg(debug_assertions)]
           {
@@ -183,5 +168,94 @@ impl Ipc {
 
   pub async fn cancel(greeter: &mut Greeter) {
     let _ = Request::CancelSession.write_to(&mut *greeter.stream().await).await;
+  }
+}
+
+fn wrap_session_command<'a>(greeter: &Greeter, session: Option<&Session>, command: &'a str) -> (Cow<'a, str>, Vec<String>) {
+  let mut env: Vec<String> = vec![];
+
+  if let Some(Session { session_type, .. }) = session {
+    if *session_type != SessionType::None {
+      env.push(format!("XDG_SESSION_TYPE={}", session_type.as_xdg_session_type()));
+    }
+
+    if *session_type == SessionType::X11 {
+      if let Some(ref wrap) = greeter.xsession_wrapper {
+        return (Cow::Owned(format!("{} {}", wrap, command)), env);
+      }
+    } else if let Some(ref wrap) = greeter.session_wrapper {
+      return (Cow::Owned(format!("{} {}", wrap, command)), env);
+    }
+  } else if let Some(ref wrap) = greeter.session_wrapper {
+    return (Cow::Owned(format!("{} {}", wrap, command)), env);
+  }
+
+  (Cow::Borrowed(command), env)
+}
+
+#[cfg(test)]
+mod test {
+  use std::path::PathBuf;
+
+  use crate::{
+    ui::sessions::{Session, SessionType},
+    Greeter,
+  };
+
+  use super::wrap_session_command;
+
+  #[test]
+  fn wayland_no_wrapper() {
+    let greeter = Greeter::default();
+
+    let session = Session {
+      name: "Session1".into(),
+      session_type: SessionType::Wayland,
+      command: "Session1Cmd".into(),
+      path: Some(PathBuf::from("/Session1Path")),
+    };
+
+    let (command, env) = wrap_session_command(&greeter, Some(&session), &session.command);
+
+    assert_eq!(command.as_ref(), "Session1Cmd");
+    assert_eq!(env, vec!["XDG_SESSION_TYPE=wayland"]);
+  }
+
+  #[test]
+  fn wayland_wrapper() {
+    let mut greeter = Greeter::default();
+    greeter.session_wrapper = Some("/wrapper.sh".into());
+
+    let session = Session {
+      name: "Session1".into(),
+      session_type: SessionType::Wayland,
+      command: "Session1Cmd".into(),
+      path: Some(PathBuf::from("/Session1Path")),
+    };
+
+    let (command, env) = wrap_session_command(&greeter, Some(&session), &session.command);
+
+    assert_eq!(command.as_ref(), "/wrapper.sh Session1Cmd");
+    assert_eq!(env, vec!["XDG_SESSION_TYPE=wayland"]);
+  }
+
+  #[test]
+  fn x11_wrapper() {
+    let mut greeter = Greeter::default();
+    greeter.xsession_wrapper = Some("startx /usr/bin/env".into());
+
+    println!("{:?}", greeter.xsession_wrapper);
+
+    let session = Session {
+      name: "Session1".into(),
+      session_type: SessionType::X11,
+      command: "Session1Cmd".into(),
+      path: Some(PathBuf::from("/Session1Path")),
+    };
+
+    let (command, env) = wrap_session_command(&greeter, Some(&session), &session.command);
+
+    assert_eq!(command.as_ref(), "startx /usr/bin/env Session1Cmd");
+    assert_eq!(env, vec!["XDG_SESSION_TYPE=x11"]);
   }
 }
