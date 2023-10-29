@@ -70,14 +70,14 @@ impl Ipc {
         AuthMessageType::Secret => {
           greeter.mode = Mode::Password;
           greeter.working = false;
-          greeter.secret = true;
+          greeter.asking_for_secret = true;
           greeter.set_prompt(&auth_message);
         }
 
         AuthMessageType::Visible => {
           greeter.mode = Mode::Password;
           greeter.working = false;
-          greeter.secret = false;
+          greeter.asking_for_secret = false;
           greeter.set_prompt(&auth_message);
         }
 
