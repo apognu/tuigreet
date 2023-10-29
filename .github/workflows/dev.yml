@@ -3,50 +3,54 @@ name: Development build
 on:
   push:
     branches:
-      - 'dev/*'
+      - "dev/*"
 
 jobs:
   clippy:
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Lint
+        run: |
+          cargo clippy
+          cargo clippy --release
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: |
+          cargo test
 
   build:
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
     strategy:
       matrix:
         arch:
-          - { name: 'x86_64', os: 'ubuntu-latest', target: 'x86_64-unknown-linux-gnu', cross: false }
-          - { name: 'i686', os: 'ubuntu-latest', target: 'i686-unknown-linux-gnu', cross: true }
-          - { name: 'armv7h', os: 'ubuntu-latest', target: 'armv7-unknown-linux-gnueabihf', cross: true }
-          - { name: 'aarch64', os: 'ubuntu-latest', target: 'aarch64-unknown-linux-gnu', cross: true }
+          - {
+              name: "x86_64",
+              os: "ubuntu-latest",
+              target: "x86_64-unknown-linux-gnu",
+              cross: false,
+            }
     runs-on: ${{ matrix.arch.os }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
         with:
-          path: target/
-          key: cargo-cache-${{ matrix.arch.target }}
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+          shared-key: cargo-cache-${{ matrix.arch.target }}
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target=${{ matrix.arch.target }}
-          use-cross: ${{ matrix.arch.cross }}
+        run: |
+          cargo build --release --target=${{ matrix.arch.target }}
       - name: Rename artifact
         run: mv target/${{ matrix.arch.target }}/release/tuigreet target/${{ matrix.arch.target }}/release/tuigreet-dev-${{ matrix.arch.name }}
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: tuigreet-dev-${{ matrix.arch.name }}
           path: target/${{ matrix.arch.target }}/release/tuigreet-dev-${{ matrix.arch.name }}

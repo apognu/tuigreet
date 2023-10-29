@@ -69,6 +69,25 @@ pub enum Mode {
   Processing,
 }
 
+// This enum models how secret values should be displayed on terminal.
+#[derive(SmartDefault, Debug, Copy, Clone)]
+pub enum SecretDisplay {
+  #[default]
+  // All characters hidden.
+  Hidden,
+  // All characters are replaced by a placeholder character.
+  Character(char),
+}
+
+impl SecretDisplay {
+  pub fn show(&self) -> bool {
+    match self {
+      SecretDisplay::Hidden => false,
+      SecretDisplay::Character(_) => true,
+    }
+  }
+}
+
 #[derive(SmartDefault)]
 pub struct Greeter {
   #[default(DEFAULT_LOCALE)]
@@ -108,13 +127,11 @@ pub struct Greeter {
   pub username_mask: Option<String>,
   // Prompt that should be displayed to ask for entry.
   pub prompt: Option<String>,
+
   // Whether the current edition prompt should be hidden.
-  pub secret: bool,
-  // Whether to display replacement characters for secret entries.
-  pub asterisks: bool,
-  // Which character to use for secret entries.
-  #[default(DEFAULT_ASTERISKS_CHAR)]
-  pub asterisks_char: char,
+  pub asking_for_secret: bool,
+  // How should secrets be displayed?
+  pub secret_display: SecretDisplay,
 
   // Whether last logged-in user should be remembered.
   pub remember: bool,
@@ -399,14 +416,20 @@ impl Greeter {
       process::exit(1);
     }
 
-    if let Some(value) = self.config().opt_str("asterisks-char") {
-      if value.chars().count() != 1 {
-        eprintln!("--asterisks-char can only have one single character as its value");
-        print_usage(opts);
-        process::exit(1);
-      }
+    if self.config().opt_present("asterisks") {
+      let asterisk = if let Some(value) = self.config().opt_str("asterisks-char") {
+        if value.chars().count() != 1 {
+          eprintln!("--asterisks-char can only have one single character as its value");
+          print_usage(opts);
+          process::exit(1);
+        }
 
-      self.asterisks_char = value.chars().next().unwrap();
+        value.chars().next().unwrap()
+      } else {
+        DEFAULT_ASTERISKS_CHAR
+      };
+
+      self.secret_display = SecretDisplay::Character(asterisk);
     }
 
     if let Some(format) = self.config().opt_str("time-format") {
@@ -449,7 +472,6 @@ impl Greeter {
     self.remember = self.config().opt_present("remember");
     self.remember_session = self.config().opt_present("remember-session");
     self.remember_user_session = self.config().opt_present("remember-user-session");
-    self.asterisks = self.config().opt_present("asterisks");
     self.greeting = self.option("greeting");
 
     // If the `--cmd` argument is provided, it will override the selected session.

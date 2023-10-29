@@ -9,7 +9,7 @@ use tui::{
 use crate::{
   info::get_hostname,
   ui::{prompt_value, util::*, Frame},
-  Greeter, Mode,
+  Greeter, Mode, SecretDisplay,
 };
 
 const GREETING_INDEX: usize = 0;
@@ -90,11 +90,10 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
       if greeter.mode == Mode::Password || greeter.previous_mode == Mode::Password {
         f.render_widget(answer_label, chunks[ANSWER_INDEX]);
 
-        if !greeter.secret || greeter.asterisks {
-          let value = if greeter.secret && greeter.asterisks {
-            greeter.asterisks_char.to_string().repeat(greeter.buffer.chars().count())
-          } else {
-            greeter.buffer.clone()
+        if !greeter.asking_for_secret || greeter.secret_display.show() {
+          let value = match (greeter.asking_for_secret, greeter.secret_display) {
+            (true, SecretDisplay::Character(asterisk)) => asterisk.to_string().repeat(greeter.buffer.chars().count()),
+            _ => greeter.buffer.clone(),
           };
 
           let answer_value_text = Span::from(value);
@@ -135,7 +134,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
       let answer_length = greeter.buffer.chars().count();
       let offset = get_cursor_offset(greeter, answer_length);
 
-      if greeter.secret && !greeter.asterisks {
+      if greeter.asking_for_secret && !greeter.secret_display.show() {
         Ok((1 + cursor.x + greeter.prompt_width() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
       } else {
         Ok((1 + cursor.x + greeter.prompt_width() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
