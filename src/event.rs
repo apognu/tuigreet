@@ -4,10 +4,12 @@ use crossterm::event::{Event as TermEvent, EventStream, KeyEvent};
 use futures::{future::FutureExt, StreamExt};
 use tokio::sync::mpsc;
 
-const TICK_RATE: u64 = 250;
+const TICK_RATE: u64 = 150;
+const FRAME_RATE: f64 = 60.0;
 
 pub enum Event {
   Key(KeyEvent),
+  Render,
   Tick,
 }
 
@@ -21,10 +23,12 @@ impl Events {
 
     tokio::task::spawn(async move {
       let mut stream = EventStream::new();
-      let mut interval = tokio::time::interval(Duration::from_millis(TICK_RATE));
+      let mut render_interval = tokio::time::interval(Duration::from_secs_f64(1.0 / FRAME_RATE));
+      let mut tick_interval = tokio::time::interval(Duration::from_millis(TICK_RATE));
 
       loop {
-        let delay = interval.tick();
+        let tick = tick_interval.tick();
+        let render = render_interval.tick();
         let event = stream.next().fuse();
 
         tokio::select! {
@@ -34,7 +38,8 @@ impl Events {
             }
           }
 
-          _ = delay => { let _ = tx.send(Event::Tick).await; },
+          _ = render => { let _ = tx.send(Event::Render).await; },
+          _ = tick => { let _ = tx.send(Event::Tick).await; },
         }
       }
     });
