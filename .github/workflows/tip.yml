@@ -64,8 +64,13 @@ jobs:
         with:
           path: target/out
       - name: Create release
-        uses: pyTooling/Actions/releaser@r0
+        uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: target/out/*/*
-          rm: true
+          name: tip
+          prerelease: true
+          tag: tip
+          commit: ${{ github.sha }}
+          artifacts: target/out/*/*
+          allowUpdates: true
+          removeArtifacts: true
