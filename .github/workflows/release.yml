@@ -63,30 +63,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-  assets:
-    strategy:
-      matrix:
-        arch:
-          - {
-              name: "x86_64",
-              os: "ubuntu-latest",
-              target: "x86_64-unknown-linux-gnu",
-              cross: false,
-            }
-    runs-on: ubuntu-latest
-    needs: release
-    steps:
       - name: Get the version
         id: version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
@@ -94,17 +70,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: target/out
-      - name: Get Release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload artifacts
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create release
+        uses: ncipollo/release-action@v1
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: target/out/tuigreet-${{ steps.version.outputs.VERSION }}-${{ matrix.arch.name }}/tuigreet-${{ steps.version.outputs.VERSION }}-${{ matrix.arch.name }}
-          asset_name: tuigreet-${{ steps.version.outputs.VERSION }}-${{ matrix.arch.name }}
-          asset_content_type: application/octet-stream
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ steps.version.outputs.VERSION }}
+          prerelease: false
+          tag: ${{ github.ref }}
+          artifacts: target/out/*/*
