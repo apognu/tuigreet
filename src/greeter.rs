@@ -96,6 +96,7 @@ pub struct Greeter {
 
   pub user_menu: bool,
 
+  pub default_user: Option<String>,
   pub remember: bool,
   pub remember_session: bool,
   pub remember_user_session: bool,
@@ -144,6 +145,10 @@ impl Greeter {
       if greeter.command.is_none() {
         greeter.command = Some(command.clone());
       }
+    }
+
+    if let Some(default_user) = greeter.default_user.clone() {
+        greeter.username = default_user;
     }
 
     if greeter.remember {
@@ -303,6 +308,7 @@ impl Greeter {
     opts.optopt("g", "greeting", "show custom text above login prompt", "GREETING");
     opts.optflag("t", "time", "display the current date and time");
     opts.optopt("", "time-format", "custom strftime format for displaying date and time", "FORMAT");
+    opts.optopt("u", "user", "set the default user", "USER");
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "remember-session", "remember last selected session");
     opts.optflag("", "remember-user-session", "remember last selected session for each user");
@@ -399,6 +405,7 @@ impl Greeter {
       process::exit(1);
     }
 
+    self.default_user = self.option("user");
     self.remember = self.config().opt_present("remember");
     self.remember_session = self.config().opt_present("remember-session");
     self.remember_user_session = self.config().opt_present("remember-user-session");
