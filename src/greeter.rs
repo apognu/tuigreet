@@ -104,6 +104,9 @@ pub struct Greeter {
   pub cursor_offset: i16,
 
   // Buffer to be used as a temporary editing zone for the various modes.
+  // Previous buffer is saved when a transient screen has to use the buffer, to
+  // be able to restore it when leaving the transient screen.
+  pub previous_buffer: Option<String>,
   pub buffer: String,
 
   // Define the selected session and how to resolve it.

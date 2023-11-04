@@ -53,7 +53,12 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     // previous mode (close a popup, for example), or cancel the `greetd`
     // session.
     KeyEvent { code: KeyCode::Esc, .. } => match greeter.mode {
-      Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => {
+      Mode::Command => {
+        greeter.mode = greeter.previous_mode;
+        greeter.buffer = greeter.previous_buffer.take().unwrap_or_default();
+      }
+
+      Mode::Users | Mode::Sessions | Mode::Power => {
         greeter.mode = greeter.previous_mode;
       }
 
@@ -77,6 +82,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
       };
 
       // Set the edition buffer to the current command.
+      greeter.previous_buffer = Some(greeter.buffer.clone());
       greeter.buffer = greeter.session_source.command(&greeter).map(str::to_string).unwrap_or_default();
       greeter.mode = Mode::Command;
     }
