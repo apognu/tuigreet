@@ -56,6 +56,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
       Mode::Command => {
         greeter.mode = greeter.previous_mode;
         greeter.buffer = greeter.previous_buffer.take().unwrap_or_default();
+        greeter.cursor_offset = 0;
       }
 
       Mode::Users | Mode::Sessions | Mode::Power => {
@@ -84,6 +85,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
       // Set the edition buffer to the current command.
       greeter.previous_buffer = Some(greeter.buffer.clone());
       greeter.buffer = greeter.session_source.command(&greeter).map(str::to_string).unwrap_or_default();
+      greeter.cursor_offset = 0;
       greeter.mode = Mode::Command;
     }
 
