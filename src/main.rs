@@ -96,7 +96,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
     match events.next().await {
       Some(Event::Render) => ui::draw(greeter.clone(), &mut terminal).await?,
       Some(Event::Key(key)) => keyboard::handle(greeter.clone(), key, ipc.clone()).await?,
-      Some(Event::Tick) | None => {}
+      _ => {}
     }
   }
 }
