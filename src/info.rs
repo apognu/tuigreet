@@ -10,6 +10,7 @@ use std::{
 use ini::Ini;
 use lazy_static::lazy_static;
 use nix::sys::utsname;
+use uzers::os::unix::UserExt;
 
 use crate::{
   ui::{
@@ -163,41 +164,20 @@ pub fn delete_last_user_session(username: &str) {
 }
 
 pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<User> {
-  match File::open("/etc/passwd") {
-    Err(_) => vec![],
-    Ok(file) => {
-      let file = BufReader::new(file);
+  let users = unsafe { uzers::all_users() };
 
-      let users: Vec<User> = file
-        .lines()
-        .filter_map(|line| {
-          line
-            .map(|line| {
-              let mut split = line.splitn(7, ':');
-              let username = split.next();
-              let uid = split.nth(1);
-              let name = split.nth(1);
+  let users: Vec<User> = users
+    .filter(|user| user.uid() >= min_uid as u32 && user.uid() <= max_uid as u32)
+    .map(|user| User {
+      username: user.name().to_string_lossy().to_string(),
+      name: match user.gecos() {
+        name if name.is_empty() => None,
+        name => Some(name.to_string_lossy().to_string()),
+      },
+    })
+    .collect();
 
-              match uid.map(|uid| uid.parse::<u16>()) {
-                Some(Ok(uid)) => match (username, name) {
-                  (Some(username), Some("")) => Some((uid, username.to_string(), None)),
-                  (Some(username), Some(name)) => Some((uid, username.to_string(), Some(name.to_string()))),
-                  _ => None,
-                },
-
-                _ => None,
-              }
-            })
-            .ok()
-            .flatten()
-            .filter(|(uid, _, _)| uid >= &min_uid && uid <= &max_uid)
-            .map(|(_, username, name)| User { username, name })
-        })
-        .collect();
-
-      users
-    }
-  }
+  users
 }
 
 pub fn get_min_max_uids(min_uid: Option<u16>, max_uid: Option<u16>) -> (u16, u16) {
