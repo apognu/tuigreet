@@ -1395,6 +1395,7 @@ dependencies = [
  "textwrap",
  "tokio",
  "unic-langid",
+ "uzers",
  "zeroize",
 ]
 
@@ -1455,6 +1456,15 @@ name = "unicode-width"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e51733f11c9c4f72aa0c160008246859e340b00807569a0da0e7a1079b27ba85"
+
+[[package]]
+name = "uzers"
+version = "0.11.3"
+source = "git+https://github.com/rustadopt/uzers-rs?branch=main#9e5460cc69ba1b6146abdc4fc6254d4c61c7c4bb"
+dependencies = [
+ "libc",
+ "log",
+]
 
 [[package]]
 name = "version_check"
