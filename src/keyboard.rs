@@ -194,6 +194,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
           _ => greeter.mode,
         };
 
+        greeter.buffer = greeter.previous_buffer.take().unwrap_or_default();
         greeter.mode = Mode::Users;
       }
 
@@ -221,6 +222,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
           delete_last_session_path();
         }
 
+        greeter.buffer = greeter.previous_buffer.take().unwrap_or_default();
         greeter.mode = greeter.previous_mode;
       }
 
