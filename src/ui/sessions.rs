@@ -37,12 +37,7 @@ impl SessionSource {
     match self {
       SessionSource::None => None,
       SessionSource::Command(command) => Some(command.as_str()),
-      SessionSource::Session(index) => greeter
-        .sessions
-        .options
-        .get(*index)
-        .and_then(|session| session.path.as_ref())
-        .and_then(|path| path.as_os_str().to_str()),
+      SessionSource::Session(index) => greeter.sessions.options.get(*index).map(|session| session.command.as_str()),
     }
   }
 }

@@ -7,7 +7,7 @@ use tokio::sync::{
 };
 
 use crate::{
-  info::{delete_last_user_session_path, write_last_user_session, write_last_user_session_path, write_last_username},
+  info::{delete_last_user_session, delete_last_user_session_path, write_last_user_session, write_last_user_session_path, write_last_username},
   ui::sessions::{Session, SessionSource, SessionType},
   AuthStatus, Greeter, Mode,
 };
@@ -116,6 +116,7 @@ impl Ipc {
                 SessionSource::Session(index) => {
                   if let Some(Session { path: Some(session_path), .. }) = greeter.sessions.options.get(index) {
                     write_last_user_session_path(&greeter.username, session_path);
+                    delete_last_user_session(&greeter.username);
                   }
                 }
 
