@@ -53,7 +53,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
   }
 
-  let username_label = if greeter.user_menu && greeter.username.is_empty() {
+  let username_label = if greeter.user_menu && greeter.username.value.is_empty() {
     let prompt_text = Span::from(fl!("select_user"));
 
     Paragraph::new(prompt_text).alignment(Alignment::Center)
@@ -63,7 +63,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     Paragraph::new(username_text)
   };
 
-  let username = greeter.username_mask.as_deref().unwrap_or_else(|| greeter.username.as_ref());
+  let username = greeter.username.get();
   let username_value_text = Span::from(username);
   let username_value = Paragraph::new(username_value_text);
 
@@ -71,7 +71,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
     Mode::Username | Mode::Password => {
       f.render_widget(username_label, chunks[USERNAME_INDEX]);
 
-      if !greeter.user_menu || !greeter.username.is_empty() {
+      if !greeter.user_menu || !greeter.username.value.is_empty() {
         f.render_widget(
           username_value,
           Rect::new(
@@ -124,7 +124,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   match greeter.mode {
     Mode::Username => {
-      let username_length = greeter.username.chars().count();
+      let username_length = greeter.username.get().chars().count();
       let offset = get_cursor_offset(greeter, username_length);
 
       Ok((2 + cursor.x + fl!("username").chars().count() as u16 + offset as u16, USERNAME_INDEX as u16 + cursor.y))

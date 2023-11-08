@@ -27,7 +27,7 @@ use crate::{
   },
   power::PowerOption,
   ui::{
-    common::menu::Menu,
+    common::{masked::MaskedString, menu::Menu},
     power::Power,
     sessions::{Session, SessionSource, SessionType},
     users::User,
@@ -124,10 +124,8 @@ pub struct Greeter {
   pub user_menu: bool,
   // Menu for user selection.
   pub users: Menu<User>,
-  // Current username.
-  pub username: String,
-  // Value to display in place of the username (e.g. full name of the user).
-  pub username_mask: Option<String>,
+  // Current username. Masked to display the full name if available.
+  pub username: MaskedString,
   // Prompt that should be displayed to ask for entry.
   pub prompt: Option<String>,
 
@@ -194,8 +192,7 @@ impl Greeter {
     // If we should remember the last logged-in user.
     if greeter.remember {
       if let Some(username) = get_last_user_username() {
-        greeter.username = username.clone();
-        greeter.username_mask = get_last_user_name();
+        greeter.username = MaskedString::from(username.clone(), get_last_user_name());
 
         // If, on top of that, we should remember their last session.
         if greeter.remember_user_session {
@@ -237,7 +234,6 @@ impl Greeter {
 
     if !soft {
       self.username.zeroize();
-      self.username_mask.zeroize();
     }
 
     if scrub_message {

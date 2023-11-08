@@ -9,6 +9,7 @@ use crate::{
   ipc::Ipc,
   power::power,
   ui::{
+    common::masked::MaskedString,
     sessions::{Session, SessionSource},
     users::User,
   },
@@ -31,7 +32,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
       modifiers: KeyModifiers::CONTROL,
       ..
     } => match greeter.mode {
-      Mode::Username => greeter.username = String::new(),
+      Mode::Username => greeter.username = MaskedString::default(),
       Mode::Password => greeter.buffer = String::new(),
       Mode::Command => greeter.buffer = String::new(),
       _ => {}
@@ -163,7 +164,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     } => {
       let value = {
         match greeter.mode {
-          Mode::Username => &greeter.username,
+          Mode::Username => &greeter.username.value,
           _ => &greeter.buffer,
         }
       };
@@ -180,13 +181,13 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
 
     // Tab should validate the username entry (same as Enter).
     KeyEvent { code: KeyCode::Tab, .. } => match greeter.mode {
-      Mode::Username if !greeter.username.is_empty() => validate_username(&mut greeter, &ipc).await,
+      Mode::Username if !greeter.username.value.is_empty() => validate_username(&mut greeter, &ipc).await,
       _ => {}
     },
 
     // Enter validates the current entry, depending on the active mode.
     KeyEvent { code: KeyCode::Enter, .. } => match greeter.mode {
-      Mode::Username if !greeter.username.is_empty() => validate_username(&mut greeter, &ipc).await,
+      Mode::Username if !greeter.username.value.is_empty() => validate_username(&mut greeter, &ipc).await,
 
       Mode::Username if greeter.user_menu => {
         greeter.previous_mode = match greeter.mode {
@@ -230,8 +231,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
         let username = greeter.users.options.get(greeter.users.selected).cloned();
 
         if let Some(User { username, name }) = username {
-          greeter.username = username;
-          greeter.username_mask = name;
+          greeter.username = MaskedString::from(username, name);
         }
 
         validate_username(&mut greeter, &ipc).await;
@@ -287,7 +287,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
 // current mode and the position of the cursor.
 async fn insert_key(greeter: &mut Greeter, c: char) {
   let value = match greeter.mode {
-    Mode::Username => &greeter.username,
+    Mode::Username => &greeter.username.value,
     Mode::Password => &greeter.buffer,
     Mode::Command => &greeter.buffer,
     Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => return,
@@ -301,7 +301,7 @@ async fn insert_key(greeter: &mut Greeter, c: char) {
   let mode = greeter.mode;
 
   match mode {
-    Mode::Username => greeter.username = value,
+    Mode::Username => greeter.username.value = value,
     Mode::Password => greeter.buffer = value,
     Mode::Command => greeter.buffer = value,
     _ => {}
@@ -313,7 +313,7 @@ async fn insert_key(greeter: &mut Greeter, c: char) {
 // of the cursor.
 async fn delete_key(greeter: &mut Greeter, key: KeyCode) {
   let value = match greeter.mode {
-    Mode::Username => &greeter.username,
+    Mode::Username => &greeter.username.value,
     Mode::Password => &greeter.buffer,
     Mode::Command => &greeter.buffer,
     Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => return,
@@ -332,7 +332,7 @@ async fn delete_key(greeter: &mut Greeter, key: KeyCode) {
     let value = left.chain(right).collect();
 
     match greeter.mode {
-      Mode::Username => greeter.username = value,
+      Mode::Username => greeter.username.value = value,
       Mode::Password => greeter.buffer = value,
       Mode::Command => greeter.buffer = value,
       Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => return,
@@ -349,18 +349,22 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
   greeter.working = true;
   greeter.message = None;
 
-  ipc.send(Request::CreateSession { username: greeter.username.clone() }).await;
+  ipc
+    .send(Request::CreateSession {
+      username: greeter.username.value.clone(),
+    })
+    .await;
   greeter.buffer = String::new();
 
   if greeter.remember_user_session {
-    if let Ok(last_session) = get_last_user_session_path(&greeter.username) {
+    if let Ok(last_session) = get_last_user_session_path(&greeter.username.value) {
       if let Some(last_session) = Session::from_path(greeter, last_session).cloned() {
         greeter.sessions.selected = greeter.sessions.options.iter().position(|sess| sess.path == last_session.path).unwrap_or(0);
         greeter.session_source = SessionSource::Session(greeter.sessions.selected);
       }
     }
 
-    if let Ok(command) = get_last_user_session(&greeter.username) {
+    if let Ok(command) = get_last_user_session(&greeter.username.value) {
       greeter.session_source = SessionSource::Command(command);
     }
   }
@@ -374,7 +378,11 @@ mod test {
   use tokio::sync::RwLock;
 
   use super::handle;
-  use crate::{ipc::Ipc, ui::sessions::SessionSource, Greeter, Mode};
+  use crate::{
+    ipc::Ipc,
+    ui::{common::masked::MaskedString, sessions::SessionSource},
+    Greeter, Mode,
+  };
 
   #[tokio::test]
   async fn ctrl_u() {
@@ -383,7 +391,7 @@ mod test {
     {
       let mut greeter = greeter.write().await;
       greeter.mode = Mode::Username;
-      greeter.username = "apognu".to_string();
+      greeter.username = MaskedString::from("apognu".to_string(), None);
     }
 
     let result = handle(greeter.clone(), KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL), Ipc::new()).await;
@@ -392,7 +400,7 @@ mod test {
       let status = greeter.read().await;
 
       assert!(matches!(result, Ok(_)));
-      assert_eq!(status.username, "".to_string());
+      assert_eq!(status.username.value, "".to_string());
     }
 
     {

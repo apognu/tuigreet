@@ -54,8 +54,12 @@ async fn run() -> Result<(), Box<dyn Error>> {
   let mut events = Events::new().await;
   let ipc = Ipc::new();
 
-  if greeter.remember && !greeter.username.is_empty() {
-    ipc.send(Request::CreateSession { username: greeter.username.clone() }).await;
+  if greeter.remember && !greeter.username.value.is_empty() {
+    ipc
+      .send(Request::CreateSession {
+        username: greeter.username.value.clone(),
+      })
+      .await;
   }
 
   let greeter = Arc::new(RwLock::new(greeter));

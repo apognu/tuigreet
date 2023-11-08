@@ -104,19 +104,19 @@ impl Ipc {
       Response::Success => {
         if greeter.done {
           if greeter.remember {
-            write_last_username(&greeter.username, greeter.username_mask.as_deref());
+            write_last_username(&greeter.username);
 
             if greeter.remember_user_session {
               match greeter.session_source {
                 SessionSource::Command(ref command) => {
-                  write_last_user_session(&greeter.username, command);
-                  delete_last_user_session_path(&greeter.username);
+                  write_last_user_session(&greeter.username.value, command);
+                  delete_last_user_session_path(&greeter.username.value);
                 }
 
                 SessionSource::Session(index) => {
                   if let Some(Session { path: Some(session_path), .. }) = greeter.sessions.options.get(index) {
-                    write_last_user_session_path(&greeter.username, session_path);
-                    delete_last_user_session(&greeter.username);
+                    write_last_user_session_path(&greeter.username.value, session_path);
+                    delete_last_user_session(&greeter.username.value);
                   }
                 }
 
@@ -161,7 +161,11 @@ impl Ipc {
         match error_type {
           ErrorType::AuthError => {
             greeter.message = Some(fl!("failed"));
-            self.send(Request::CreateSession { username: greeter.username.clone() }).await;
+            self
+              .send(Request::CreateSession {
+                username: greeter.username.value.clone(),
+              })
+              .await;
             greeter.reset(true).await;
           }
 

@@ -13,6 +13,7 @@ use nix::sys::utsname;
 
 use crate::{
   ui::{
+    common::masked::MaskedString,
     sessions::{Session, SessionType},
     users::User,
   },
@@ -101,10 +102,10 @@ pub fn get_last_user_name() -> Option<String> {
   }
 }
 
-pub fn write_last_username(username: &str, name: Option<&str>) {
-  let _ = fs::write(LAST_USER_USERNAME, username);
+pub fn write_last_username(username: &MaskedString) {
+  let _ = fs::write(LAST_USER_USERNAME, username.value.clone());
 
-  if let Some(name) = name {
+  if let Some(ref name) = username.mask {
     let _ = fs::write(LAST_USER_NAME, name);
   } else {
     let _ = fs::remove_file(LAST_USER_NAME);
