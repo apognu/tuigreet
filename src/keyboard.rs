@@ -45,9 +45,11 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
       modifiers: KeyModifiers::CONTROL,
       ..
     } => {
-      use crate::greeter::AuthStatus;
+      use crate::{AuthStatus, Event};
 
-      crate::exit(&mut greeter, AuthStatus::Cancel).await;
+      if let Some(ref sender) = greeter.events {
+        let _ = sender.send(Event::Exit(AuthStatus::Cancel)).await;
+      }
     }
 
     // Depending on the active screen, pressing Escape will either return to the
@@ -259,7 +261,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
         let power_command = greeter.powers.options.get(greeter.powers.selected).cloned();
 
         if let Some(command) = power_command {
-          power(&mut greeter, command.action);
+          power(&mut greeter, command.action).await;
         }
 
         greeter.mode = greeter.previous_mode;

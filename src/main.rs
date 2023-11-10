@@ -38,7 +38,8 @@ async fn main() {
 }
 
 async fn run() -> Result<(), Box<dyn Error>> {
-  let greeter = Greeter::new().await;
+  let mut events = Events::new().await;
+  let greeter = Greeter::new(events.sender()).await;
   let mut stdout = io::stdout();
 
   register_panic_handler();
@@ -51,7 +52,6 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
   terminal.clear()?;
 
-  let mut events = Events::new().await;
   let ipc = Ipc::new();
 
   if greeter.remember && !greeter.username.value.is_empty() {
@@ -75,23 +75,6 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
   });
 
-  tokio::task::spawn({
-    let greeter = greeter.clone();
-    let notify = greeter.read().await.power_command_notify.clone();
-
-    async move {
-      loop {
-        notify.notified().await;
-
-        let command = greeter.write().await.power_command.take();
-
-        if let Some(command) = command {
-          power::run(&greeter, command).await;
-        }
-      }
-    }
-  });
-
   loop {
     if let Some(status) = greeter.read().await.exit {
       return Err(status.into());
@@ -100,12 +83,21 @@ async fn run() -> Result<(), Box<dyn Error>> {
     match events.next().await {
       Some(Event::Render) => ui::draw(greeter.clone(), &mut terminal).await?,
       Some(Event::Key(key)) => keyboard::handle(greeter.clone(), key, ipc.clone()).await?,
+
+      Some(Event::Exit(status)) => {
+        crate::exit(&mut *greeter.write().await, status).await;
+      }
+
+      Some(Event::PowerCommand(command)) => {
+        power::run(&greeter, command).await;
+      }
+
       _ => {}
     }
   }
 }
 
-pub async fn exit(greeter: &mut Greeter, status: AuthStatus) {
+async fn exit(greeter: &mut Greeter, status: AuthStatus) {
   match status {
     AuthStatus::Success => {}
     AuthStatus::Cancel | AuthStatus::Failure => Ipc::cancel(greeter).await,
