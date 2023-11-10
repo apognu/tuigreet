@@ -2,7 +2,7 @@ use std::{process::Stdio, sync::Arc};
 
 use tokio::{process::Command, sync::RwLock};
 
-use crate::{ui::power::Power, Greeter, Mode};
+use crate::{event::Event, ui::power::Power, Greeter, Mode};
 
 #[derive(SmartDefault, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PowerOption {
@@ -11,7 +11,7 @@ pub enum PowerOption {
   Reboot,
 }
 
-pub fn power(greeter: &mut Greeter, option: PowerOption) {
+pub async fn power(greeter: &mut Greeter, option: PowerOption) {
   let command = match greeter.powers.options.iter().find(|opt| opt.action == option) {
     None => None,
 
@@ -54,8 +54,9 @@ pub fn power(greeter: &mut Greeter, option: PowerOption) {
     command.stdout(Stdio::null());
     command.stderr(Stdio::null());
 
-    greeter.power_command = Some(command);
-    greeter.power_command_notify.notify_one();
+    if let Some(ref sender) = greeter.events {
+      let _ = sender.send(Event::PowerCommand(command)).await;
+    }
   }
 }
 

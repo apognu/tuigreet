@@ -7,6 +7,7 @@ use tokio::sync::{
 };
 
 use crate::{
+  event::Event,
   info::{delete_last_user_session, delete_last_user_session_path, write_last_user_session, write_last_user_session_path, write_last_username},
   ui::sessions::{Session, SessionSource, SessionType},
   AuthStatus, Greeter, Mode,
@@ -125,7 +126,9 @@ impl Ipc {
             }
           }
 
-          crate::exit(greeter, AuthStatus::Success).await;
+          if let Some(ref sender) = greeter.events {
+            let _ = sender.send(Event::Exit(AuthStatus::Success)).await;
+          }
         } else {
           let command = greeter.session_source.command(greeter).map(str::to_string);
 

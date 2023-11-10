@@ -16,12 +16,12 @@ use getopts::{Matches, Options};
 use i18n_embed::DesktopLanguageRequester;
 use tokio::{
   net::UnixStream,
-  process::Command,
-  sync::{Notify, RwLock, RwLockWriteGuard},
+  sync::{mpsc::Sender, RwLock, RwLockWriteGuard},
 };
 use zeroize::Zeroize;
 
 use crate::{
+  event::Event,
   info::{
     get_issue, get_last_session, get_last_session_path, get_last_user_name, get_last_user_session, get_last_user_session_path, get_last_user_username, get_min_max_uids, get_sessions, get_users,
   },
@@ -95,6 +95,7 @@ pub struct Greeter {
   pub config: Option<Matches>,
   pub socket: String,
   pub stream: Option<Arc<RwLock<UnixStream>>>,
+  pub events: Option<Sender<Event>>,
 
   // Current mode of the application, will define what actions are permitted.
   pub mode: Mode,
@@ -148,10 +149,6 @@ pub struct Greeter {
 
   // Menu for power options.
   pub powers: Menu<Power>,
-  // Power command that was selected.
-  pub power_command: Option<Command>,
-  // Channel to notify of a power command selection.
-  pub power_command_notify: Arc<Notify>,
   // Whether to prefix the power commands with `setsid`.
   pub power_setsid: bool,
 
@@ -170,9 +167,10 @@ impl Drop for Greeter {
 }
 
 impl Greeter {
-  pub async fn new() -> Self {
+  pub async fn new(events: Sender<Event>) -> Self {
     let mut greeter = Self::default();
 
+    greeter.events = Some(events);
     greeter.set_locale();
 
     greeter.powers = Menu {

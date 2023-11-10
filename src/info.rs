@@ -159,7 +159,7 @@ pub fn delete_last_user_session_path(username: &str) {
 }
 
 pub fn delete_last_user_session(username: &str) {
-  let _ = fs::remove_file(&format!("{LAST_SESSION}-{username}"));
+  let _ = fs::remove_file(format!("{LAST_SESSION}-{username}"));
 }
 
 pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<User> {
