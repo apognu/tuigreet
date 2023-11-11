@@ -195,7 +195,7 @@ Note that, by default, all commands are prefixed with `setsid` to completely det
 
 ### User menu
 
-Optionally, a user can be selected from a menu instead of typing out their name, with the `--user-menu` option, this will present all users present in `/etc/passwd` at the time `tuigreet` was run, with a UID within the acceptable range. The values for the minimum and maximum UIDs are selected as follows, for each value:
+Optionally, a user can be selected from a menu instead of typing out their name, with the `--user-menu` option, this will present all users returned by NSS at the time `tuigreet` was run, with a UID within the acceptable range. The values for the minimum and maximum UIDs are selected as follows, for each value:
 
  * A user-provided value, through `--user-menu-min-uid` or `--user-menu-max-uid`;
  * **Or**, the available values for `UID_MIN` or `UID_MAX` from `/etc/login.defs`;

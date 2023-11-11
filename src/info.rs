@@ -256,3 +256,20 @@ pub fn capslock_status() -> bool {
     Err(_) => false,
   }
 }
+
+#[cfg(feature = "nsswrapper")]
+#[cfg(test)]
+mod nsswrapper_tests {
+  #[test]
+  fn nsswrapper_get_users_from_nss() {
+    use super::get_users;
+
+    let users = get_users(1000, 2000);
+
+    assert_eq!(users.len(), 2);
+    assert_eq!(users[0].username, "joe");
+    assert_eq!(users[0].name, Some("Joe".to_string()));
+    assert_eq!(users[1].username, "bob");
+    assert_eq!(users[1].name, None);
+  }
+}

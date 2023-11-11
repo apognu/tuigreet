@@ -377,7 +377,7 @@ impl Greeter {
   }
 
   // Parses command line arguments to configured the software accordingly.
-  async fn parse_options(&mut self) {
+  pub async fn parse_options(&mut self) {
     let opts = Greeter::options();
 
     self.config = match opts.parse(env::args().collect::<Vec<String>>()) {
