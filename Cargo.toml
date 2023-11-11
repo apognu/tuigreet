@@ -5,6 +5,10 @@ authors = ["Antoine POPINEAU <antoine.popineau@appscho.com>"]
 edition = "2018"
 build = "build.rs"
 
+[features]
+default = []
+nsswrapper = []
+
 [dependencies]
 chrono = { version = "^0.4", features = ["unstable-locales"] }
 crossterm = { version = "^0.27", features = ["event-stream"] }
