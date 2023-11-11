@@ -172,6 +172,12 @@ Name=Wayland Gnome
 Exec=/path/to/my/wrapper.sh
 ```
 
+#### Common wrappers
+
+Two options allows you to automatically wrap run commands around sessions started from desktop files, depending on whether they come `/usr/share/wayland-sessions` or `/usr/share/xsessions`: `--sessions-wrapper` and `--xsessions-wrapper`. With this, you can prepend another command on front of the sessions you run to set up the required environment to run these kinds of sessions.
+
+By default, unless you change it, all X11 sessions (those picked up from `/usr/share/xsessions`) are prepended with `startx /usr/bin/env`, so the X11 server is started properly.
+
 ### Power management
 
 Two power actions are possible from `tuigreet`, shutting down (through `shutdown -h now`) and rebooting (with `shutdown -r now`) the machine. This requires that those commands be executable by regular users, which is not the case on some distros.
