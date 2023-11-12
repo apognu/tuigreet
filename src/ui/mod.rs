@@ -40,7 +40,7 @@ const STATUSBAR_RIGHT_INDEX: usize = 2;
 
 pub(super) type Backend = CrosstermBackend<io::Stdout>;
 pub(super) type Term = Terminal<Backend>;
-pub(super) type Frame<'a> = CrosstermFrame<'a, Backend>;
+pub(super) type Frame<'a> = CrosstermFrame<'a>;
 
 pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<(), Box<dyn Error>> {
   let mut greeter = greeter.write().await;
