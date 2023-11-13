@@ -39,7 +39,7 @@ async fn main() {
 
 async fn run() -> Result<(), Box<dyn Error>> {
   let mut events = Events::new().await;
-  let greeter = Greeter::new(events.sender()).await;
+  let mut greeter = Greeter::new(events.sender()).await;
   let mut stdout = io::stdout();
 
   register_panic_handler();
@@ -55,6 +55,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
   let ipc = Ipc::new();
 
   if greeter.remember && !greeter.username.value.is_empty() {
+    greeter.working = true;
+
     ipc
       .send(Request::CreateSession {
         username: greeter.username.value.clone(),

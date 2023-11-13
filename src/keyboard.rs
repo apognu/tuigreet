@@ -25,6 +25,10 @@ use crate::{
 pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) -> Result<(), Box<dyn Error>> {
   let mut greeter = greeter.write().await;
 
+  if greeter.working {
+    return Ok(());
+  }
+
   match input {
     // ^U should erase the current buffer.
     KeyEvent {
