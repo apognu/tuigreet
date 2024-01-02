@@ -40,7 +40,7 @@ tokio = { version = "^1.2", default-features = false, features = [
 unic-langid = "^0.9"
 zeroize = "^1.3"
 # TODO: Change to published version when a new release is out.
-uzers = { git = "https://github.com/rustadopt/uzers-rs", branch = "main" }
+uzers = { git = "https://github.com/rustadopt/uzers-rs", commit = "aa6f0f8665fff188ddceb758078dc3a1e0c238a4" }
 
 [profile.release]
 lto = true
