@@ -141,6 +141,8 @@ pub struct Greeter {
   pub remember_session: bool,
   // Whether last launched session for the current user should be remembered.
   pub remember_user_session: bool,
+  // Whether to sort sessions alphabetically.
+  pub sort_sessions: bool,
 
   // Greeting message (MOTD) to use to welcome the user.
   pub greeting: Option<String>,
@@ -367,6 +369,7 @@ impl Greeter {
     opts.optflag("r", "remember", "remember last logged-in username");
     opts.optflag("", "remember-session", "remember last selected session");
     opts.optflag("", "remember-user-session", "remember last selected session for each user");
+    opts.optflag("", "sort-sessions", "sort sessions alphabetically");
     opts.optflag("", "user-menu", "allow graphical selection of users from a menu");
     opts.optopt("", "user-menu-min-uid", "minimum UID to display in the user selection menu", "UID");
     opts.optopt("", "user-menu-max-uid", "maximum UID to display in the user selection menu", "UID");
@@ -480,6 +483,7 @@ impl Greeter {
     self.remember = self.config().opt_present("remember");
     self.remember_session = self.config().opt_present("remember-session");
     self.remember_user_session = self.config().opt_present("remember-user-session");
+    self.sort_sessions = self.config().opt_present("sort-sessions");
     self.greeting = self.option("greeting");
 
     // If the `--cmd` argument is provided, it will override the selected session.
