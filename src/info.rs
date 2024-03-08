@@ -226,6 +226,9 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
       files.extend(entries.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path(), *session_type))).flatten());
     }
   }
+  if greeter.sort_sessions {
+    files.sort_by(|a, b| a.name.cmp(&b.name));
+  }
   Ok(files)
 }
 
