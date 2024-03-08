@@ -227,6 +227,10 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
     }
   }
 
+  if greeter.sort_sessions {
+    files.sort_by(|a, b| a.name.cmp(&b.name));
+  }
+
   Ok(files)
 }
 
