@@ -15,7 +15,7 @@ use crate::{
 
 const GREETING_INDEX: usize = 0;
 const USERNAME_INDEX: usize = 1;
-const ANSWER_INDEX: usize = 2;
+const ANSWER_INDEX: usize = 3;
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
   let size = f.size();
@@ -35,13 +35,11 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let (message, message_height) = get_message_height(greeter, container_padding, 1);
   let (greeting, greeting_height) = get_greeting_height(greeter, container_padding, 0);
 
-  let username_padding = if greeter.mode == Mode::Username && prompt_padding == 0 { 1 } else { prompt_padding };
-  let answer_padding = if prompt_padding == 0 { 1 } else { prompt_padding };
-
   let constraints = [
-    Constraint::Length(greeting_height),                                                     // Greeting
-    Constraint::Length(1 + username_padding),                                                // Username
-    Constraint::Length(if greeter.mode == Mode::Username { 0 } else { 1 + answer_padding }), // Answer
+    Constraint::Length(greeting_height),                                                 // Greeting
+    Constraint::Length(1),                                                               // Username
+    Constraint::Length(if greeter.mode == Mode::Username { 0 } else { prompt_padding }), // Prompt padding
+    Constraint::Length(if greeter.mode == Mode::Username { 0 } else { 1 }),              // Answer
   ];
 
   let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(frame);
@@ -145,9 +143,9 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
       let offset = get_cursor_offset(greeter, answer_length);
 
       if greeter.asking_for_secret && !greeter.secret_display.show() {
-        Ok((1 + cursor.x + greeter.prompt_width() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
+        Ok((1 + cursor.x + greeter.prompt_width() as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y - 1))
       } else {
-        Ok((1 + cursor.x + greeter.prompt_width() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y))
+        Ok((1 + cursor.x + greeter.prompt_width() as u16 + offset as u16, ANSWER_INDEX as u16 + prompt_padding + cursor.y - 1))
       }
     }
 
