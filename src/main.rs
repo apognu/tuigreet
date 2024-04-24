@@ -20,6 +20,7 @@ use crossterm::{
 };
 use event::Event;
 use greetd_ipc::Request;
+use power::PowerPostAction;
 use tokio::sync::RwLock;
 use tracing_appender::non_blocking::WorkerGuard;
 use tui::{backend::CrosstermBackend, Terminal};
@@ -100,12 +101,21 @@ async fn run() -> Result<(), Box<dyn Error>> {
       }
 
       Some(Event::PowerCommand(command)) => {
-        power::run(&greeter, command).await;
+        if let PowerPostAction::ClearScreen = power::run(&greeter, command).await {
+          execute!(io::stdout(), LeaveAlternateScreen)?;
+          terminal.set_cursor(1, 1)?;
+          terminal.clear()?;
+          disable_raw_mode()?;
+
+          break;
+        }
       }
 
       _ => {}
     }
   }
+
+  Ok(())
 }
 
 async fn exit(greeter: &mut Greeter, status: AuthStatus) {

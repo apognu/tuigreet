@@ -60,7 +60,12 @@ pub async fn power(greeter: &mut Greeter, option: PowerOption) {
   }
 }
 
-pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) {
+pub enum PowerPostAction {
+  Noop,
+  ClearScreen,
+}
+
+pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) -> PowerPostAction {
   tracing::info!("executing power command: {:?}", command);
 
   greeter.write().await.mode = Mode::Processing;
@@ -85,6 +90,12 @@ pub async fn run(greeter: &Arc<RwLock<Greeter>>, mut command: Command) {
 
   let mut greeter = greeter.write().await;
 
-  greeter.mode = mode;
-  greeter.message = message;
+  if message.is_none() {
+    PowerPostAction::ClearScreen
+  } else {
+    greeter.mode = mode;
+    greeter.message = message;
+
+    PowerPostAction::Noop
+  }
 }
