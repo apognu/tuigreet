@@ -84,9 +84,9 @@ tuigreet - A graphical console greeter for greetd
 	Add visual feedback when typing secrets, as one asterisk character for every
 	keystroke. By default, no feedback is given at all.
 
-*--asterisks-char CHAR*
-	Change the default feedback character from an asterisk to the provided
-	character.
+*--asterisks-char CHARS*
+	Change the default feedback character from an asterisk to a random
+	distribution of the provided characters.
 
 *--window-padding COLS*
 	Add spacing between the edge of the screen area the drawing area.

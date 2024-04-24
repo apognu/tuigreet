@@ -39,8 +39,8 @@ Options:
         --user-menu-max-uid UID
                         maximum UID to display in the user selection menu
         --asterisks     display asterisks when a secret is typed
-        --asterisks-char CHAR
-                        character to be used to redact secrets (default: *)
+        --asterisks-char CHARS
+                        characters to be used to redact secrets (default: *)
         --window-padding PADDING
                         padding inside the terminal area (default: 0)
         --container-padding PADDING

@@ -35,7 +35,7 @@ use crate::{
 };
 
 const DEFAULT_LOCALE: Locale = Locale::en_US;
-const DEFAULT_ASTERISKS_CHAR: char = '*';
+const DEFAULT_ASTERISKS_CHARS: &str = "*";
 // `startx` wants an absolute path to the executable as a first argument.
 // We don't want to resolve the session command in the greeter though, so it should be additionally wrapped with a known noop command (like `/usr/bin/env`).
 const DEFAULT_XSESSION_WRAPPER: &str = "startx /usr/bin/env";
@@ -70,13 +70,13 @@ pub enum Mode {
 }
 
 // This enum models how secret values should be displayed on terminal.
-#[derive(SmartDefault, Debug, Copy, Clone)]
+#[derive(SmartDefault, Debug, Clone)]
 pub enum SecretDisplay {
   #[default]
   // All characters hidden.
   Hidden,
   // All characters are replaced by a placeholder character.
-  Character(char),
+  Character(String),
 }
 
 impl SecretDisplay {
@@ -364,7 +364,7 @@ impl Greeter {
     opts.optopt("", "user-menu-min-uid", "minimum UID to display in the user selection menu", "UID");
     opts.optopt("", "user-menu-max-uid", "maximum UID to display in the user selection menu", "UID");
     opts.optflag("", "asterisks", "display asterisks when a secret is typed");
-    opts.optopt("", "asterisks-char", "character to be used to redact secrets (default: *)", "CHAR");
+    opts.optopt("", "asterisks-char", "characters to be used to redact secrets (default: *)", "CHARS");
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
     opts.optopt("", "container-padding", "padding inside the main prompt container (default: 1)", "PADDING");
     opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
@@ -415,15 +415,15 @@ impl Greeter {
 
     if self.config().opt_present("asterisks") {
       let asterisk = if let Some(value) = self.config().opt_str("asterisks-char") {
-        if value.chars().count() != 1 {
-          eprintln!("--asterisks-char can only have one single character as its value");
+        if value.chars().count() < 1 {
+          eprintln!("--asterisks-char must have at least one character as its value");
           print_usage(opts);
           process::exit(1);
         }
 
-        value.chars().next().unwrap()
+        value
       } else {
-        DEFAULT_ASTERISKS_CHAR
+        DEFAULT_ASTERISKS_CHARS.to_string()
       };
 
       self.secret_display = SecretDisplay::Character(asterisk);

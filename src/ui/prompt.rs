@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use rand::{prelude::StdRng, Rng, SeedableRng};
 use tui::{
   layout::{Alignment, Constraint, Direction, Layout, Rect},
   text::{Span, Text},
@@ -91,8 +92,17 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
         f.render_widget(answer_label, chunks[ANSWER_INDEX]);
 
         if !greeter.asking_for_secret || greeter.secret_display.show() {
-          let value = match (greeter.asking_for_secret, greeter.secret_display) {
-            (true, SecretDisplay::Character(asterisk)) => asterisk.to_string().repeat(greeter.buffer.chars().count()),
+          let value = match (greeter.asking_for_secret, &greeter.secret_display) {
+            (true, SecretDisplay::Character(pool)) => {
+              if pool.chars().count() == 1 {
+                pool.repeat(greeter.buffer.chars().count())
+              } else {
+                let mut rng = StdRng::seed_from_u64(0);
+
+                greeter.buffer.chars().map(|_| pool.chars().nth(rng.gen_range(0..pool.chars().count())).unwrap()).collect()
+              }
+            }
+
             _ => greeter.buffer.clone(),
           };
 
