@@ -223,32 +223,40 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
 
   for (path, session_type) in paths.iter() {
     if let Ok(entries) = fs::read_dir(path) {
-      files.extend(entries.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path(), *session_type))).flatten());
+      files.extend(entries.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path(), *session_type))).flatten().flatten());
     }
   }
+
   Ok(files)
 }
 
-fn load_desktop_file<P>(path: P, session_type: SessionType) -> Result<Session, Box<dyn Error>>
+fn load_desktop_file<P>(path: P, session_type: SessionType) -> Result<Option<Session>, Box<dyn Error>>
 where
   P: AsRef<Path>,
 {
   let desktop = Ini::load_from_file(path.as_ref())?;
   let section = desktop.section(Some("Desktop Entry")).ok_or("no Desktop Entry section in desktop file")?;
 
+  if let Some("true") = section.get("Hidden") {
+    return Ok(None);
+  }
+  if let Some("true") = section.get("NoDisplay") {
+    return Ok(None);
+  }
+
   let slug = path.as_ref().file_stem().map(|slug| slug.to_string_lossy().to_string());
   let name = section.get("Name").ok_or("no Name property in desktop file")?;
   let exec = section.get("Exec").ok_or("no Exec property in desktop file")?;
   let xdg_desktop_names = section.get("DesktopNames").map(str::to_string);
 
-  Ok(Session {
+  Ok(Some(Session {
     slug,
     name: name.to_string(),
     command: exec.to_string(),
     session_type,
     path: Some(path.as_ref().into()),
     xdg_desktop_names,
-  })
+  }))
 }
 
 pub fn capslock_status() -> bool {
