@@ -152,6 +152,10 @@ pub struct Greeter {
   // Whether to prefix the power commands with `setsid`.
   pub power_setsid: bool,
 
+  pub kb_command: u8,
+  pub kb_sessions: u8,
+  pub kb_power: u8,
+
   // The software is waiting for a response from `greetd`.
   pub working: bool,
   // We are done working.
@@ -373,6 +377,10 @@ impl Greeter {
     opts.optopt("", "power-reboot", "command to run to reboot the system", "'CMD [ARGS]...'");
     opts.optflag("", "power-no-setsid", "do not prefix power commands with setsid");
 
+    opts.optopt("", "kb-command", "F-key to use to open the command menu", "[1-12]");
+    opts.optopt("", "kb-sessions", "F-key to use to open the sessions menu", "[1-12]");
+    opts.optopt("", "kb-power", "F-key to use to open the power menu", "[1-12]");
+
     opts
   }
 
@@ -509,6 +517,16 @@ impl Greeter {
     });
 
     self.power_setsid = !self.config().opt_present("power-no-setsid");
+
+    self.kb_command = self.config().opt_str("kb-command").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(2);
+    self.kb_sessions = self.config().opt_str("kb-sessions").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(3);
+    self.kb_power = self.config().opt_str("kb-power").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(12);
+
+    if self.kb_command == self.kb_sessions || self.kb_sessions == self.kb_power || self.kb_power == self.kb_command {
+      eprintln!("keybindings must all be distinct");
+      print_usage(opts);
+      process::exit(1);
+    }
 
     self.connect().await;
   }

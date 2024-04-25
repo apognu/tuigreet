@@ -83,7 +83,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     // F2 will display the command entry prompt. If we are already in one of the
     // popup screens, we set the previous screen as being the current previous
     // screen.
-    KeyEvent { code: KeyCode::F(2), .. } => {
+    KeyEvent { code: KeyCode::F(i), .. } if i == greeter.kb_command => {
       greeter.previous_mode = match greeter.mode {
         Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
         _ => greeter.mode,
@@ -99,7 +99,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     // F3 will display the session selection menu. If we are already in one of
     // the popup screens, we set the previous screen as being the current
     // previous screen.
-    KeyEvent { code: KeyCode::F(3), .. } => {
+    KeyEvent { code: KeyCode::F(i), .. } if i == greeter.kb_sessions => {
       greeter.previous_mode = match greeter.mode {
         Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
         _ => greeter.mode,
@@ -111,7 +111,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
     // F12 will display the user selection menu. If we are already in one of the
     // popup screens, we set the previous screen as being the current previous
     // screen.
-    KeyEvent { code: KeyCode::F(12), .. } => {
+    KeyEvent { code: KeyCode::F(i), .. } if i == greeter.kb_power => {
       greeter.previous_mode = match greeter.mode {
         Mode::Users | Mode::Command | Mode::Sessions | Mode::Power => greeter.previous_mode,
         _ => greeter.mode,
