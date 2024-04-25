@@ -68,6 +68,9 @@ impl SessionType {
 // A session, as defined by an XDG session file.
 #[derive(SmartDefault, Clone)]
 pub struct Session {
+  // Slug of the session, being the name of the desktop file without its
+  // extension.
+  pub slug: Option<String>,
   // Human-friendly name for the session, maps to the `Name` attribute.
   pub name: String,
   // Command used to start the session, maps to the `Exec` attribute.
@@ -78,6 +81,8 @@ pub struct Session {
   // Path to the session file. Used to uniquely identify sessions, since names
   // and commands can be identital between two different sessions.
   pub path: Option<PathBuf>,
+  // Desktop names as defined with the `DesktopNames` desktop file property
+  pub xdg_desktop_names: Option<String>,
 }
 
 impl MenuItem for Session {
@@ -134,12 +139,14 @@ mod test {
           command: "Session1Cmd".into(),
           session_type: super::SessionType::Wayland,
           path: Some("/Session1Path".into()),
+          ..Default::default()
         },
         Session {
           name: "Session2".into(),
           command: "Session2Cmd".into(),
           session_type: super::SessionType::X11,
           path: Some("/Session2Path".into()),
+          ..Default::default()
         },
       ],
     };
@@ -164,6 +171,7 @@ mod test {
         command: "Session1Cmd".into(),
         session_type: super::SessionType::Wayland,
         path: Some("/Session1Path".into()),
+        ..Default::default()
       }],
     };
 
@@ -193,12 +201,14 @@ mod test {
           command: "Session1Cmd".into(),
           session_type: super::SessionType::Wayland,
           path: Some("/Session1Path".into()),
+          ..Default::default()
         },
         Session {
           name: "Session2".into(),
           command: "Session2Cmd".into(),
           session_type: super::SessionType::X11,
           path: Some("/Session2Path".into()),
+          ..Default::default()
         },
       ],
     };
@@ -224,12 +234,14 @@ mod test {
           command: "Session1Cmd".into(),
           session_type: super::SessionType::Wayland,
           path: Some("/Session1Path".into()),
+          ..Default::default()
         },
         Session {
           name: "Session".into(),
           command: "Session2Cmd".into(),
           session_type: super::SessionType::X11,
           path: Some("/Session2Path".into()),
+          ..Default::default()
         },
       ],
     };

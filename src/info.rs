@@ -236,14 +236,18 @@ where
   let desktop = Ini::load_from_file(path.as_ref())?;
   let section = desktop.section(Some("Desktop Entry")).ok_or("no Desktop Entry section in desktop file")?;
 
+  let slug = path.as_ref().file_stem().map(|slug| slug.to_string_lossy().to_string());
   let name = section.get("Name").ok_or("no Name property in desktop file")?;
   let exec = section.get("Exec").ok_or("no Exec property in desktop file")?;
+  let xdg_desktop_names = section.get("DesktopNames").map(str::to_string);
 
   Ok(Session {
+    slug,
     name: name.to_string(),
     command: exec.to_string(),
     session_type,
     path: Some(path.as_ref().into()),
+    xdg_desktop_names,
   })
 }
 

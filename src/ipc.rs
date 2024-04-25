@@ -191,9 +191,22 @@ impl Ipc {
 fn wrap_session_command<'a>(greeter: &Greeter, session: Option<&Session>, command: &'a str) -> (Cow<'a, str>, Vec<String>) {
   let mut env: Vec<String> = vec![];
 
-  if let Some(Session { session_type, .. }) = session {
+  if let Some(Session {
+    slug,
+    session_type,
+    xdg_desktop_names,
+    ..
+  }) = session
+  {
+    if let Some(slug) = slug {
+      env.push(format!("XDG_SESSION_DESKTOP={slug}"));
+      env.push(format!("DESKTOP_SESSION={slug}"));
+    }
     if *session_type != SessionType::None {
       env.push(format!("XDG_SESSION_TYPE={}", session_type.as_xdg_session_type()));
+    }
+    if let Some(xdg_desktop_names) = xdg_desktop_names {
+      env.push(format!("XDG_CURRENT_DESKTOP={xdg_desktop_names}"));
     }
 
     if *session_type == SessionType::X11 {
@@ -230,6 +243,7 @@ mod test {
       session_type: SessionType::Wayland,
       command: "Session1Cmd".into(),
       path: Some(PathBuf::from("/Session1Path")),
+      ..Default::default()
     };
 
     let (command, env) = wrap_session_command(&greeter, Some(&session), &session.command);
@@ -248,6 +262,7 @@ mod test {
       session_type: SessionType::Wayland,
       command: "Session1Cmd".into(),
       path: Some(PathBuf::from("/Session1Path")),
+      ..Default::default()
     };
 
     let (command, env) = wrap_session_command(&greeter, Some(&session), &session.command);
@@ -264,15 +279,21 @@ mod test {
     println!("{:?}", greeter.xsession_wrapper);
 
     let session = Session {
+      slug: Some("thede".to_string()),
       name: "Session1".into(),
       session_type: SessionType::X11,
       command: "Session1Cmd".into(),
       path: Some(PathBuf::from("/Session1Path")),
+      xdg_desktop_names: Some("one;two;three;".to_string()),
+      ..Default::default()
     };
 
     let (command, env) = wrap_session_command(&greeter, Some(&session), &session.command);
 
     assert_eq!(command.as_ref(), "startx /usr/bin/env Session1Cmd");
-    assert_eq!(env, vec!["XDG_SESSION_TYPE=x11"]);
+    assert_eq!(
+      env,
+      vec!["XDG_SESSION_DESKTOP=thede", "DESKTOP_SESSION=thede", "XDG_SESSION_TYPE=x11", "XDG_CURRENT_DESKTOP=one;two;three;"]
+    );
   }
 }
