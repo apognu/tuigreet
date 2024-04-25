@@ -590,6 +590,50 @@ mod test {
   }
 
   #[tokio::test]
+  async fn f_menu_rebinded() {
+    let greeter = Arc::new(RwLock::new(Greeter::default()));
+
+    for (key, mode) in [(KeyCode::F(1), Mode::Sessions), (KeyCode::F(11), Mode::Power)] {
+      {
+        let mut greeter = greeter.write().await;
+        greeter.kb_command = 3;
+        greeter.kb_sessions = 1;
+        greeter.kb_power = 11;
+        greeter.mode = Mode::Username;
+        greeter.buffer = "apognu".to_string();
+      }
+
+      let result = handle(greeter.clone(), KeyEvent::new(key, KeyModifiers::empty()), Ipc::new()).await;
+
+      {
+        let status = greeter.read().await;
+
+        assert!(matches!(result, Ok(_)));
+        assert_eq!(status.mode, mode);
+        assert_eq!(status.buffer, "apognu".to_string());
+      }
+
+      for mode in [Mode::Users, Mode::Sessions, Mode::Power] {
+        {
+          let mut greeter = greeter.write().await;
+          greeter.previous_mode = Mode::Username;
+          greeter.mode = mode;
+        }
+
+        let result = handle(greeter.clone(), KeyEvent::new(KeyCode::F(3), KeyModifiers::empty()), Ipc::new()).await;
+
+        {
+          let status = greeter.read().await;
+
+          assert!(matches!(result, Ok(_)));
+          assert_eq!(status.mode, Mode::Command);
+          assert_eq!(status.previous_mode, Mode::Username);
+        }
+      }
+    }
+  }
+
+  #[tokio::test]
   async fn ctrl_a_e() {
     let greeter = Arc::new(RwLock::new(Greeter::default()));
 

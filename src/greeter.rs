@@ -152,8 +152,11 @@ pub struct Greeter {
   // Whether to prefix the power commands with `setsid`.
   pub power_setsid: bool,
 
+  #[default(2)]
   pub kb_command: u8,
+  #[default(3)]
   pub kb_sessions: u8,
+  #[default(12)]
   pub kb_power: u8,
 
   // The software is waiting for a response from `greetd`.
