@@ -33,8 +33,6 @@ Options:
                         remember last selected session
         --remember-user-session
                         remember last selected session for each user
-        --sort-sessions
-                        sort sessions alphabetically
         --user-menu     allow graphical selection of users from a menu
         --user-menu-min-uid UID
                         minimum UID to display in the user selection menu
