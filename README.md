@@ -53,9 +53,9 @@ Options:
                         command to run to reboot the system
         --power-no-setsid
                         do not prefix power commands with setsid
-        --kb-[command|sessions|power] [1-12]*
-	                      change the default F-key keybindings to access the command, sessions and power
-	                      menus.
+        --kb-[command|sessions|power] [1-12]
+                        change the default F-key keybindings to access the
+                        command, sessions and power menus.
 ```
 
 ## Usage
