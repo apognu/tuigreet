@@ -40,6 +40,9 @@ Options:
                         minimum UID to display in the user selection menu
         --user-menu-max-uid UID
                         maximum UID to display in the user selection menu
+        --theme SPEC
+                        Add visual feedback when typing secrets, as one asterisk character for every
+                        keystroke. By default, no feedback is given at all.
         --asterisks     display asterisks when a secret is typed
         --asterisks-char CHARS
                         characters to be used to redact secrets (default: *)
@@ -205,3 +208,26 @@ Optionally, a user can be selected from a menu instead of typing out their name,
  * A user-provided value, through `--user-menu-min-uid` or `--user-menu-max-uid`;
  * **Or**, the available values for `UID_MIN` or `UID_MAX` from `/etc/login.defs`;
  * **Or**, hardcoded `1000` for minimum UID and `60000` for maximum UID.
+
+### Theming
+
+A theme specification can be given through the `--theme` argument to control some of the colors used to draw the UI. This specification string must have the following format: `component1=color;component2=color[;...]` where the component is one of the value listed in the table below, and the color is a valid ANSI color name as listed [here](https://github.com/ratatui-org/ratatui/blob/main/src/style/color.rs#L15).
+
+Please note that we can only render colors as supported by the running terminal. In the case of the Linux virtual console, those colors might not look as good as one may think. Your mileage may vary.
+
+| Component name | Description                                                                        |
+| -------------- | ---------------------------------------------------------------------------------- |
+| text           | Base text color other than those specified below                                   |
+| time           | Color of the date and time. If unspecified, falls back to `text`                   |
+| container      | Background color for the centered containers used throughout the app               |
+| border         | Color of the borders of those containers                                           |
+| title          | Color of the containers' titles. If unspecified, falls back to `border`            |
+| greet          | Color of the issue of greeting message. If unspecified, falls back to `text`       |
+| prompt         | Color of the prompt ("Username:", etc.)                                            |
+| input          | Color of user input feedback                                                       |
+| action         | Color of the actions displayed at the bottom of the screen                         |
+| button         | Color of the keybindings for those actions. If unspecified, falls back to `action` |
+
+Below is a screenshot of the greeter with the following theme applied: `border=magenta;text=cyan;prompt=green;time=red;action=blue;button=yellow;container=black;input=red`:
+
+![Screenshot of tuigreet](https://github.com/apognu/tuigreet/blob/master/contrib/screenshot-themed.png)

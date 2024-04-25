@@ -13,11 +13,15 @@ use crate::{
   Greeter, Mode, SecretDisplay,
 };
 
+use super::common::style::Themed;
+
 const GREETING_INDEX: usize = 0;
 const USERNAME_INDEX: usize = 1;
 const ANSWER_INDEX: usize = 3;
 
 pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
+  let theme = &greeter.theme;
+
   let size = f.size();
   let (x, y, width, height) = get_rect_bounds(greeter, size, 0);
 
@@ -28,7 +32,13 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let frame = Rect::new(x + container_padding, y + container_padding, width - (2 * container_padding), height - (2 * container_padding));
 
   let hostname = Span::from(titleize(&fl!("title_authenticate", hostname = get_hostname())));
-  let block = Block::default().title(hostname).borders(Borders::ALL).border_type(BorderType::Plain);
+  let block = Block::default()
+    .title(hostname)
+    .title_style(theme.of(&[Themed::Title]))
+    .style(theme.of(&[Themed::Container]))
+    .borders(Borders::ALL)
+    .border_type(BorderType::Plain)
+    .border_style(theme.of(&[Themed::Border]));
 
   f.render_widget(block, container);
 
@@ -49,7 +59,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   if let Some(greeting) = &greeting {
     let greeting_text = greeting.trim_end();
-    let greeting_label = Paragraph::new(greeting_text).alignment(Alignment::Center);
+    let greeting_label = Paragraph::new(greeting_text).alignment(Alignment::Center).style(theme.of(&[Themed::Greet]));
 
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
   }
@@ -59,14 +69,14 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
     Paragraph::new(prompt_text).alignment(Alignment::Center)
   } else {
-    let username_text = prompt_value(Some(fl!("username")));
+    let username_text = prompt_value(theme, Some(fl!("username")));
 
     Paragraph::new(username_text)
   };
 
   let username = greeter.username.get();
   let username_value_text = Span::from(username);
-  let username_value = Paragraph::new(username_value_text);
+  let username_value = Paragraph::new(username_value_text).style(theme.of(&[Themed::Input]));
 
   match greeter.mode {
     Mode::Username | Mode::Password | Mode::Action => {
@@ -84,7 +94,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
         );
       }
 
-      let answer_text = if greeter.working { Span::from(fl!("wait")) } else { prompt_value(greeter.prompt.as_ref()) };
+      let answer_text = if greeter.working { Span::from(fl!("wait")) } else { prompt_value(theme, greeter.prompt.as_ref()) };
 
       let answer_label = Paragraph::new(answer_text);
 
@@ -107,7 +117,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
           };
 
           let answer_value_text = Span::from(value);
-          let answer_value = Paragraph::new(answer_value_text);
+          let answer_value = Paragraph::new(answer_value_text).style(theme.of(&[Themed::Input]));
 
           f.render_widget(
             answer_value,

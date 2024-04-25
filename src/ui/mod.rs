@@ -19,7 +19,7 @@ use tokio::sync::RwLock;
 use tui::{
   backend::CrosstermBackend,
   layout::{Alignment, Constraint, Direction, Layout},
-  style::{Modifier, Style},
+  style::Modifier,
   text::{Line, Span},
   widgets::Paragraph,
   Frame as CrosstermFrame, Terminal,
@@ -31,6 +31,7 @@ use crate::{
   Greeter, Mode,
 };
 
+use self::common::style::{Theme, Themed};
 pub use self::i18n::MESSAGES;
 
 const TITLEBAR_INDEX: usize = 1;
@@ -47,6 +48,8 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
   let hide_cursor = should_hide_cursor(&greeter);
 
   terminal.draw(|f| {
+    let theme = &greeter.theme;
+
     let size = f.size();
     let chunks = Layout::default()
       .constraints(
@@ -63,7 +66,7 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
 
     if greeter.config().opt_present("time") {
       let time_text = Span::from(get_time(&greeter));
-      let time = Paragraph::new(time_text).alignment(Alignment::Center);
+      let time = Paragraph::new(time_text).alignment(Alignment::Center).style(theme.of(&[Themed::Time]));
 
       f.render_widget(time, chunks[TITLEBAR_INDEX]);
     }
@@ -86,23 +89,23 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
 
     let command = greeter.session_source.label(&greeter).unwrap_or("-");
     let status_left_text = Line::from(vec![
-      status_label("ESC"),
-      status_value(fl!("action_reset")),
-      status_label(&format!("F{}", greeter.kb_command)),
-      status_value(fl!("action_command")),
-      status_label(&format!("F{}", greeter.kb_sessions)),
-      status_value(fl!("action_session")),
-      status_label(&format!("F{}", greeter.kb_power)),
-      status_value(fl!("action_power")),
-      status_label(fl!("status_command")),
-      status_value(command),
+      status_label(theme, "ESC"),
+      status_value(theme, fl!("action_reset")),
+      status_label(theme, "F2"),
+      status_value(theme, fl!("action_command")),
+      status_label(theme, "F3"),
+      status_value(theme, fl!("action_session")),
+      status_label(theme, "F12"),
+      status_value(theme, fl!("action_power")),
+      status_label(theme, fl!("status_command")),
+      status_value(theme, command),
     ]);
     let status_left = Paragraph::new(status_left_text);
 
     f.render_widget(status_left, status_chunks[STATUSBAR_LEFT_INDEX]);
 
     if capslock_status() {
-      let status_right_text = status_label(fl!("status_caps"));
+      let status_right_text = status_label(theme, fl!("status_caps"));
       let status_right = Paragraph::new(status_right_text).alignment(Alignment::Right);
 
       f.render_widget(status_right, status_chunks[STATUSBAR_RIGHT_INDEX]);
@@ -138,26 +141,26 @@ fn get_time(greeter: &Greeter) -> String {
   Local::now().format_localized(&format, greeter.locale).to_string()
 }
 
-fn status_label<'s, S>(text: S) -> Span<'s>
+fn status_label<'s, S>(theme: &Theme, text: S) -> Span<'s>
 where
   S: Into<String>,
 {
-  Span::styled(text.into(), Style::default().add_modifier(Modifier::REVERSED))
+  Span::styled(text.into(), theme.of(&[Themed::ActionButton]).add_modifier(Modifier::REVERSED))
 }
 
-fn status_value<'s, S>(text: S) -> Span<'s>
+fn status_value<'s, S>(theme: &Theme, text: S) -> Span<'s>
 where
   S: Into<String>,
 {
-  Span::from(titleize(&text.into()))
+  Span::from(titleize(&text.into())).style(theme.of(&[Themed::Action]))
 }
 
-fn prompt_value<'s, S>(text: Option<S>) -> Span<'s>
+fn prompt_value<'s, S>(theme: &Theme, text: Option<S>) -> Span<'s>
 where
   S: Into<String>,
 {
   match text {
-    Some(text) => Span::styled(text.into(), Style::default().add_modifier(Modifier::BOLD)),
+    Some(text) => Span::styled(text.into(), theme.of(&[Themed::Prompt]).add_modifier(Modifier::BOLD)),
     None => Span::from(""),
   }
 }

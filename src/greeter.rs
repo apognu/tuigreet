@@ -27,7 +27,7 @@ use crate::{
   },
   power::PowerOption,
   ui::{
-    common::{masked::MaskedString, menu::Menu},
+    common::{masked::MaskedString, menu::Menu, style::Theme},
     power::Power,
     sessions::{Session, SessionSource, SessionType},
     users::User,
@@ -147,6 +147,8 @@ pub struct Greeter {
   // Whether last launched session for the current user should be remembered.
   pub remember_user_session: bool,
 
+  // Style object for the terminal UI
+  pub theme: Theme,
   // Greeting message (MOTD) to use to welcome the user.
   pub greeting: Option<String>,
   // Transaction message to show to the user.
@@ -376,6 +378,7 @@ impl Greeter {
     opts.optflag("", "user-menu", "allow graphical selection of users from a menu");
     opts.optopt("", "user-menu-min-uid", "minimum UID to display in the user selection menu", "UID");
     opts.optopt("", "user-menu-max-uid", "maximum UID to display in the user selection menu", "UID");
+    opts.optopt("", "theme", "define the application theme colors", "THEME");
     opts.optflag("", "asterisks", "display asterisks when a secret is typed");
     opts.optopt("", "asterisks-char", "characters to be used to redact secrets (default: *)", "CHARS");
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
@@ -437,6 +440,12 @@ impl Greeter {
       eprintln!("Only one of --issue and --greeting may be used at the same time");
       print_usage(opts);
       process::exit(1);
+    }
+
+    if self.config().opt_present("theme") {
+      if let Some(spec) = self.config().opt_str("theme") {
+        self.theme = Theme::parse(spec.as_str());
+      }
     }
 
     if self.config().opt_present("asterisks") {
