@@ -37,12 +37,7 @@ jobs:
     strategy:
       matrix:
         arch:
-          - {
-              name: "x86_64",
-              os: "ubuntu-latest",
-              target: "x86_64-unknown-linux-gnu",
-              cross: false,
-            }
+          - { name: "x86_64", os: "ubuntu-latest", target: "x86_64-unknown-linux-gnu", cross: false }
     runs-on: ${{ matrix.arch.os }}
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +51,7 @@ jobs:
       - name: Rename artifact
         run: mv target/${{ matrix.arch.target }}/release/tuigreet target/${{ matrix.arch.target }}/release/tuigreet-dev-${{ matrix.arch.name }}
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tuigreet-dev-${{ matrix.arch.name }}
           path: target/${{ matrix.arch.target }}/release/tuigreet-dev-${{ matrix.arch.name }}
