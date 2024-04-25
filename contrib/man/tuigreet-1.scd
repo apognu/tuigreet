@@ -84,6 +84,10 @@ tuigreet - A graphical console greeter for greetd
 *--remember-user-session*
 	Remember the last opened session, per user (requires *--remember*).
 
+*--theme SPEC*
+	Define colors to be used to draw the UI components. You can find the proper
+	syntax in the project's README.
+
 *--asterisks*
 	Add visual feedback when typing secrets, as one asterisk character for every
 	keystroke. By default, no feedback is given at all.

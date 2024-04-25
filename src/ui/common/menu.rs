@@ -15,6 +15,8 @@ use crate::{
   Greeter,
 };
 
+use super::style::Themed;
+
 pub trait MenuItem {
   fn format(&self) -> String;
 }
@@ -34,13 +36,21 @@ where
   T: MenuItem,
 {
   pub fn draw(&self, greeter: &Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn Error>> {
+    let theme = &greeter.theme;
+
     let size = f.size();
     let (x, y, width, height) = get_rect_bounds(greeter, size, self.options.len());
 
     let container = Rect::new(x, y, width, height);
 
     let title = Span::from(titleize(&self.title));
-    let block = Block::default().title(title).borders(Borders::ALL).border_type(BorderType::Plain);
+    let block = Block::default()
+      .title(title)
+      .title_style(theme.of(&[Themed::Title]))
+      .style(theme.of(&[Themed::Container]))
+      .borders(Borders::ALL)
+      .border_type(BorderType::Plain)
+      .border_style(theme.of(&[Themed::Border]));
 
     for (index, option) in self.options.iter().enumerate() {
       let name = option.format();
