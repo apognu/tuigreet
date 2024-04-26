@@ -9,6 +9,7 @@ use tokio::sync::{
 use crate::{
   event::Event,
   info::{delete_last_user_session, delete_last_user_session_path, write_last_user_session, write_last_user_session_path, write_last_username},
+  macros::SafeDebug,
   ui::sessions::{Session, SessionSource, SessionType},
   AuthStatus, Greeter, Mode,
 };
@@ -32,6 +33,8 @@ impl Ipc {
   }
 
   pub async fn send(&self, request: Request) {
+    tracing::info!("sending request to greetd: {}", request.safe_repr());
+
     let _ = self.0.tx.read().await.send(request).await;
   }
 
@@ -66,6 +69,8 @@ impl Ipc {
   }
 
   async fn parse_response(&mut self, greeter: &mut Greeter, response: Response) -> Result<(), Box<dyn Error>> {
+    tracing::info!("received greetd message: {:?}", response);
+
     match response {
       Response::AuthMessage { auth_message_type, auth_message } => match auth_message_type {
         AuthMessageType::Secret => {
@@ -107,18 +112,26 @@ impl Ipc {
 
       Response::Success => {
         if greeter.done {
+          tracing::info!("greetd acknowledged session start, exiting");
+
           if greeter.remember {
+            tracing::info!("caching last successful username");
+
             write_last_username(&greeter.username);
 
             if greeter.remember_user_session {
               match greeter.session_source {
                 SessionSource::Command(ref command) => {
+                  tracing::info!("caching last user command: {command}");
+
                   write_last_user_session(&greeter.username.value, command);
                   delete_last_user_session_path(&greeter.username.value);
                 }
 
                 SessionSource::Session(index) => {
                   if let Some(Session { path: Some(session_path), .. }) = greeter.sessions.options.get(index) {
+                    tracing::info!("caching last user session: {session_path:?}");
+
                     write_last_user_session_path(&greeter.username.value, session_path);
                     delete_last_user_session(&greeter.username.value);
                   }
@@ -133,6 +146,8 @@ impl Ipc {
             let _ = sender.send(Event::Exit(AuthStatus::Success)).await;
           }
         } else {
+          tracing::info!("authentication successful, starting session");
+
           let command = greeter.session_source.command(greeter).map(str::to_string);
 
           if let Some(command) = command {
@@ -162,6 +177,8 @@ impl Ipc {
       }
 
       Response::Error { error_type, description } => {
+        tracing::info!("received an error from greetd: {error_type:?} - {description}");
+
         Ipc::cancel(greeter).await;
 
         match error_type {
@@ -187,6 +204,8 @@ impl Ipc {
   }
 
   pub async fn cancel(greeter: &mut Greeter) {
+    tracing::info!("cancelling session");
+
     let _ = Request::CancelSession.write_to(&mut *greeter.stream().await).await;
   }
 }

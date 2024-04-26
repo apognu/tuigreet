@@ -12,7 +12,7 @@ mod keyboard;
 mod power;
 mod ui;
 
-use std::{error::Error, io, process, sync::Arc};
+use std::{error::Error, fs::OpenOptions, io, process, sync::Arc};
 
 use crossterm::{
   execute,
@@ -21,6 +21,7 @@ use crossterm::{
 use event::Event;
 use greetd_ipc::Request;
 use tokio::sync::RwLock;
+use tracing_appender::non_blocking::WorkerGuard;
 use tui::{backend::CrosstermBackend, Terminal};
 
 pub use self::greeter::*;
@@ -42,6 +43,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
   let mut greeter = Greeter::new(events.sender()).await;
   let mut stdout = io::stdout();
 
+  let _guard = init_logger(&greeter);
+
+  tracing::info!("tuigreet started");
+
   register_panic_handler();
 
   enable_raw_mode()?;
@@ -56,6 +61,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
   if greeter.remember && !greeter.username.value.is_empty() {
     greeter.working = true;
+
+    tracing::info!("creating remembered session for user {}", greeter.username.value);
 
     ipc
       .send(Request::CreateSession {
@@ -79,6 +86,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
   loop {
     if let Some(status) = greeter.read().await.exit {
+      tracing::info!("exiting main loop");
+
       return Err(status.into());
     }
 
@@ -100,6 +109,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
 }
 
 async fn exit(greeter: &mut Greeter, status: AuthStatus) {
+  tracing::info!("preparing exit with status {}", status);
+
   match status {
     AuthStatus::Success => {}
     AuthStatus::Cancel | AuthStatus::Failure => Ipc::cancel(greeter).await,
@@ -133,14 +144,25 @@ pub fn clear_screen() {
   }
 }
 
-#[cfg(debug_assertions)]
-pub fn log(msg: &str) {
-  use std::io::Write;
+fn init_logger(greeter: &Greeter) -> Option<WorkerGuard> {
+  use tracing_subscriber::filter::{LevelFilter, Targets};
+  use tracing_subscriber::prelude::*;
 
-  let time = chrono::Utc::now();
+  let logfile = OpenOptions::new().write(true).create(true).append(true).clone();
 
-  let mut file = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/tuigreet.log").unwrap();
-  file.write_all(format!("{:?} - ", time).as_ref()).unwrap();
-  file.write_all(msg.as_ref()).unwrap();
-  file.write_all("\n".as_bytes()).unwrap();
+  match (greeter.debug, logfile.open(&greeter.logfile)) {
+    (true, Ok(file)) => {
+      let (appender, guard) = tracing_appender::non_blocking(file);
+      let target = Targets::new().with_target("tuigreet", LevelFilter::DEBUG);
+
+      tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().with_writer(appender).with_line_number(true))
+        .with(target)
+        .init();
+
+      Some(guard)
+    }
+
+    _ => None,
+  }
 }

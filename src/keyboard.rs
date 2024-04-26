@@ -367,12 +367,16 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
   if greeter.remember_user_session {
     if let Ok(last_session) = get_last_user_session_path(&greeter.username.value) {
       if let Some(last_session) = Session::from_path(greeter, last_session).cloned() {
+        tracing::info!("remembered user session is {}", last_session.name);
+
         greeter.sessions.selected = greeter.sessions.options.iter().position(|sess| sess.path == last_session.path).unwrap_or(0);
         greeter.session_source = SessionSource::Session(greeter.sessions.selected);
       }
     }
 
     if let Ok(command) = get_last_user_session(&greeter.username.value) {
+      tracing::info!("remembered user command is {}", command);
+
       greeter.session_source = SessionSource::Command(command);
     }
   }

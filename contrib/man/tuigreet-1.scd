@@ -16,6 +16,10 @@ tuigreet - A graphical console greeter for greetd
 *-v, --version*
 	Print program version and exit.
 
+*-d, --debug [FILE]*
+	Enables debug logging to the provided FILE path, or to /tmp/tuigreet.log if no
+	file is specified.
+
 *-c, --cmd CMD*
 	Specify which command to run on successful authentication. This can be
 	overridden by manual selection within *tuigreet*.
