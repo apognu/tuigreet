@@ -34,6 +34,7 @@ use crate::{
   },
 };
 
+const DEFAULT_LOG_FILE: &str = "/tmp/tuigreet.log";
 const DEFAULT_LOCALE: Locale = Locale::en_US;
 const DEFAULT_ASTERISKS_CHARS: &str = "*";
 // `startx` wants an absolute path to the executable as a first argument.
@@ -91,6 +92,9 @@ impl SecretDisplay {
 
 #[derive(SmartDefault)]
 pub struct Greeter {
+  pub debug: bool,
+  pub logfile: String,
+
   #[default(DEFAULT_LOCALE)]
   pub locale: Locale,
   pub config: Option<Matches>,
@@ -354,6 +358,7 @@ impl Greeter {
 
     opts.optflag("h", "help", "show this usage information");
     opts.optflag("v", "version", "print version information");
+    opts.optflagopt("d", "debug", "enable debug logging to the provided file, or to /tmp/tuigreet.log", "FILE");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
     opts.optopt("s", "sessions", "colon-separated list of Wayland session paths", "DIRS");
     opts.optopt("", "session-wrapper", "wrapper command to initialize the non-X11 session", "'CMD [ARGS]...'");
@@ -419,6 +424,15 @@ impl Greeter {
       }
     }
 
+    if self.config().opt_present("debug") {
+      self.debug = true;
+
+      self.logfile = match self.config().opt_str("debug") {
+        Some(file) => file.to_string(),
+        None => DEFAULT_LOG_FILE.to_string(),
+      }
+    }
+
     if self.config().opt_present("issue") && self.config().opt_present("greeting") {
       eprintln!("Only one of --issue and --greeting may be used at the same time");
       print_usage(opts);
@@ -455,6 +469,8 @@ impl Greeter {
       let max_uid = self.config().opt_str("user-menu-max-uid").and_then(|uid| uid.parse::<u16>().ok());
       let (min_uid, max_uid) = get_min_max_uids(min_uid, max_uid);
 
+      tracing::info!("min/max UIDs are {}/{}", min_uid, max_uid);
+
       if min_uid >= max_uid {
         eprintln!("Minimum UID ({min_uid}) must be less than maximum UID ({max_uid})");
         process::exit(1);
@@ -464,7 +480,9 @@ impl Greeter {
         title: fl!("title_users"),
         options: get_users(min_uid, max_uid),
         selected: 0,
-      }
+      };
+
+      tracing::info!("found {} users", self.users.options.len());
     }
 
     if self.config().opt_present("remember-session") && self.config().opt_present("remember-user-session") {

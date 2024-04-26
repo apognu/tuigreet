@@ -22,10 +22,14 @@ A clear and concise description of what you expected to happen.
 
 **System information:**
  - Distribution:
- - `greetd` version: 
+ - `greetd` version:
  - `tuigreet` version:
  - Installation method (from source, package, binary, etc.):
  - `tuigreet` command line:
 
 **Additional context**
 Add any other context about the problem here.
+
+**Debug log**
+Run `tuigreet` with the `-d [FILE]` option to log tracing information into the
+specified file, to append here.

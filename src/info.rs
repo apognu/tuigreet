@@ -229,6 +229,8 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
 
   files.sort_by(|a, b| a.name.cmp(&b.name));
 
+  tracing::info!("found {} sessions", files.len());
+
   Ok(files)
 }
 

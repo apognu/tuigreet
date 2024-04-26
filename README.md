@@ -10,6 +10,8 @@ Usage: tuigreet [OPTIONS]
 Options:
     -h, --help          show this usage information
     -v, --version       print version information
+    -d, --debug [FILE]  enable debug logging to the provided file, or to
+                        /tmp/tuigreet.log
     -c, --cmd COMMAND   command to run
     -s, --sessions DIRS colon-separated list of Wayland session paths
         --session-wrapper 'CMD [ARGS]...'
