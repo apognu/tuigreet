@@ -188,6 +188,10 @@ impl Ipc {
   }
 }
 
+fn desktop_names_to_xdg(names: &str) -> String {
+  names.replace(';', ":").trim_end_matches(':').to_string()
+}
+
 fn wrap_session_command<'a>(greeter: &Greeter, session: Option<&Session>, command: &'a str) -> (Cow<'a, str>, Vec<String>) {
   let mut env: Vec<String> = vec![];
 
@@ -206,7 +210,7 @@ fn wrap_session_command<'a>(greeter: &Greeter, session: Option<&Session>, comman
       env.push(format!("XDG_SESSION_TYPE={}", session_type.as_xdg_session_type()));
     }
     if let Some(xdg_desktop_names) = xdg_desktop_names {
-      env.push(format!("XDG_CURRENT_DESKTOP={xdg_desktop_names}"));
+      env.push(format!("XDG_CURRENT_DESKTOP={}", desktop_names_to_xdg(xdg_desktop_names)));
     }
 
     if *session_type == SessionType::X11 {
@@ -228,6 +232,7 @@ mod test {
   use std::path::PathBuf;
 
   use crate::{
+    ipc::desktop_names_to_xdg,
     ui::sessions::{Session, SessionType},
     Greeter,
   };
@@ -293,7 +298,15 @@ mod test {
     assert_eq!(command.as_ref(), "startx /usr/bin/env Session1Cmd");
     assert_eq!(
       env,
-      vec!["XDG_SESSION_DESKTOP=thede", "DESKTOP_SESSION=thede", "XDG_SESSION_TYPE=x11", "XDG_CURRENT_DESKTOP=one;two;three;"]
+      vec!["XDG_SESSION_DESKTOP=thede", "DESKTOP_SESSION=thede", "XDG_SESSION_TYPE=x11", "XDG_CURRENT_DESKTOP=one:two:three"]
     );
+  }
+
+  #[test]
+  fn xdg_current_desktop() {
+    assert_eq!(desktop_names_to_xdg("one;two;three four"), "one:two:three four");
+    assert_eq!(desktop_names_to_xdg("one;"), "one");
+    assert_eq!(desktop_names_to_xdg(""), "");
+    assert_eq!(desktop_names_to_xdg(";"), "");
   }
 }
