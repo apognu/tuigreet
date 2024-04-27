@@ -91,6 +91,9 @@ impl Ipc {
         AuthMessageType::Info => {
           greeter.remove_prompt();
 
+          greeter.previous_mode = greeter.mode;
+          greeter.mode = Mode::Action;
+
           if let Some(message) = &mut greeter.message {
             message.push('\n');
             message.push_str(auth_message.trim_end());

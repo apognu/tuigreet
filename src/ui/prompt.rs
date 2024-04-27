@@ -35,11 +35,13 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let (message, message_height) = get_message_height(greeter, container_padding, 1);
   let (greeting, greeting_height) = get_greeting_height(greeter, container_padding, 0);
 
+  let should_display_answer = greeter.mode == Mode::Password;
+
   let constraints = [
-    Constraint::Length(greeting_height),                                                 // Greeting
-    Constraint::Length(1),                                                               // Username
-    Constraint::Length(if greeter.mode == Mode::Username { 0 } else { prompt_padding }), // Prompt padding
-    Constraint::Length(if greeter.mode == Mode::Username { 0 } else { 1 }),              // Answer
+    Constraint::Length(greeting_height),                                        // Greeting
+    Constraint::Length(1),                                                      // Username
+    Constraint::Length(if should_display_answer { prompt_padding } else { 0 }), // Prompt padding
+    Constraint::Length(if should_display_answer { 1 } else { 0 }),              // Answer
   ];
 
   let chunks = Layout::default().direction(Direction::Vertical).constraints(constraints.as_ref()).split(frame);
@@ -67,7 +69,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let username_value = Paragraph::new(username_value_text);
 
   match greeter.mode {
-    Mode::Username | Mode::Password => {
+    Mode::Username | Mode::Password | Mode::Action => {
       f.render_widget(username_label, chunks[USERNAME_INDEX]);
 
       if !greeter.user_menu || !greeter.username.value.is_empty() {

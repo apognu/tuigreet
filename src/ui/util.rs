@@ -18,6 +18,7 @@ pub fn should_hide_cursor(greeter: &Greeter) -> bool {
     || greeter.mode == Mode::Sessions
     || greeter.mode == Mode::Power
     || greeter.mode == Mode::Processing
+    || greeter.mode == Mode::Action
 }
 
 // Computes the height of the main window where we display content, depending on
@@ -37,7 +38,7 @@ pub fn get_height(greeter: &Greeter) -> u16 {
   let prompt_padding = greeter.prompt_padding();
 
   let initial = match greeter.mode {
-    Mode::Username | Mode::Command => (2 * container_padding) + 1,
+    Mode::Username | Mode::Action | Mode::Command => (2 * container_padding) + 1,
     Mode::Password => match greeter.prompt {
       Some(_) => (2 * container_padding) + prompt_padding + 2,
       None => (2 * container_padding) + 1,

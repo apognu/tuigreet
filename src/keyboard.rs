@@ -240,6 +240,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
           greeter.username = MaskedString::from(username, name);
         }
 
+        greeter.mode = greeter.previous_mode;
+
         validate_username(&mut greeter, &ipc).await;
       }
 
@@ -271,7 +273,7 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
         greeter.mode = greeter.previous_mode;
       }
 
-      Mode::Processing => {}
+      _ => {}
     },
 
     // Do not handle any other controls keybindings
@@ -296,7 +298,7 @@ async fn insert_key(greeter: &mut Greeter, c: char) {
     Mode::Username => &greeter.username.value,
     Mode::Password => &greeter.buffer,
     Mode::Command => &greeter.buffer,
-    Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => return,
+    _ => return,
   };
 
   let index = (value.chars().count() as i16 + greeter.cursor_offset) as usize;
@@ -322,7 +324,7 @@ async fn delete_key(greeter: &mut Greeter, key: KeyCode) {
     Mode::Username => &greeter.username.value,
     Mode::Password => &greeter.buffer,
     Mode::Command => &greeter.buffer,
-    Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => return,
+    _ => return,
   };
 
   let index = match key {
@@ -341,7 +343,7 @@ async fn delete_key(greeter: &mut Greeter, key: KeyCode) {
       Mode::Username => greeter.username.value = value,
       Mode::Password => greeter.buffer = value,
       Mode::Command => greeter.buffer = value,
-      Mode::Users | Mode::Sessions | Mode::Power | Mode::Processing => return,
+      _ => return,
     };
 
     if let KeyCode::Delete = key {

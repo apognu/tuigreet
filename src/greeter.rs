@@ -62,6 +62,7 @@ pub enum Mode {
   #[default]
   Username,
   Password,
+  Action,
   Users,
   Command,
   Sessions,
