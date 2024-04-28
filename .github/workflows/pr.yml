@@ -1,0 +1,50 @@
+name: Pull request build
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Lint
+        run: |
+          cargo clippy
+          cargo clippy --release
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: |
+          sudo apt update && sudo apt install -y libnss-wrapper
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        env:
+          NSS_WRAPPER_PASSWD: contrib/fixtures/passwd
+          NSS_WRAPPER_GROUP: contrib/fixtures/group
+        run: |
+          cargo test
+          LD_PRELOAD=libnss_wrapper.so cargo test --features nsswrapper nsswrapper_
+
+  build:
+    strategy:
+      matrix:
+        arch:
+          - { name: "x86_64", os: "ubuntu-latest", target: "x86_64-unknown-linux-gnu", cross: false }
+    runs-on: ${{ matrix.arch.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: cargo-cache-${{ matrix.arch.target }}
+      - name: Build
+        run: |
+          cargo build --release --target=${{ matrix.arch.target }}
