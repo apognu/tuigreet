@@ -156,6 +156,10 @@ pub struct Greeter {
 
   // Style object for the terminal UI
   pub theme: Theme,
+  // Display the current time
+  pub time: bool,
+  // Time format
+  pub time_format: Option<String>,
   // Greeting message (MOTD) to use to welcome the user.
   pub greeting: Option<String>,
   // Transaction message to show to the user.
@@ -200,6 +204,7 @@ impl Greeter {
       selected: 0,
     };
 
+    #[cfg(not(test))]
     greeter.parse_options().await;
 
     let sessions = get_sessions(&greeter).unwrap_or_default();
@@ -502,11 +507,15 @@ impl Greeter {
       self.secret_display = SecretDisplay::Character(asterisk);
     }
 
+    self.time = self.config().opt_present("time");
+
     if let Some(format) = self.config().opt_str("time-format") {
       if StrftimeItems::new(&format).any(|item| item == Item::Error) {
         eprintln!("Invalid strftime format provided in --time-format");
         process::exit(1);
       }
+
+      self.time_format = Some(format);
     }
 
     if self.config().opt_present("user-menu") {
