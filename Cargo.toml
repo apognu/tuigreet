@@ -47,3 +47,8 @@ tracing = "0.1.40"
 
 [profile.release]
 lto = true
+
+[dev-dependencies]
+greetd-stub = "0.3.0"
+tempfile = "3.10.1"
+unicode-width = "0.1.12"
