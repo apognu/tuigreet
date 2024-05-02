@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+  borrow::Cow,
+  path::{Path, PathBuf},
+};
 
 use crate::Greeter;
 
@@ -86,8 +89,8 @@ pub struct Session {
 }
 
 impl MenuItem for Session {
-  fn format(&self) -> String {
-    self.name.clone()
+  fn format(&self) -> Cow<'_, str> {
+    Cow::Borrowed(&self.name)
   }
 }
 

@@ -44,7 +44,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   let command_label_text = prompt_value(theme, Some(fl!("new_command")));
   let command_label = Paragraph::new(command_label_text).style(theme.of(&[Themed::Prompt]));
-  let command_value_text = Span::from(greeter.buffer.clone());
+  let command_value_text = Span::from(&greeter.buffer);
   let command_value = Paragraph::new(command_value_text).style(theme.of(&[Themed::Input]));
 
   f.render_widget(command_label, chunks[0]);

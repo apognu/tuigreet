@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::common::menu::MenuItem;
 
 #[derive(Default, Clone)]
@@ -7,10 +9,10 @@ pub struct User {
 }
 
 impl MenuItem for User {
-  fn format(&self) -> String {
+  fn format(&self) -> Cow<'_, str> {
     match &self.name {
-      Some(name) => format!("{name} ({})", self.username),
-      None => self.username.clone(),
+      Some(name) => Cow::Owned(format!("{name} ({})", self.username)),
+      None => Cow::Borrowed(&self.username),
     }
   }
 }
