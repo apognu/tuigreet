@@ -90,6 +90,15 @@ impl SecretDisplay {
   }
 }
 
+// This enum models text alignment options
+#[derive(SmartDefault, Debug, Clone)]
+pub enum TextAlign {
+  #[default]
+  Center,
+  Left,
+  Right
+}
+
 #[derive(SmartDefault)]
 pub struct Greeter {
   pub debug: bool,
@@ -270,7 +279,7 @@ impl Greeter {
     self.connect().await;
   }
 
-  // Connect to `greetd` and return a strea we can safely write to.
+  // Connect to `greetd` and return a stream we can safely write to.
   pub async fn connect(&mut self) {
     match UnixStream::connect(&self.socket).await {
       Ok(stream) => self.stream = Some(Arc::new(RwLock::new(stream))),
@@ -340,6 +349,18 @@ impl Greeter {
     1
   }
 
+  pub fn text_align(&self) -> TextAlign {
+    if let Some(value) = self.option("text-align") {
+      match value.to_uppercase().as_str() {
+        "LEFT" | "L" => TextAlign::Left,
+        "RIGHT" | "R" => TextAlign::Right,
+        _ => TextAlign::Center
+      }
+    } else {
+      TextAlign::default()
+    }
+  }
+
   // Sets the locale that will be used for this invocation from environment.
   fn set_locale(&mut self) {
     let locale = DesktopLanguageRequester::requested_languages()
@@ -384,6 +405,7 @@ impl Greeter {
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
     opts.optopt("", "container-padding", "padding inside the main prompt container (default: 1)", "PADDING");
     opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
+    opts.optopt("", "text-align", "alignment of text in the prompt container (default: 'center')", "[left|center|right]");
 
     opts.optopt("", "power-shutdown", "command to run to shut down the system", "'CMD [ARGS]...'");
     opts.optopt("", "power-reboot", "command to run to reboot the system", "'CMD [ARGS]...'");

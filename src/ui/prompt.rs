@@ -7,11 +7,7 @@ use tui::{
   widgets::{Block, BorderType, Borders, Paragraph},
 };
 
-use crate::{
-  info::get_hostname,
-  ui::{prompt_value, util::*, Frame},
-  Greeter, Mode, SecretDisplay,
-};
+use crate::{info::get_hostname, ui::{prompt_value, util::*, Frame}, Greeter, Mode, SecretDisplay, TextAlign};
 
 use super::common::style::Themed;
 
@@ -27,6 +23,11 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   let container_padding = greeter.container_padding();
   let prompt_padding = greeter.prompt_padding();
+  let text_alignment = match greeter.text_align() {
+    TextAlign::Center => Alignment::Center,
+    TextAlign::Left => Alignment::Left,
+    TextAlign::Right => Alignment::Right
+  };
 
   let container = Rect::new(x, y, width, height);
   let frame = Rect::new(x + container_padding, y + container_padding, width - (2 * container_padding), height - (2 * container_padding));
@@ -59,7 +60,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
   if let Some(greeting) = &greeting {
     let greeting_text = greeting.trim_end();
-    let greeting_label = Paragraph::new(greeting_text).alignment(Alignment::Center).style(theme.of(&[Themed::Greet]));
+    let greeting_label = Paragraph::new(greeting_text).alignment(text_alignment).style(theme.of(&[Themed::Greet]));
 
     f.render_widget(greeting_label, chunks[GREETING_INDEX]);
   }
@@ -67,7 +68,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
   let username_label = if greeter.user_menu && greeter.username.value.is_empty() {
     let prompt_text = Span::from(fl!("select_user"));
 
-    Paragraph::new(prompt_text).alignment(Alignment::Center)
+    Paragraph::new(prompt_text).alignment(text_alignment)
   } else {
     let username_text = prompt_value(theme, Some(fl!("username")));
 
@@ -133,7 +134,7 @@ pub fn draw(greeter: &mut Greeter, f: &mut Frame) -> Result<(u16, u16), Box<dyn 
 
       if let Some(message) = message {
         let message_text = Text::from(message);
-        let message = Paragraph::new(message_text).alignment(Alignment::Center);
+        let message = Paragraph::new(message_text).alignment(text_alignment);
 
         f.render_widget(message, Rect::new(x, y + height, width, message_height));
       }
