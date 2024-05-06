@@ -1,7 +1,7 @@
 [package]
 name = "tuigreet"
 version = "0.9.0"
-authors = ["Antoine POPINEAU <antoine.popineau@appscho.com>"]
+authors = ["Antoine POPINEAU <antoine@popineau.eu>"]
 edition = "2018"
 build = "build.rs"
 
