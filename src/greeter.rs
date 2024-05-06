@@ -2,6 +2,7 @@ use std::{
   convert::TryInto,
   env,
   error::Error,
+  ffi::OsStr,
   fmt::{self, Display},
   path::PathBuf,
   process,
@@ -198,7 +199,26 @@ impl Greeter {
     };
 
     #[cfg(not(test))]
-    greeter.parse_options().await;
+    {
+      match env::var("GREETD_SOCK") {
+        Ok(socket) => greeter.socket = socket,
+        Err(_) => {
+          eprintln!("GREETD_SOCK must be defined");
+          process::exit(1);
+        }
+      }
+
+      let args = env::args().collect::<Vec<String>>();
+
+      if let Err(err) = greeter.parse_options(&args).await {
+        eprintln!("{err}");
+        print_usage(Greeter::options());
+
+        process::exit(1);
+      }
+
+      greeter.connect().await;
+    }
 
     greeter.sessions = Menu {
       title: fl!("title_session"),
@@ -402,17 +422,15 @@ impl Greeter {
   }
 
   // Parses command line arguments to configured the software accordingly.
-  pub async fn parse_options(&mut self) {
+  pub async fn parse_options<S>(&mut self, args: &[S]) -> Result<(), Box<dyn Error>>
+  where
+    S: AsRef<OsStr>,
+  {
     let opts = Greeter::options();
 
-    self.config = match opts.parse(env::args().collect::<Vec<String>>()) {
+    self.config = match opts.parse(args) {
       Ok(matches) => Some(matches),
-
-      Err(err) => {
-        eprintln!("{err}");
-        print_usage(opts);
-        process::exit(1);
-      }
+      Err(err) => return Err(err.into()),
     };
 
     if self.config().opt_present("help") {
@@ -422,14 +440,6 @@ impl Greeter {
     if self.config().opt_present("version") {
       print_version();
       process::exit(0);
-    }
-
-    match env::var("GREETD_SOCK") {
-      Ok(socket) => self.socket = socket,
-      Err(_) => {
-        eprintln!("GREETD_SOCK must be defined");
-        process::exit(1);
-      }
     }
 
     if self.config().opt_present("debug") {
@@ -442,9 +452,7 @@ impl Greeter {
     }
 
     if self.config().opt_present("issue") && self.config().opt_present("greeting") {
-      eprintln!("Only one of --issue and --greeting may be used at the same time");
-      print_usage(opts);
-      process::exit(1);
+      return Err("Only one of --issue and --greeting may be used at the same time".into());
     }
 
     if self.config().opt_present("theme") {
@@ -456,9 +464,7 @@ impl Greeter {
     if self.config().opt_present("asterisks") {
       let asterisk = if let Some(value) = self.config().opt_str("asterisks-char") {
         if value.chars().count() < 1 {
-          eprintln!("--asterisks-char must have at least one character as its value");
-          print_usage(opts);
-          process::exit(1);
+          return Err("--asterisks-char must have at least one character as its value".into());
         }
 
         value
@@ -473,8 +479,7 @@ impl Greeter {
 
     if let Some(format) = self.config().opt_str("time-format") {
       if StrftimeItems::new(&format).any(|item| item == Item::Error) {
-        eprintln!("Invalid strftime format provided in --time-format");
-        process::exit(1);
+        return Err("Invalid strftime format provided in --time-format".into());
       }
 
       self.time_format = Some(format);
@@ -490,8 +495,7 @@ impl Greeter {
       tracing::info!("min/max UIDs are {}/{}", min_uid, max_uid);
 
       if min_uid >= max_uid {
-        eprintln!("Minimum UID ({min_uid}) must be less than maximum UID ({max_uid})");
-        process::exit(1);
+        return Err("Minimum UID ({min_uid}) must be less than maximum UID ({max_uid})".into());
       }
 
       self.users = Menu {
@@ -504,14 +508,10 @@ impl Greeter {
     }
 
     if self.config().opt_present("remember-session") && self.config().opt_present("remember-user-session") {
-      eprintln!("Only one of --remember-session and --remember-user-session may be used at the same time");
-      print_usage(opts);
-      process::exit(1);
+      return Err("Only one of --remember-session and --remember-user-session may be used at the same time".into());
     }
     if self.config().opt_present("remember-user-session") && !self.config().opt_present("remember") {
-      eprintln!("--remember-session must be used with --remember");
-      print_usage(opts);
-      process::exit(1);
+      return Err("--remember-session must be used with --remember".into());
     }
 
     self.remember = self.config().opt_present("remember");
@@ -563,12 +563,10 @@ impl Greeter {
     self.kb_power = self.config().opt_str("kb-power").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(12);
 
     if self.kb_command == self.kb_sessions || self.kb_sessions == self.kb_power || self.kb_power == self.kb_command {
-      eprintln!("keybindings must all be distinct");
-      print_usage(opts);
-      process::exit(1);
+      return Err("keybindings must all be distinct".into());
     }
 
-    self.connect().await;
+    Ok(())
   }
 
   pub fn set_prompt(&mut self, prompt: &str) {
@@ -603,7 +601,7 @@ fn print_version() {
 
 #[cfg(test)]
 mod test {
-  use crate::Greeter;
+  use crate::{ui::sessions::SessionSource, Greeter, SecretDisplay};
 
   #[test]
   fn test_prompt_width() {
@@ -632,5 +630,80 @@ mod test {
     greeter.remove_prompt();
 
     assert_eq!(greeter.prompt, None);
+  }
+
+  #[tokio::test]
+  async fn test_command_line_arguments() {
+    let table: &[(&[&str], _, Option<fn(&Greeter)>)] = &[
+      // No arguments
+      (&[], true, None),
+      // Valid combinations
+      (&["--cmd", "hello"], true, None),
+      (
+        &[
+          "--cmd",
+          "uname",
+          "--asterisks",
+          "--asterisks-char",
+          ".",
+          "--issue",
+          "--time",
+          "--prompt-padding",
+          "0",
+          "--window-padding",
+          "1",
+          "--container-padding",
+          "12",
+          "--user-menu",
+        ],
+        true,
+        Some(|greeter| {
+          assert!(matches!(&greeter.session_source, SessionSource::Command(cmd) if cmd == "uname"));
+          assert!(matches!(&greeter.secret_display, SecretDisplay::Character(c) if c == "."));
+          assert_eq!(greeter.prompt_padding(), 0);
+          assert_eq!(greeter.window_padding(), 1);
+          assert_eq!(greeter.container_padding(), 13);
+          assert_eq!(greeter.user_menu, true);
+          assert!(matches!(greeter.xsession_wrapper.as_deref(), Some("startx /usr/bin/env")));
+        }),
+      ),
+      (
+        &["--xsession-wrapper", "mywrapper.sh"],
+        true,
+        Some(|greeter| {
+          assert!(matches!(greeter.xsession_wrapper.as_deref(), Some("mywrapper.sh")));
+        }),
+      ),
+      (
+        &["--no-xsession-wrapper"],
+        true,
+        Some(|greeter| {
+          assert!(matches!(greeter.xsession_wrapper, None));
+        }),
+      ),
+      // Invalid combinations
+      (&["--remember-session", "--remember-user-session"], false, None),
+      (&["--asterisk-char", ""], false, None),
+      (&["--remember-user-session"], false, None),
+      (&["--min-uid", "10000", "--max-uid", "5000"], false, None),
+      (&["--issue", "--greeting", "Hello, world!"], false, None),
+      (&["--kb-command", "F2", "--kb-sessions", "F2"], false, None),
+      (&["--time-format", "%i %"], false, None),
+    ];
+
+    for (opts, valid, check) in table {
+      let mut greeter = Greeter::default();
+
+      match valid {
+        true => {
+          assert!(matches!(greeter.parse_options(*opts).await, Ok(())), "{:?} cannot be parsed", opts);
+
+          if let Some(check) = check {
+            check(&greeter);
+          }
+        }
+        false => assert!(matches!(greeter.parse_options(*opts).await, Err(_))),
+      }
+    }
   }
 }
