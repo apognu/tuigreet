@@ -138,6 +138,21 @@ Please refer to the snippet below for the minimal `tuigreet` configuration:
 
 Pre-built binaries of `tuigreet` for several architectures can be found in the [releases](https://github.com/apognu/tuigreet/releases) section of this repository. The [tip prerelease](https://github.com/apognu/tuigreet/releases/tag/tip) is continuously built and kept in sync with the `master` branch.
 
+## Running the tests
+
+Tests from the default features should run without any special consideration by running `cargo test`.
+
+If you intend to run the whole test suite, you will need to perform some setup. One of our features uses NSS to list and filter existing users on the system, and in order not to rely on actual users being created on the host, we use [libnss_wrapper](https://cwrap.org/nss_wrapper.html) to mock responses from NSS. Without this, the tests would use the real user list from your system and probably fail because it cannot find the one it looks for.
+
+After installing `libnss_wrapper` on your system (or compiling it to get the `.so`), you can run those specific tests as such:
+
+```
+$ export NSS_WRAPPER_PASSWD=contrib/fixtures/passwd
+$ export NSS_WRAPPER_GROUP=contrib/fixtures/group
+$ LD_PRELOAD=/path/to/libnss_wrapper.so cargo test --features nsswrapper nsswrapper_ # To run those tests specifically
+$ LD_PRELOAD=/path/to/libnss_wrapper.so cargo test --all-features # To run the whole test suite
+```
+
 ## Configuration
 
 Edit `/etc/greetd/config.toml` and set the `command` setting to use `tuigreet`:
