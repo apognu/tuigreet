@@ -104,7 +104,7 @@ pub fn get_last_user_name() -> Option<String> {
 }
 
 pub fn write_last_username(username: &MaskedString) {
-  let _ = fs::write(LAST_USER_USERNAME, username.value.clone());
+  let _ = fs::write(LAST_USER_USERNAME, &username.value);
 
   if let Some(ref name) = username.mask {
     let _ = fs::write(LAST_USER_NAME, name);

@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{borrow::Cow, error::Error};
 
 use tui::{
   prelude::Rect,
@@ -18,7 +18,7 @@ use crate::{
 use super::style::Themed;
 
 pub trait MenuItem {
-  fn format(&self) -> String;
+  fn format(&self) -> Cow<'_, str>;
 }
 
 #[derive(Default)]

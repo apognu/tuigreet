@@ -213,18 +213,18 @@ impl Greeter {
     // If we should remember the last logged-in user.
     if greeter.remember {
       if let Some(username) = get_last_user_username() {
-        greeter.username = MaskedString::from(username.clone(), get_last_user_name());
+        greeter.username = MaskedString::from(username, get_last_user_name());
 
         // If, on top of that, we should remember their last session.
         if greeter.remember_user_session {
-          if let Ok(ref session_path) = get_last_user_session_path(&username) {
+          if let Ok(ref session_path) = get_last_user_session_path(greeter.username.get()) {
             // Set the selected menu option and the session source.
             greeter.sessions.selected = greeter.sessions.options.iter().position(|Session { path, .. }| path.as_deref() == Some(session_path)).unwrap_or(0);
             greeter.session_source = SessionSource::Session(greeter.sessions.selected);
           }
 
           // See if we have the last free-form command from the user.
-          if let Ok(command) = get_last_user_session(&username) {
+          if let Ok(command) = get_last_user_session(greeter.username.get()) {
             greeter.session_source = SessionSource::Command(command);
           }
         }
