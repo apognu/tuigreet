@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: |
-          sudo apt update && sudo apt install -y libnss-wrapper
+          sudo apt update && sudo apt install -y libnss-wrapper scdoc
       - uses: Swatinem/rust-cache@v2
       - name: Test
         env:
@@ -32,6 +32,9 @@ jobs:
         run: |
           cargo test
           LD_PRELOAD=libnss_wrapper.so cargo test --features nsswrapper nsswrapper_
+      - name: Generate manpage
+        run: |
+          scdoc < contrib/man/tuigreet-1.scd > /dev/null
 
   build:
     strategy:
