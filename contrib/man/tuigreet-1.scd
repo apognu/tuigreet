@@ -105,6 +105,10 @@ tuigreet - A graphical console greeter for greetd
 *--prompt-padding ROWS*
 	Add spacing between form fields.
 
+*--greet-align [left|center|right]*
+    Alignment of the greeting text in the main prompt container
+    (default: 'center')
+
 *--power-shutdown CMD [ARGS]...*
 	Customize the command run when instructed to shut down the machine. This must
 	be a non-interactive command (sudo cannot prompt for a password, for example).
