@@ -106,8 +106,8 @@ tuigreet - A graphical console greeter for greetd
 	Add spacing between form fields.
 
 *--greet-align [left|center|right]*
-    Alignment of the greeting text in the main prompt container
-    (default: 'center')
+	Alignment of the greeting text in the main prompt container
+	(default: 'center').
 
 *--power-shutdown CMD [ARGS]...*
 	Customize the command run when instructed to shut down the machine. This must
