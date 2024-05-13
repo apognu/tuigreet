@@ -92,7 +92,7 @@ impl SecretDisplay {
 
 // This enum models text alignment options
 #[derive(SmartDefault, Debug, Clone)]
-pub enum TextAlign {
+pub enum GreetAlign {
   #[default]
   Center,
   Left,
@@ -349,15 +349,15 @@ impl Greeter {
     1
   }
 
-  pub fn text_align(&self) -> TextAlign {
-    if let Some(value) = self.option("text-align") {
+  pub fn greet_align(&self) -> GreetAlign {
+    if let Some(value) = self.option("greet-align") {
       match value.to_uppercase().as_str() {
-        "LEFT" | "L" => TextAlign::Left,
-        "RIGHT" | "R" => TextAlign::Right,
-        _ => TextAlign::Center
+        "left" => GreetAlign::Left,
+        "right" => GreetAlign::Right,
+        _ => GreetAlign::Center
       }
     } else {
-      TextAlign::default()
+      GreetAlign::default()
     }
   }
 
@@ -405,7 +405,7 @@ impl Greeter {
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
     opts.optopt("", "container-padding", "padding inside the main prompt container (default: 1)", "PADDING");
     opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
-    opts.optopt("", "text-align", "alignment of text in the prompt container (default: 'center')", "[left|center|right]");
+    opts.optopt("", "greet-align", "alignment of the greeting text in the main prompt container (default: 'center')", "[left|center|right]");
 
     opts.optopt("", "power-shutdown", "command to run to shut down the system", "'CMD [ARGS]...'");
     opts.optopt("", "power-reboot", "command to run to reboot the system", "'CMD [ARGS]...'");
