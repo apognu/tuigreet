@@ -351,7 +351,7 @@ impl Greeter {
 
   pub fn greet_align(&self) -> GreetAlign {
     if let Some(value) = self.option("greet-align") {
-      match value.to_uppercase().as_str() {
+      match value.as_str() {
         "left" => GreetAlign::Left,
         "right" => GreetAlign::Right,
         _ => GreetAlign::Center
