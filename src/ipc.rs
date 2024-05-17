@@ -69,7 +69,11 @@ impl Ipc {
   }
 
   async fn parse_response(&mut self, greeter: &mut Greeter, response: Response) -> Result<(), Box<dyn Error>> {
-    tracing::info!("received greetd message: {:?}", response);
+    // Do not display actual message from greetd, which may contain entered information, sometimes passwords.
+    match response {
+      Response::Error { ref error_type, .. } => tracing::info!("received greetd error message: {error_type:?}"),
+      ref response => tracing::info!("received greetd message: {:?}", response),
+    }
 
     match response {
       Response::AuthMessage { auth_message_type, auth_message } => match auth_message_type {
@@ -190,8 +194,9 @@ impl Ipc {
         }
       }
 
-      Response::Error { error_type, description } => {
-        tracing::info!("received an error from greetd: {error_type:?} - {description}");
+      Response::Error { error_type, .. } => {
+        // Do not display actual message from greetd, which may contain entered information, sometimes passwords.
+        tracing::info!("received an error from greetd: {error_type:?}");
 
         Ipc::cancel(greeter).await;
 
@@ -207,7 +212,8 @@ impl Ipc {
           }
 
           ErrorType::Error => {
-            greeter.message = Some(description);
+            // Do not display actual message from greetd, which may contain entered information, sometimes passwords.
+            greeter.message = Some("An error was received from greetd".to_string());
             greeter.reset(false).await;
           }
         }
