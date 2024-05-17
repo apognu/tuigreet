@@ -148,29 +148,43 @@ impl Ipc {
         } else {
           tracing::info!("authentication successful, starting session");
 
-          let command = greeter.session_source.command(greeter).map(str::to_string);
+          match greeter.session_source.command(greeter).map(str::to_string) {
+            None => {
+              Ipc::cancel(greeter).await;
 
-          if let Some(command) = command {
-            greeter.done = true;
-            greeter.mode = Mode::Processing;
+              greeter.message = Some(fl!("command_missing"));
+              greeter.reset(false).await;
+            }
 
-            let session = Session::get_selected(greeter);
-            let (command, env) = wrap_session_command(greeter, session, &command);
+            Some(command) if command.is_empty() => {
+              Ipc::cancel(greeter).await;
 
-            #[cfg(not(debug_assertions))]
-            self.send(Request::StartSession { cmd: vec![command.to_string()], env }).await;
+              greeter.message = Some(fl!("command_missing"));
+              greeter.reset(false).await;
+            }
 
-            #[cfg(debug_assertions)]
-            {
-              let _ = command;
-              let _ = env;
+            Some(command) => {
+              greeter.done = true;
+              greeter.mode = Mode::Processing;
 
-              self
-                .send(Request::StartSession {
-                  cmd: vec!["true".to_string()],
-                  env: vec![],
-                })
-                .await;
+              let session = Session::get_selected(greeter);
+              let (command, env) = wrap_session_command(greeter, session, &command);
+
+              #[cfg(not(debug_assertions))]
+              self.send(Request::StartSession { cmd: vec![command.to_string()], env }).await;
+
+              #[cfg(debug_assertions)]
+              {
+                let _ = command;
+                let _ = env;
+
+                self
+                  .send(Request::StartSession {
+                    cmd: vec!["true".to_string()],
+                    env: vec![],
+                  })
+                  .await;
+              }
             }
           }
         }
