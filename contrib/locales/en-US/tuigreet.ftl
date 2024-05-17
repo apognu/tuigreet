@@ -21,6 +21,7 @@ new_command = New command:
 shutdown = Shut down
 reboot = Reboot
 
+command_missing = No command configured
 command_exited = Command exited with
 command_failed = Command failed
 
