@@ -204,9 +204,17 @@ impl Greeter {
 
     greeter.parse_options().await;
 
+    let sessions = get_sessions(&greeter).unwrap_or_default();
+
+    if let SessionSource::None = greeter.session_source {
+      if !sessions.is_empty() {
+        greeter.session_source = SessionSource::Session(0);
+      }
+    }
+
     greeter.sessions = Menu {
       title: fl!("title_session"),
-      options: get_sessions(&greeter).unwrap_or_default(),
+      options: sessions,
       selected: 0,
     };
 
