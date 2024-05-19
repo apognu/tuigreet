@@ -5,7 +5,7 @@ use greetd_ipc::Request;
 use tokio::sync::RwLock;
 
 use crate::{
-  info::{delete_last_session_path, get_last_user_session, get_last_user_session_path, write_last_session, write_last_session_path},
+  info::{delete_last_command, delete_last_session, get_last_user_command, get_last_user_session, write_last_command, write_last_session_path},
   ipc::Ipc,
   power::power,
   ui::{
@@ -225,8 +225,8 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
         greeter.session_source = SessionSource::Command(greeter.buffer.clone());
 
         if greeter.remember_session {
-          write_last_session(&greeter.buffer);
-          delete_last_session_path();
+          write_last_command(&greeter.buffer);
+          delete_last_session();
         }
 
         greeter.buffer = greeter.previous_buffer.take().unwrap_or_default();
@@ -248,13 +248,12 @@ pub async fn handle(greeter: Arc<RwLock<Greeter>>, input: KeyEvent, ipc: Ipc) ->
       Mode::Sessions => {
         let session = greeter.sessions.options.get(greeter.sessions.selected).cloned();
 
-        if let Some(Session { path, command, .. }) = session {
+        if let Some(Session { path, .. }) = session {
           if greeter.remember_session {
             if let Some(ref path) = path {
               write_last_session_path(path);
+              delete_last_command();
             }
-
-            write_last_session(&command);
           }
 
           greeter.session_source = SessionSource::Session(greeter.sessions.selected);
@@ -365,7 +364,7 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
   greeter.buffer = String::new();
 
   if greeter.remember_user_session {
-    if let Ok(last_session) = get_last_user_session_path(&greeter.username.value) {
+    if let Ok(last_session) = get_last_user_session(&greeter.username.value) {
       if let Some(last_session) = Session::from_path(greeter, last_session).cloned() {
         tracing::info!("remembered user session is {}", last_session.name);
 
@@ -374,7 +373,7 @@ async fn validate_username(greeter: &mut Greeter, ipc: &Ipc) {
       }
     }
 
-    if let Ok(command) = get_last_user_session(&greeter.username.value) {
+    if let Ok(command) = get_last_user_command(&greeter.username.value) {
       tracing::info!("remembered user command is {}", command);
 
       greeter.session_source = SessionSource::Command(command);
