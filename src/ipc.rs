@@ -8,7 +8,7 @@ use tokio::sync::{
 
 use crate::{
   event::Event,
-  info::{delete_last_user_session, delete_last_user_session_path, write_last_user_session, write_last_user_session_path, write_last_username},
+  info::{delete_last_user_command, delete_last_user_session, write_last_user_command, write_last_user_session, write_last_username},
   macros::SafeDebug,
   ui::sessions::{Session, SessionSource, SessionType},
   AuthStatus, Greeter, Mode,
@@ -124,16 +124,16 @@ impl Ipc {
                 SessionSource::Command(ref command) => {
                   tracing::info!("caching last user command: {command}");
 
-                  write_last_user_session(&greeter.username.value, command);
-                  delete_last_user_session_path(&greeter.username.value);
+                  write_last_user_command(&greeter.username.value, command);
+                  delete_last_user_session(&greeter.username.value);
                 }
 
                 SessionSource::Session(index) => {
                   if let Some(Session { path: Some(session_path), .. }) = greeter.sessions.options.get(index) {
                     tracing::info!("caching last user session: {session_path:?}");
 
-                    write_last_user_session_path(&greeter.username.value, session_path);
-                    delete_last_user_session(&greeter.username.value);
+                    write_last_user_session(&greeter.username.value, session_path);
+                    delete_last_user_command(&greeter.username.value);
                   }
                 }
 

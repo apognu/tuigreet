@@ -22,9 +22,7 @@ use zeroize::Zeroize;
 
 use crate::{
   event::Event,
-  info::{
-    get_issue, get_last_session, get_last_session_path, get_last_user_name, get_last_user_session, get_last_user_session_path, get_last_user_username, get_min_max_uids, get_sessions, get_users,
-  },
+  info::{get_issue, get_last_command, get_last_session_path, get_last_user_command, get_last_user_name, get_last_user_session, get_last_user_username, get_min_max_uids, get_sessions, get_users},
   power::PowerOption,
   ui::{
     common::{masked::MaskedString, menu::Menu, style::Theme},
@@ -96,7 +94,7 @@ pub enum GreetAlign {
   #[default]
   Center,
   Left,
-  Right
+  Right,
 }
 
 #[derive(SmartDefault)]
@@ -217,15 +215,18 @@ impl Greeter {
 
         // If, on top of that, we should remember their last session.
         if greeter.remember_user_session {
-          if let Ok(ref session_path) = get_last_user_session_path(greeter.username.get()) {
-            // Set the selected menu option and the session source.
-            greeter.sessions.selected = greeter.sessions.options.iter().position(|Session { path, .. }| path.as_deref() == Some(session_path)).unwrap_or(0);
-            greeter.session_source = SessionSource::Session(greeter.sessions.selected);
+          // See if we have the last free-form command from the user.
+          if let Ok(command) = get_last_user_command(greeter.username.get()) {
+            greeter.session_source = SessionSource::Command(command);
           }
 
-          // See if we have the last free-form command from the user.
-          if let Ok(command) = get_last_user_session(greeter.username.get()) {
-            greeter.session_source = SessionSource::Command(command);
+          // If a session was saved, use it and its name.
+          if let Ok(ref session_path) = get_last_user_session(greeter.username.get()) {
+            // Set the selected menu option and the session source.
+            if let Some(index) = greeter.sessions.options.iter().position(|Session { path, .. }| path.as_deref() == Some(session_path)) {
+              greeter.sessions.selected = index;
+              greeter.session_source = SessionSource::Session(greeter.sessions.selected);
+            }
           }
         }
       }
@@ -233,13 +234,15 @@ impl Greeter {
 
     // Same thing, but not user specific.
     if greeter.remember_session {
-      if let Ok(ref session_path) = get_last_session_path() {
-        greeter.sessions.selected = greeter.sessions.options.iter().position(|Session { path, .. }| path.as_deref() == Some(session_path)).unwrap_or(0);
-        greeter.session_source = SessionSource::Session(greeter.sessions.selected);
+      if let Ok(command) = get_last_command() {
+        greeter.session_source = SessionSource::Command(command.trim().to_string());
       }
 
-      if let Ok(command) = get_last_session() {
-        greeter.session_source = SessionSource::Command(command.trim().to_string());
+      if let Ok(ref session_path) = get_last_session_path() {
+        if let Some(index) = greeter.sessions.options.iter().position(|Session { path, .. }| path.as_deref() == Some(session_path)) {
+          greeter.sessions.selected = index;
+          greeter.session_source = SessionSource::Session(greeter.sessions.selected);
+        }
       }
     }
 
@@ -354,7 +357,7 @@ impl Greeter {
       match value.as_str() {
         "left" => GreetAlign::Left,
         "right" => GreetAlign::Right,
-        _ => GreetAlign::Center
+        _ => GreetAlign::Center,
       }
     } else {
       GreetAlign::default()
@@ -405,7 +408,12 @@ impl Greeter {
     opts.optopt("", "window-padding", "padding inside the terminal area (default: 0)", "PADDING");
     opts.optopt("", "container-padding", "padding inside the main prompt container (default: 1)", "PADDING");
     opts.optopt("", "prompt-padding", "padding between prompt rows (default: 1)", "PADDING");
-    opts.optopt("", "greet-align", "alignment of the greeting text in the main prompt container (default: 'center')", "[left|center|right]");
+    opts.optopt(
+      "",
+      "greet-align",
+      "alignment of the greeting text in the main prompt container (default: 'center')",
+      "[left|center|right]",
+    );
 
     opts.optopt("", "power-shutdown", "command to run to shut down the system", "'CMD [ARGS]...'");
     opts.optopt("", "power-reboot", "command to run to reboot the system", "'CMD [ARGS]...'");
