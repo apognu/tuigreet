@@ -12,11 +12,14 @@ mod keyboard;
 mod power;
 mod ui;
 
+#[cfg(test)]
+mod integration;
+
 use std::{error::Error, fs::OpenOptions, io, process, sync::Arc};
 
 use crossterm::{
   execute,
-  terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+  terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
 use event::Event;
 use greetd_ipc::Request;
@@ -25,12 +28,19 @@ use tokio::sync::RwLock;
 use tracing_appender::non_blocking::WorkerGuard;
 use tui::{backend::CrosstermBackend, Terminal};
 
+#[cfg(not(test))]
+use crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
+
 pub use self::greeter::*;
 use self::{event::Events, ipc::Ipc};
 
 #[tokio::main]
 async fn main() {
-  if let Err(error) = run().await {
+  let backend = CrosstermBackend::new(io::stdout());
+  let events = Events::new().await;
+  let greeter = Greeter::new(events.sender()).await;
+
+  if let Err(error) = run(backend, greeter, events).await {
     if let Some(AuthStatus::Success) = error.downcast_ref::<AuthStatus>() {
       return;
     }
@@ -39,23 +49,25 @@ async fn main() {
   }
 }
 
-async fn run() -> Result<(), Box<dyn Error>> {
-  let mut events = Events::new().await;
-  let mut greeter = Greeter::new(events.sender()).await;
-  let mut stdout = io::stdout();
-
+async fn run<B>(backend: B, mut greeter: Greeter, mut events: Events) -> Result<(), Box<dyn Error>>
+where
+  B: tui::backend::Backend,
+{
   let _guard = init_logger(&greeter);
 
   tracing::info!("tuigreet started");
 
   register_panic_handler();
 
-  enable_raw_mode()?;
-  execute!(stdout, EnterAlternateScreen)?;
+  #[cfg(not(test))]
+  {
+    enable_raw_mode()?;
+    execute!(io::stdout(), EnterAlternateScreen)?;
+  }
 
-  let backend = CrosstermBackend::new(stdout);
   let mut terminal = Terminal::new(backend)?;
 
+  #[cfg(not(test))]
   terminal.clear()?;
 
   let ipc = Ipc::new();
@@ -126,7 +138,9 @@ async fn exit(greeter: &mut Greeter, status: AuthStatus) {
     AuthStatus::Cancel | AuthStatus::Failure => Ipc::cancel(greeter).await,
   }
 
+  #[cfg(not(test))]
   clear_screen();
+
   let _ = execute!(io::stdout(), LeaveAlternateScreen);
   let _ = disable_raw_mode();
 
@@ -137,7 +151,9 @@ fn register_panic_handler() {
   let hook = std::panic::take_hook();
 
   std::panic::set_hook(Box::new(move |info| {
+    #[cfg(not(test))]
     clear_screen();
+
     let _ = execute!(io::stdout(), LeaveAlternateScreen);
     let _ = disable_raw_mode();
 
@@ -145,6 +161,7 @@ fn register_panic_handler() {
   }));
 }
 
+#[cfg(not(test))]
 pub fn clear_screen() {
   let backend = CrosstermBackend::new(io::stdout());
 
