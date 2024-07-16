@@ -24,6 +24,9 @@ tuigreet - A graphical console greeter for greetd
 	Specify which command to run on successful authentication. This can be
 	overridden by manual selection within *tuigreet*.
 
+*--env KEY=VALUE*
+	Environment variables to run the default session with (can appear more then once).
+
 *-s, --sessions DIR1[:DIR2]...*
 	Location of desktop-files to be used as Wayland session definitions. By
 	default, Wayland sessions are fetched from */usr/share/wayland-sessions*.

@@ -13,6 +13,8 @@ Options:
     -d, --debug [FILE]  enable debug logging to the provided file, or to
                         /tmp/tuigreet.log
     -c, --cmd COMMAND   command to run
+        --env KEY=VALUE environment variables to run the default session with
+                        (can appear more than once)
     -s, --sessions DIRS colon-separated list of Wayland session paths
         --session-wrapper 'CMD [ARGS]...'
                         wrapper command to initialize the non-X11 session
@@ -40,9 +42,7 @@ Options:
                         minimum UID to display in the user selection menu
         --user-menu-max-uid UID
                         maximum UID to display in the user selection menu
-        --theme SPEC
-                        Add visual feedback when typing secrets, as one asterisk character for every
-                        keystroke. By default, no feedback is given at all.
+        --theme THEME   define the application theme colors
         --asterisks     display asterisks when a secret is typed
         --asterisks-char CHARS
                         characters to be used to redact secrets (default: *)
@@ -52,15 +52,21 @@ Options:
                         padding inside the main prompt container (default: 1)
         --prompt-padding PADDING
                         padding between prompt rows (default: 1)
+        --greet-align [left|center|right]
+                        alignment of the greeting text in the main prompt
+                        container (default: 'center')
         --power-shutdown 'CMD [ARGS]...'
                         command to run to shut down the system
         --power-reboot 'CMD [ARGS]...'
                         command to run to reboot the system
         --power-no-setsid
                         do not prefix power commands with setsid
-        --kb-[command|sessions|power] [1-12]
-                        change the default F-key keybindings to access the
-                        command, sessions and power menus.
+        --kb-command [1-12]
+                        F-key to use to open the command menu
+        --kb-sessions [1-12]
+                        F-key to use to open the sessions menu
+        --kb-power [1-12]
+                        F-key to use to open the power menu
 ```
 
 ## Usage

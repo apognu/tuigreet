@@ -339,6 +339,13 @@ impl Greeter {
     self.config().opt_str(name)
   }
 
+  pub fn options_multi(&self, name: &str) -> Option<Vec<String>> {
+    match self.config().opt_present(name) {
+      true => Some(self.config().opt_strs(name)),
+      false => None,
+    }
+  }
+
   // Returns the width of the main window where content is displayed from the
   // provided arguments.
   pub fn width(&self) -> u16 {
@@ -419,6 +426,7 @@ impl Greeter {
     opts.optflag("v", "version", "print version information");
     opts.optflagopt("d", "debug", "enable debug logging to the provided file, or to /tmp/tuigreet.log", "FILE");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
+    opts.optmulti("", "env", "environment variables to run the default session with (can appear more than once)", "KEY=VALUE");
     opts.optopt("s", "sessions", "colon-separated list of Wayland session paths", "DIRS");
     opts.optopt("", "session-wrapper", "wrapper command to initialize the non-X11 session", "'CMD [ARGS]...'");
     opts.optopt("x", "xsessions", "colon-separated list of X11 session paths", "DIRS");
@@ -559,7 +567,7 @@ impl Greeter {
 
     // If the `--cmd` argument is provided, it will override the selected session.
     if let Some(command) = self.option("cmd") {
-      self.session_source = SessionSource::Command(command);
+      self.session_source = SessionSource::DefaultCommand(command, self.options_multi("env"));
     }
 
     if let Some(dirs) = self.option("sessions") {

@@ -172,7 +172,8 @@ impl Ipc {
               greeter.mode = Mode::Processing;
 
               let session = Session::get_selected(greeter);
-              let (command, env) = wrap_session_command(greeter, session, &command);
+              let default = DefaultCommand(&command, greeter.session_source.env());
+              let (command, env) = wrap_session_command(greeter, session, &default);
 
               #[cfg(not(debug_assertions))]
               self.send(Request::StartSession { cmd: vec![command.to_string()], env }).await;
@@ -180,14 +181,8 @@ impl Ipc {
               #[cfg(debug_assertions)]
               {
                 let _ = command;
-                let _ = env;
 
-                self
-                  .send(Request::StartSession {
-                    cmd: vec!["true".to_string()],
-                    env: vec![],
-                  })
-                  .await;
+                self.send(Request::StartSession { cmd: vec!["true".to_string()], env }).await;
               }
             }
           }
@@ -234,39 +229,64 @@ fn desktop_names_to_xdg(names: &str) -> String {
   names.replace(';', ":").trim_end_matches(':').to_string()
 }
 
-fn wrap_session_command<'a>(greeter: &Greeter, session: Option<&Session>, command: &'a str) -> (Cow<'a, str>, Vec<String>) {
-  let mut env: Vec<String> = vec![];
+struct DefaultCommand<'a>(&'a str, Option<Vec<String>>);
 
-  if let Some(Session {
-    slug,
-    session_type,
-    xdg_desktop_names,
-    ..
-  }) = session
-  {
-    if let Some(slug) = slug {
-      env.push(format!("XDG_SESSION_DESKTOP={slug}"));
-      env.push(format!("DESKTOP_SESSION={slug}"));
-    }
-    if *session_type != SessionType::None {
-      env.push(format!("XDG_SESSION_TYPE={}", session_type.as_xdg_session_type()));
-    }
-    if let Some(xdg_desktop_names) = xdg_desktop_names {
-      env.push(format!("XDG_CURRENT_DESKTOP={}", desktop_names_to_xdg(xdg_desktop_names)));
-    }
-
-    if *session_type == SessionType::X11 {
-      if let Some(ref wrap) = greeter.xsession_wrapper {
-        return (Cow::Owned(format!("{} {}", wrap, command)), env);
-      }
-    } else if let Some(ref wrap) = greeter.session_wrapper {
-      return (Cow::Owned(format!("{} {}", wrap, command)), env);
-    }
-  } else if let Some(ref wrap) = greeter.session_wrapper {
-    return (Cow::Owned(format!("{} {}", wrap, command)), env);
+impl<'a> DefaultCommand<'a> {
+  fn command(&'a self) -> &'a str {
+    self.0
   }
 
-  (Cow::Borrowed(command), env)
+  fn env(&'a self) -> Option<&'a Vec<String>> {
+    self.1.as_ref()
+  }
+}
+
+fn wrap_session_command<'a>(greeter: &Greeter, session: Option<&Session>, default: &'a DefaultCommand<'a>) -> (Cow<'a, str>, Vec<String>) {
+  let mut env: Vec<String> = vec![];
+
+  match session {
+    // If the target is a defined session, we should be able to deduce all the
+    // environment we need from the desktop file.
+    Some(Session {
+      slug,
+      session_type,
+      xdg_desktop_names,
+      ..
+    }) => {
+      if let Some(slug) = slug {
+        env.push(format!("XDG_SESSION_DESKTOP={slug}"));
+        env.push(format!("DESKTOP_SESSION={slug}"));
+      }
+      if *session_type != SessionType::None {
+        env.push(format!("XDG_SESSION_TYPE={}", session_type.as_xdg_session_type()));
+      }
+      if let Some(xdg_desktop_names) = xdg_desktop_names {
+        env.push(format!("XDG_CURRENT_DESKTOP={}", desktop_names_to_xdg(xdg_desktop_names)));
+      }
+
+      if *session_type == SessionType::X11 {
+        if let Some(ref wrap) = greeter.xsession_wrapper {
+          return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+        }
+      } else if let Some(ref wrap) = greeter.session_wrapper {
+        return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+      }
+    }
+
+    _ => {
+      // If a wrapper script is used, assume that it is able to set up the
+      // required environment.
+      if let Some(ref wrap) = greeter.session_wrapper {
+        return (Cow::Owned(format!("{} {}", wrap, default.command())), env);
+      }
+      // Otherwise, set up the environment from the provided argument.
+      if let Some(base_env) = default.env() {
+        env.append(&mut base_env.clone());
+      }
+    }
+  }
+
+  (Cow::Borrowed(default.command()), env)
 }
 
 #[cfg(test)]
@@ -274,7 +294,7 @@ mod test {
   use std::path::PathBuf;
 
   use crate::{
-    ipc::desktop_names_to_xdg,
+    ipc::{desktop_names_to_xdg, DefaultCommand},
     ui::sessions::{Session, SessionType},
     Greeter,
   };
@@ -293,7 +313,8 @@ mod test {
       ..Default::default()
     };
 
-    let (command, env) = wrap_session_command(&greeter, Some(&session), &session.command);
+    let default = DefaultCommand(&session.command, None);
+    let (command, env) = wrap_session_command(&greeter, Some(&session), &default);
 
     assert_eq!(command.as_ref(), "Session1Cmd");
     assert_eq!(env, vec!["XDG_SESSION_TYPE=wayland"]);
@@ -312,7 +333,8 @@ mod test {
       ..Default::default()
     };
 
-    let (command, env) = wrap_session_command(&greeter, Some(&session), &session.command);
+    let default = DefaultCommand(&session.command, None);
+    let (command, env) = wrap_session_command(&greeter, Some(&session), &default);
 
     assert_eq!(command.as_ref(), "/wrapper.sh Session1Cmd");
     assert_eq!(env, vec!["XDG_SESSION_TYPE=wayland"]);
@@ -333,7 +355,8 @@ mod test {
       ..Default::default()
     };
 
-    let (command, env) = wrap_session_command(&greeter, Some(&session), &session.command);
+    let default = DefaultCommand(&session.command, None);
+    let (command, env) = wrap_session_command(&greeter, Some(&session), &default);
 
     assert_eq!(command.as_ref(), "startx /usr/bin/env Session1Cmd");
     assert_eq!(
