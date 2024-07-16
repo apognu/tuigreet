@@ -61,16 +61,16 @@ impl Theme {
     }
 
     if style.time.is_none() {
-      style.time = style.text.clone();
+      style.time.clone_from(&style.text);
     }
     if style.greet.is_none() {
-      style.greet = style.text.clone();
+      style.greet.clone_from(&style.text);
     }
     if style.title.is_none() {
-      style.title = style.border.clone();
+      style.title.clone_from(&style.border);
     }
     if style.button.is_none() {
-      style.button = style.action.clone();
+      style.button.clone_from(&style.action);
     }
 
     style
