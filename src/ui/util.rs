@@ -1,4 +1,9 @@
-use tui::prelude::Rect;
+use ansi_to_tui::IntoText;
+use tui::{
+  prelude::Rect,
+  text::Text,
+  widgets::{Paragraph, Wrap},
+};
 
 use crate::{Greeter, Mode};
 
@@ -96,25 +101,31 @@ pub fn get_cursor_offset(greeter: &mut Greeter, length: usize) -> i16 {
   offset
 }
 
-pub fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<String>, u16) {
+pub fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph>, u16) {
   if let Some(greeting) = &greeter.greeting {
     let width = greeter.width();
-    let wrapped = textwrap::fill(greeting, (width - (2 * padding)) as usize);
-    let height = wrapped.trim_end().matches('\n').count();
 
-    (Some(wrapped), height as u16 + 2)
+    let text = match greeting.clone().trim().into_text() {
+      Ok(text) => text,
+      Err(_) => Text::raw(greeting),
+    };
+
+    let paragraph = Paragraph::new(text.clone()).wrap(Wrap { trim: true });
+    let height = paragraph.line_count(width - (2 * padding)) + 1;
+
+    (Some(paragraph), height as u16)
   } else {
     (None, fallback)
   }
 }
 
-pub fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<String>, u16) {
+pub fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Option<Paragraph>, u16) {
   if let Some(message) = &greeter.message {
     let width = greeter.width();
-    let wrapped = textwrap::fill(message.trim_end(), width as usize - 4);
-    let height = wrapped.trim_end().matches('\n').count();
+    let paragraph = Paragraph::new(message.trim_end()).wrap(Wrap { trim: true });
+    let height = paragraph.line_count(width - 4);
 
-    (Some(wrapped), height as u16 + padding)
+    (Some(paragraph), height as u16 + padding)
   } else {
     (None, fallback)
   }
@@ -122,7 +133,12 @@ pub fn get_message_height(greeter: &Greeter, padding: u16, fallback: u16) -> (Op
 
 #[cfg(test)]
 mod test {
-  use tui::prelude::Rect;
+  use tui::{
+    prelude::Rect,
+    style::{Color, Style},
+    text::{Line, Span, Text},
+    widgets::{Paragraph, Wrap},
+  };
 
   use crate::{
     ui::util::{get_greeting_height, get_height},
@@ -243,24 +259,58 @@ mod test {
   #[test]
   fn greeting_height_one_line() {
     let mut greeter = Greeter::default();
-    greeter.config = Greeter::options().parse(&["--width", "10", "--container-padding", "1"]).ok();
-    greeter.greeting = Some("Hello".into());
+    greeter.config = Greeter::options().parse(&["--width", "15", "--container-padding", "1"]).ok();
+    greeter.greeting = Some("Hello World".into());
 
-    let (text, width) = get_greeting_height(&greeter, 1, 0);
+    let (_, height) = get_greeting_height(&greeter, 1, 0);
 
-    assert!(matches!(text.as_deref(), Some("Hello")));
-    assert_eq!(width, 2);
+    assert_eq!(height, 2);
   }
 
   #[test]
   fn greeting_height_two_lines() {
     let mut greeter = Greeter::default();
-    greeter.config = Greeter::options().parse(&["--width", "10", "--container-padding", "1"]).ok();
+    greeter.config = Greeter::options().parse(&["--width", "8", "--container-padding", "1"]).ok();
     greeter.greeting = Some("Hello World".into());
 
-    let (text, width) = get_greeting_height(&greeter, 1, 0);
+    let (_, height) = get_greeting_height(&greeter, 1, 0);
 
-    assert!(matches!(text.as_deref(), Some("Hello\nWorld")));
-    assert_eq!(width, 3);
+    assert_eq!(height, 3);
+  }
+
+  #[test]
+  fn ansi_greeting_height_one_line() {
+    let mut greeter = Greeter::default();
+    greeter.config = Greeter::options().parse(&["--width", "15", "--container-padding", "1"]).ok();
+    greeter.greeting = Some("\x1b[31mHello\x1b[0m World".into());
+
+    let (text, height) = get_greeting_height(&greeter, 1, 0);
+
+    let expected = Paragraph::new(Text::from(vec![Line::from(vec![
+      Span::styled("Hello", Style::default().fg(Color::Red)),
+      Span::styled(" World", Style::reset()),
+    ])]))
+    .wrap(Wrap { trim: true });
+
+    assert_eq!(text, Some(expected));
+    assert_eq!(height, 2);
+  }
+
+  #[test]
+  fn ansi_greeting_height_two_lines() {
+    let mut greeter = Greeter::default();
+    greeter.config = Greeter::options().parse(&["--width", "8", "--container-padding", "1"]).ok();
+    greeter.greeting = Some("\x1b[31mHello\x1b[0m World".into());
+
+    let (text, height) = get_greeting_height(&greeter, 1, 0);
+
+    let expected = Paragraph::new(Text::from(vec![Line::from(vec![
+      Span::styled("Hello", Style::default().fg(Color::Red)),
+      Span::styled(" World", Style::reset()),
+    ])]))
+    .wrap(Wrap { trim: true });
+
+    assert_eq!(text, Some(expected));
+    assert_eq!(height, 3);
   }
 }
