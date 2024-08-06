@@ -10,6 +10,7 @@ default = []
 nsswrapper = []
 
 [dependencies]
+ansi-to-tui = "4.1.0"
 chrono = { version = "^0.4", features = ["unstable-locales"] }
 crossterm = { version = "^0.27", features = ["event-stream"] }
 futures = "0.3"
@@ -24,11 +25,11 @@ lazy_static = "^1.4"
 nix = { version = "^0.28", features = ["feature"] }
 tui = { package = "ratatui", version = "^0.26", default-features = false, features = [
   "crossterm",
+  "unstable"
 ] }
 rust-embed = "^8.0"
 rust-ini = "^0.21"
 smart-default = "^0.7"
-textwrap = "^0.16"
 tokio = { version = "^1.2", default-features = false, features = [
   "macros",
   "rt-multi-thread",

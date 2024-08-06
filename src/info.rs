@@ -63,6 +63,9 @@ pub fn get_issue() -> Option<String> {
           .replace("\\v", uts.version().to_str().unwrap_or(""))
           .replace("\\n", uts.nodename().to_str().unwrap_or(""))
           .replace("\\m", uts.machine().to_str().unwrap_or(""))
+          .replace("\\x1b", "\x1b")
+          .replace("\\033", "\x1b")
+          .replace("\\e", "\x1b")
           .replace("\\\\", "\\"),
       ),
 
