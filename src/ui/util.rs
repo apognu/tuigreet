@@ -110,7 +110,7 @@ pub fn get_greeting_height(greeter: &Greeter, padding: u16, fallback: u16) -> (O
       Err(_) => Text::raw(greeting),
     };
 
-    let paragraph = Paragraph::new(text.clone()).wrap(Wrap { trim: true });
+    let paragraph = Paragraph::new(text.clone()).wrap(Wrap { trim: false });
     let height = paragraph.line_count(width - (2 * padding)) + 1;
 
     (Some(paragraph), height as u16)
@@ -290,7 +290,7 @@ mod test {
       Span::styled("Hello", Style::default().fg(Color::Red)),
       Span::styled(" World", Style::reset()),
     ])]))
-    .wrap(Wrap { trim: true });
+    .wrap(Wrap { trim: false });
 
     assert_eq!(text, Some(expected));
     assert_eq!(height, 2);
@@ -308,7 +308,7 @@ mod test {
       Span::styled("Hello", Style::default().fg(Color::Red)),
       Span::styled(" World", Style::reset()),
     ])]))
-    .wrap(Wrap { trim: true });
+    .wrap(Wrap { trim: false });
 
     assert_eq!(text, Some(expected));
     assert_eq!(height, 3);

@@ -45,6 +45,7 @@ rand = "0.8.5"
 tracing-appender = "0.2.3"
 tracing-subscriber = "0.3.18"
 tracing = "0.1.40"
+utmp-rs = "0.3.0"
 
 [profile.release]
 lto = true
