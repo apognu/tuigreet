@@ -323,8 +323,6 @@ mod test {
     let mut greeter = Greeter::default();
     greeter.xsession_wrapper = Some("startx /usr/bin/env".into());
 
-    println!("{:?}", greeter.xsession_wrapper);
-
     let session = Session {
       slug: Some("thede".to_string()),
       name: "Session1".into(),

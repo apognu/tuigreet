@@ -62,7 +62,6 @@ pub fn output(buffer: &Arc<Mutex<Buffer>>) -> String {
   for cells in buffer.content.chunks(buffer.area.width as usize) {
     let mut overwritten = vec![];
     let mut skip: usize = 0;
-    view.push('"');
     for (x, c) in cells.iter().enumerate() {
       if skip == 0 {
         view.push_str(c.symbol());
@@ -71,7 +70,6 @@ pub fn output(buffer: &Arc<Mutex<Buffer>>) -> String {
       }
       skip = std::cmp::max(skip, c.symbol().width()).saturating_sub(1);
     }
-    view.push('"');
     if !overwritten.is_empty() {
       write!(&mut view, " Hidden by multi-width symbols: {overwritten:?}").unwrap();
     }

@@ -1,4 +1,5 @@
 mod backend;
+mod output;
 
 use std::{
   panic,
@@ -24,9 +25,12 @@ use crate::{
   Greeter,
 };
 
-pub use self::backend::{output, TestBackend};
+pub(super) use self::{
+  backend::{output, TestBackend},
+  output::*,
+};
 
-pub struct IntegrationRunner(Arc<RwLock<_IntegrationRunner>>);
+pub(super) struct IntegrationRunner(Arc<RwLock<_IntegrationRunner>>);
 
 struct _IntegrationRunner {
   server: Option<JoinHandle<()>>,
@@ -45,9 +49,13 @@ impl Clone for IntegrationRunner {
 
 impl IntegrationRunner {
   pub async fn new(opts: SessionOptions, builder: Option<fn(&mut Greeter)>) -> IntegrationRunner {
+    IntegrationRunner::new_with_size(opts, builder, (200, 40)).await
+  }
+
+  pub async fn new_with_size(opts: SessionOptions, builder: Option<fn(&mut Greeter)>, size: (u16, u16)) -> IntegrationRunner {
     let socket = NamedTempFile::new().unwrap().into_temp_path().to_path_buf();
 
-    let (backend, buffer, tick) = TestBackend::new(200, 200);
+    let (backend, buffer, tick) = TestBackend::new(size.0, size.1);
     let events = Events::new().await;
     let sender = events.sender();
 
@@ -159,8 +167,8 @@ impl IntegrationRunner {
     self.0.write().await.tick.recv().await;
   }
 
-  pub async fn output(&self) -> String {
-    output(&self.0.read().await.buffer)
+  pub async fn output(&self) -> Output {
+    Output(output(&self.0.read().await.buffer))
   }
 }
 
