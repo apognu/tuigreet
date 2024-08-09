@@ -7,9 +7,11 @@ use std::{
   process::Command,
 };
 
+use chrono::Local;
 use ini::Ini;
 use lazy_static::lazy_static;
 use nix::sys::utsname;
+use utmp_rs::{UtmpEntry, UtmpParser};
 use uzers::os::unix::UserExt;
 
 use crate::{
@@ -49,6 +51,20 @@ pub fn get_hostname() -> String {
 }
 
 pub fn get_issue() -> Option<String> {
+  let (date, time) = {
+    let now = Local::now();
+
+    (now.format("%a %b %_d %Y").to_string(), now.format("%H:%M:%S").to_string())
+  };
+
+  let count = match UtmpParser::from_path("/var/run/utmp")
+    .map(|utmp| utmp.into_iter().filter(|user| matches!(user, Ok(UtmpEntry::UserProcess { .. }))).count())
+    .unwrap_or(0)
+  {
+    n if n < 2 => format!("{n} user"),
+    n => format!("{n} users"),
+  };
+
   let vtnr: usize = env::var("XDG_VTNR").unwrap_or_else(|_| "0".to_string()).parse().expect("unable to parse VTNR");
   let uts = utsname::uname();
 
@@ -63,10 +79,13 @@ pub fn get_issue() -> Option<String> {
           .replace("\\v", uts.version().to_str().unwrap_or(""))
           .replace("\\n", uts.nodename().to_str().unwrap_or(""))
           .replace("\\m", uts.machine().to_str().unwrap_or(""))
+          .replace("\\d", &date)
+          .replace("\\t", &time)
+          .replace("\\U", &count)
           .replace("\\x1b", "\x1b")
           .replace("\\033", "\x1b")
           .replace("\\e", "\x1b")
-          .replace("\\\\", "\\"),
+          .replace(r"\\", r"\"),
       ),
 
       _ => Some(issue),
