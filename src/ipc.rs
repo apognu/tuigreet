@@ -8,7 +8,7 @@ use tokio::sync::{
 
 use crate::{
   event::Event,
-  info::{delete_last_user_session, delete_last_user_session_path, write_last_user_session, write_last_user_session_path, write_last_username},
+  info::{delete_last_user_command, delete_last_user_session, write_last_user_command, write_last_user_session, write_last_username},
   macros::SafeDebug,
   ui::sessions::{Session, SessionSource, SessionType},
   AuthStatus, Greeter, Mode,
@@ -69,7 +69,11 @@ impl Ipc {
   }
 
   async fn parse_response(&mut self, greeter: &mut Greeter, response: Response) -> Result<(), Box<dyn Error>> {
-    tracing::info!("received greetd message: {:?}", response);
+    // Do not display actual message from greetd, which may contain entered information, sometimes passwords.
+    match response {
+      Response::Error { ref error_type, .. } => tracing::info!("received greetd error message: {error_type:?}"),
+      ref response => tracing::info!("received greetd message: {:?}", response),
+    }
 
     match response {
       Response::AuthMessage { auth_message_type, auth_message } => match auth_message_type {
@@ -124,16 +128,16 @@ impl Ipc {
                 SessionSource::Command(ref command) => {
                   tracing::info!("caching last user command: {command}");
 
-                  write_last_user_session(&greeter.username.value, command);
-                  delete_last_user_session_path(&greeter.username.value);
+                  write_last_user_command(&greeter.username.value, command);
+                  delete_last_user_session(&greeter.username.value);
                 }
 
                 SessionSource::Session(index) => {
                   if let Some(Session { path: Some(session_path), .. }) = greeter.sessions.options.get(index) {
                     tracing::info!("caching last user session: {session_path:?}");
 
-                    write_last_user_session_path(&greeter.username.value, session_path);
-                    delete_last_user_session(&greeter.username.value);
+                    write_last_user_session(&greeter.username.value, session_path);
+                    delete_last_user_command(&greeter.username.value);
                   }
                 }
 
@@ -148,36 +152,51 @@ impl Ipc {
         } else {
           tracing::info!("authentication successful, starting session");
 
-          let command = greeter.session_source.command(greeter).map(str::to_string);
+          match greeter.session_source.command(greeter).map(str::to_string) {
+            None => {
+              Ipc::cancel(greeter).await;
 
-          if let Some(command) = command {
-            greeter.done = true;
-            greeter.mode = Mode::Processing;
+              greeter.message = Some(fl!("command_missing"));
+              greeter.reset(false).await;
+            }
 
-            let session = Session::get_selected(greeter);
-            let (command, env) = wrap_session_command(greeter, session, &command);
+            Some(command) if command.is_empty() => {
+              Ipc::cancel(greeter).await;
 
-            #[cfg(not(debug_assertions))]
-            self.send(Request::StartSession { cmd: vec![command.to_string()], env }).await;
+              greeter.message = Some(fl!("command_missing"));
+              greeter.reset(false).await;
+            }
 
-            #[cfg(debug_assertions)]
-            {
-              let _ = command;
-              let _ = env;
+            Some(command) => {
+              greeter.done = true;
+              greeter.mode = Mode::Processing;
 
-              self
-                .send(Request::StartSession {
-                  cmd: vec!["true".to_string()],
-                  env: vec![],
-                })
-                .await;
+              let session = Session::get_selected(greeter);
+              let (command, env) = wrap_session_command(greeter, session, &command);
+
+              #[cfg(not(debug_assertions))]
+              self.send(Request::StartSession { cmd: vec![command.to_string()], env }).await;
+
+              #[cfg(debug_assertions)]
+              {
+                let _ = command;
+                let _ = env;
+
+                self
+                  .send(Request::StartSession {
+                    cmd: vec!["true".to_string()],
+                    env: vec![],
+                  })
+                  .await;
+              }
             }
           }
         }
       }
 
-      Response::Error { error_type, description } => {
-        tracing::info!("received an error from greetd: {error_type:?} - {description}");
+      Response::Error { error_type, .. } => {
+        // Do not display actual message from greetd, which may contain entered information, sometimes passwords.
+        tracing::info!("received an error from greetd: {error_type:?}");
 
         Ipc::cancel(greeter).await;
 
@@ -193,7 +212,8 @@ impl Ipc {
           }
 
           ErrorType::Error => {
-            greeter.message = Some(description);
+            // Do not display actual message from greetd, which may contain entered information, sometimes passwords.
+            greeter.message = Some("An error was received from greetd".to_string());
             greeter.reset(false).await;
           }
         }

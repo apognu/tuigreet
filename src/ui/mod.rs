@@ -9,6 +9,7 @@ pub mod users;
 mod util;
 
 use std::{
+  borrow::Cow,
   error::Error,
   io::{self, Write},
   sync::Arc,
@@ -17,7 +18,6 @@ use std::{
 use chrono::prelude::*;
 use tokio::sync::RwLock;
 use tui::{
-  backend::CrosstermBackend,
   layout::{Alignment, Constraint, Direction, Layout},
   style::Modifier,
   text::{Line, Span},
@@ -39,11 +39,12 @@ const STATUSBAR_INDEX: usize = 3;
 const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
 
-pub(super) type Backend = CrosstermBackend<io::Stdout>;
-pub(super) type Term = Terminal<Backend>;
 pub(super) type Frame<'a> = CrosstermFrame<'a>;
 
-pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<(), Box<dyn Error>> {
+pub async fn draw<B>(greeter: Arc<RwLock<Greeter>>, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>>
+where
+  B: tui::backend::Backend,
+{
   let mut greeter = greeter.write().await;
   let hide_cursor = should_hide_cursor(&greeter);
 
@@ -64,7 +65,7 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
       )
       .split(size);
 
-    if greeter.config().opt_present("time") {
+    if greeter.time {
       let time_text = Span::from(get_time(&greeter));
       let time = Paragraph::new(time_text).alignment(Alignment::Center).style(theme.of(&[Themed::Time]));
 
@@ -133,9 +134,9 @@ pub async fn draw(greeter: Arc<RwLock<Greeter>>, terminal: &mut Term) -> Result<
 }
 
 fn get_time(greeter: &Greeter) -> String {
-  let format = match greeter.config().opt_str("time-format") {
-    Some(format) => format,
-    None => fl!("date"),
+  let format = match &greeter.time_format {
+    Some(format) => Cow::Borrowed(format),
+    None => Cow::Owned(fl!("date")),
   };
 
   Local::now().format_localized(&format, greeter.locale).to_string()
