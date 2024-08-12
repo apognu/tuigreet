@@ -57,39 +57,44 @@ pub fn get_issue() -> Option<String> {
     (now.format("%a %b %_d %Y").to_string(), now.format("%H:%M:%S").to_string())
   };
 
-  let count = match UtmpParser::from_path("/var/run/utmp")
-    .map(|utmp| utmp.into_iter().filter(|user| matches!(user, Ok(UtmpEntry::UserProcess { .. }))).count())
+  let user_count = match UtmpParser::from_path("/var/run/utmp")
+    .map(|utmp| {
+      utmp.into_iter().fold(0, |acc, entry| match entry {
+        Ok(UtmpEntry::UserProcess { .. }) => acc + 1,
+        Ok(UtmpEntry::LoginProcess { .. }) => acc + 1,
+        _ => acc,
+      })
+    })
     .unwrap_or(0)
   {
     n if n < 2 => format!("{n} user"),
     n => format!("{n} users"),
   };
 
-  let vtnr: usize = env::var("XDG_VTNR").unwrap_or_else(|_| "0".to_string()).parse().expect("unable to parse VTNR");
+  let vtnr: usize = env::var("XDG_VTNR").unwrap_or_else(|_| "0".to_string()).parse().unwrap_or(0);
   let uts = utsname::uname();
 
   if let Ok(issue) = fs::read_to_string("/etc/issue") {
-    let issue = issue.replace("\\S", "Linux").replace("\\l", &format!("tty{vtnr}"));
+    let issue = issue
+      .replace("\\S", "Linux")
+      .replace("\\l", &format!("tty{vtnr}"))
+      .replace("\\d", &date)
+      .replace("\\t", &time)
+      .replace("\\U", &user_count);
 
-    return match uts {
-      Ok(uts) => Some(
-        issue
-          .replace("\\s", uts.sysname().to_str().unwrap_or(""))
-          .replace("\\r", uts.release().to_str().unwrap_or(""))
-          .replace("\\v", uts.version().to_str().unwrap_or(""))
-          .replace("\\n", uts.nodename().to_str().unwrap_or(""))
-          .replace("\\m", uts.machine().to_str().unwrap_or(""))
-          .replace("\\d", &date)
-          .replace("\\t", &time)
-          .replace("\\U", &count)
-          .replace("\\x1b", "\x1b")
-          .replace("\\033", "\x1b")
-          .replace("\\e", "\x1b")
-          .replace(r"\\", r"\"),
-      ),
+    let issue = match uts {
+      Ok(uts) => issue
+        .replace("\\s", uts.sysname().to_str().unwrap_or(""))
+        .replace("\\r", uts.release().to_str().unwrap_or(""))
+        .replace("\\v", uts.version().to_str().unwrap_or(""))
+        .replace("\\n", uts.nodename().to_str().unwrap_or(""))
+        .replace("\\m", uts.machine().to_str().unwrap_or(""))
+        .replace("\\o", uts.domainname().to_str().unwrap_or("")),
 
-      _ => Some(issue),
+      _ => issue,
     };
+
+    return Some(issue.replace("\\x1b", "\x1b").replace("\\033", "\x1b").replace("\\e", "\x1b").replace(r"\\", r"\"));
   }
 
   None
