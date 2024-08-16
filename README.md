@@ -229,6 +229,8 @@ Optionally, a user can be selected from a menu instead of typing out their name,
 
 A theme specification can be given through the `--theme` argument to control some of the colors used to draw the UI. This specification string must have the following format: `component1=color;component2=color[;...]` where the component is one of the value listed in the table below, and the color is a valid ANSI color name as listed [here](https://github.com/ratatui-org/ratatui/blob/main/src/style/color.rs#L15).
 
+Mind that the specification string include semicolons, which are command delimiters in most shells, hence, you should enclose it in single-quotes so it is considered a single argument instead.
+
 Please note that we can only render colors as supported by the running terminal. In the case of the Linux virtual console, those colors might not look as good as one may think. Your mileage may vary.
 
 | Component name | Description                                                                        |
