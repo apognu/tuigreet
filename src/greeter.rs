@@ -567,6 +567,16 @@ impl Greeter {
 
     // If the `--cmd` argument is provided, it will override the selected session.
     if let Some(command) = self.option("cmd") {
+      let envs = self.options_multi("env");
+
+      if let Some(envs) = envs {
+        for env in envs {
+          if !env.contains('=') {
+            return Err(format!("malformed environment variable definition for '{env}'").into());
+          }
+        }
+      }
+
       self.session_source = SessionSource::DefaultCommand(command, self.options_multi("env"));
     }
 
@@ -689,6 +699,10 @@ mod test {
         &[
           "--cmd",
           "uname",
+          "--env",
+          "A=B",
+          "--env",
+          "C=D=E",
           "--asterisks",
           "--asterisks-char",
           ".",
@@ -704,7 +718,13 @@ mod test {
         ],
         true,
         Some(|greeter| {
-          assert!(matches!(&greeter.session_source, SessionSource::Command(cmd) if cmd == "uname"));
+          assert!(matches!(&greeter.session_source, SessionSource::DefaultCommand(cmd, Some(env)) if cmd == "uname" && env.len() == 2));
+
+          if let SessionSource::DefaultCommand(_, Some(env)) = &greeter.session_source {
+            assert_eq!(env[0], "A=B");
+            assert_eq!(env[1], "C=D=E");
+          }
+
           assert!(matches!(&greeter.secret_display, SecretDisplay::Character(c) if c == "."));
           assert_eq!(greeter.prompt_padding(), 0);
           assert_eq!(greeter.window_padding(), 1);
@@ -735,6 +755,8 @@ mod test {
       (&["--issue", "--greeting", "Hello, world!"], false, None),
       (&["--kb-command", "F2", "--kb-sessions", "F2"], false, None),
       (&["--time-format", "%i %"], false, None),
+      (&["--cmd", "cmd", "--env"], false, None),
+      (&["--cmd", "cmd", "--env", "A"], false, None),
     ];
 
     for (opts, valid, check) in table {
