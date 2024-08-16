@@ -17,6 +17,7 @@ use super::common::menu::MenuItem;
 pub enum SessionSource {
   #[default]
   None,
+  DefaultCommand(String, Option<Vec<String>>),
   Command(String),
   Session(usize),
 }
@@ -29,6 +30,7 @@ impl SessionSource {
   pub fn label<'g, 'ss: 'g>(&'ss self, greeter: &'g Greeter) -> Option<&'g str> {
     match self {
       SessionSource::None => None,
+      SessionSource::DefaultCommand(command, _) => Some(command),
       SessionSource::Command(command) => Some(command),
       SessionSource::Session(index) => greeter.sessions.options.get(*index).map(|session| session.name.as_str()),
     }
@@ -39,8 +41,18 @@ impl SessionSource {
   pub fn command<'g, 'ss: 'g>(&'ss self, greeter: &'g Greeter) -> Option<&'g str> {
     match self {
       SessionSource::None => None,
+      SessionSource::DefaultCommand(command, _) => Some(command.as_str()),
       SessionSource::Command(command) => Some(command.as_str()),
       SessionSource::Session(index) => greeter.sessions.options.get(*index).map(|session| session.command.as_str()),
+    }
+  }
+
+  pub fn env<'g, 'ss: 'g>(&'ss self) -> Option<Vec<String>> {
+    match self {
+      SessionSource::None => None,
+      SessionSource::DefaultCommand(_, env) => env.clone(),
+      SessionSource::Command(_) => None,
+      SessionSource::Session(_) => None,
     }
   }
 }
