@@ -1,10 +1,9 @@
-use std::{error::Error, path::PathBuf};
+use std::path::PathBuf;
 
 use serde::Deserialize;
 
-use crate::Greeter;
-
 #[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FileConfig {
   #[serde(default)]
   pub defaults: Defaults,
@@ -17,6 +16,7 @@ pub struct FileConfig {
 }
 
 #[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Defaults {
   pub debug: Option<String>,
   pub command: Option<String>,
@@ -30,6 +30,7 @@ pub struct Defaults {
 }
 
 #[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Sessions {
   pub wayland_paths: Option<Vec<PathBuf>>,
   pub wayland_wrapper: Option<String>,
@@ -40,6 +41,7 @@ pub struct Sessions {
 }
 
 #[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Remember {
   #[serde(default)]
   pub last_user: bool,
@@ -50,6 +52,7 @@ pub struct Remember {
 }
 
 #[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Ui {
   pub greeting: Option<String>,
   #[serde(default)]
@@ -69,10 +72,4 @@ pub struct Ui {
   pub command_f_key: Option<u8>,
   pub sessions_f_key: Option<u8>,
   pub power_f_key: Option<u8>,
-}
-
-impl Greeter {
-  pub fn parse_config_file(&mut self, file: &str) -> Result<FileConfig, Box<dyn Error>> {
-    Ok(toml::from_str::<FileConfig>(file)?)
-  }
 }

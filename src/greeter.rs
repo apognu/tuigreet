@@ -212,31 +212,41 @@ impl Greeter {
 
       let args = env::args().collect::<Vec<String>>();
 
-      if let Err(err) = greeter.parse_options(&args).await {
+      match greeter.parse_opts(&args) {
+        Ok(opts) => greeter.opts = opts,
+        Err(err) => {
+          eprintln!("{err}");
+          print_usage(Greeter::options());
+
+          process::exit(1);
+        }
+      }
+
+      greeter.config = if let Some(config_file) = greeter.config().opt_str("config") {
+        match fs::read_to_string(config_file) {
+          Ok(config) => match toml::from_str::<FileConfig>(&config) {
+            Ok(config) => config,
+            Err(err) => {
+              eprintln!("ERROR: could not parse configuration file: {err}");
+              process::exit(1);
+            }
+          },
+
+          Err(err) => {
+            eprintln!("ERROR: could not open configuration file: {err}");
+            process::exit(1);
+          }
+        }
+      } else {
+        FileConfig::default()
+      };
+
+      if let Err(err) = greeter.parse_config().await {
         eprintln!("{err}");
         print_usage(Greeter::options());
 
         process::exit(1);
       }
-
-      greeter.config = if let Some(config_file) = greeter.config().opt_str("config") {
-        if let Ok(config) = fs::read_to_string(config_file) {
-          match greeter.parse_config_file(&config) {
-            Ok(config) => config,
-            Err(err) => {
-              eprintln!("{err}");
-              print_usage(Greeter::options());
-
-              process::exit(1);
-            }
-          }
-        } else {
-          // TODO: add error here.
-          FileConfig::default()
-        }
-      } else {
-        FileConfig::default()
-      };
 
       greeter.connect().await;
     }
@@ -482,25 +492,28 @@ impl Greeter {
     opts
   }
 
-  // Parses command line arguments to configured the software accordingly.
-  pub async fn parse_options<S>(&mut self, args: &[S]) -> Result<(), Box<dyn Error>>
+  pub fn parse_opts<S>(&mut self, args: &[S]) -> Result<Option<Matches>, Box<dyn Error>>
   where
     S: AsRef<OsStr>,
   {
-    let opts = Greeter::options();
+    Ok(Some(Greeter::options().parse(args)?))
+  }
 
-    self.opts = match opts.parse(args) {
-      Ok(matches) => Some(matches),
-      Err(err) => return Err(err.into()),
-    };
-
+  // Parses command line arguments to configured the software accordingly.
+  pub async fn parse_config(&mut self) -> Result<(), Box<dyn Error>> {
     if self.config().opt_present("help") {
-      print_usage(opts);
+      print_usage(Greeter::options());
       process::exit(0);
     }
     if self.config().opt_present("version") {
       print_version();
       process::exit(0);
+    }
+
+    if self.config().opt_present("theme") {
+      if let Some(spec) = self.config().opt_str("theme") {
+        self.theme = Theme::parse(spec.as_str());
+      }
     }
 
     self.parse_debug();
@@ -513,12 +526,6 @@ impl Greeter {
     self.parse_remembers()?;
     self.parse_power();
     self.parse_keybinds()?;
-
-    if self.config().opt_present("theme") {
-      if let Some(spec) = self.config().opt_str("theme") {
-        self.theme = Theme::parse(spec.as_str());
-      }
-    }
 
     Ok(())
   }

@@ -106,7 +106,7 @@ impl Greeter {
       self.session_wrapper = self.option("session-wrapper").or_else(|| self.config.sessions.wayland_wrapper.clone());
     }
 
-    if !self.config().opt_present("no-xsession-wrapper") && self.config.sessions.x11_wrapper_disabled {
+    if !self.config().opt_present("no-xsession-wrapper") && !self.config.sessions.x11_wrapper_disabled {
       self.xsession_wrapper = self
         .option("xsession-wrapper")
         .or_else(|| self.config.sessions.x11_wrapper.clone())
@@ -277,19 +277,30 @@ mod tests {
       (&["--cmd", "cmd", "--env", "A"], false, None),
     ];
 
-    for (opts, valid, check) in table {
+    for (args, valid, check) in table {
       let mut greeter = Greeter::default();
+      let opts = greeter.parse_opts(*args);
+
+      let result = match opts {
+        Ok(opts) => {
+          greeter.opts = opts;
+          greeter.parse_config().await.ok()
+        }
+
+        Err(_) => None,
+      };
 
       match valid {
         true => {
-          assert!(matches!(greeter.parse_options(*opts).await, Ok(())), "{:?} cannot be parsed", opts);
+          assert!(result.is_some(), "{:?} cannot be parsed", args);
+          assert!(matches!(greeter.parse_config().await, Ok(())), "{:?} cannot be parsed", greeter.opts);
 
           if let Some(check) = check {
             check(&greeter);
           }
         }
 
-        false => assert!(matches!(greeter.parse_options(*opts).await, Err(_))),
+        false => assert!(result.is_none(), "{:?} should not have been parsed", args),
       }
     }
   }
@@ -321,11 +332,12 @@ mod tests {
 
     for (opts, file, check) in table {
       let mut greeter = Greeter::default();
+      greeter.opts = greeter.parse_opts(*opts).unwrap();
       greeter.config = FileConfig::default();
 
       file(&mut greeter.config);
 
-      assert!(matches!(greeter.parse_options(*opts).await, Ok(())), "{:?} cannot be parsed", opts);
+      assert!(matches!(greeter.parse_config().await, Ok(())), "{:?} cannot be parsed", opts);
 
       check(&greeter);
     }
