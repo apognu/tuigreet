@@ -75,8 +75,8 @@ impl IntegrationRunner {
         builder(&mut greeter);
       }
 
-      if greeter.config.is_none() {
-        greeter.config = Greeter::options().parse(&[""]).ok();
+      if greeter.opts.is_none() {
+        greeter.opts = Greeter::options().parse(&[""]).ok();
       }
 
       greeter.logfile = "/tmp/tuigreet.log".to_string();
