@@ -373,10 +373,8 @@ impl Greeter {
   // Returns the width of the main window where content is displayed from the
   // provided arguments.
   pub fn width(&self) -> u16 {
-    if let Some(value) = self.option("width") {
-      if let Ok(width) = value.parse::<u16>() {
-        return width;
-      }
+    if let Some(width) = self.option("width").and_then(|value| value.parse::<u16>().ok()).or(self.config.ui.width) {
+      return width;
     }
 
     80
@@ -384,10 +382,8 @@ impl Greeter {
 
   // Returns the padding of the screen from the provided arguments.
   pub fn window_padding(&self) -> u16 {
-    if let Some(value) = self.option("window-padding") {
-      if let Ok(padding) = value.parse::<u16>() {
-        return padding;
-      }
+    if let Some(padding) = self.option("window-padding").and_then(|value| value.parse::<u16>().ok()).or(self.config.ui.window_padding) {
+      return padding;
     }
 
     0
@@ -396,10 +392,8 @@ impl Greeter {
   // Returns the padding of the main window where content is displayed from the
   // provided arguments.
   pub fn container_padding(&self) -> u16 {
-    if let Some(value) = self.option("container-padding") {
-      if let Ok(padding) = value.parse::<u16>() {
-        return padding + 1;
-      }
+    if let Some(padding) = self.option("container-padding").and_then(|value| value.parse::<u16>().ok()).or(self.config.ui.container_padding) {
+      return padding + 1;
     }
 
     2
@@ -407,17 +401,15 @@ impl Greeter {
 
   // Returns the spacing between each prompt from the provided arguments.
   pub fn prompt_padding(&self) -> u16 {
-    if let Some(value) = self.option("prompt-padding") {
-      if let Ok(padding) = value.parse::<u16>() {
-        return padding;
-      }
+    if let Some(padding) = self.option("prompt-padding").and_then(|value| value.parse::<u16>().ok()).or(self.config.ui.prompt_padding) {
+      return padding;
     }
 
     1
   }
 
   pub fn greet_align(&self) -> GreetAlign {
-    if let Some(value) = self.option("greet-align") {
+    if let Some(value) = self.option("greet-align").or_else(|| self.config.ui.greet_align.clone()) {
       match value.as_str() {
         "left" => GreetAlign::Left,
         "right" => GreetAlign::Right,
@@ -526,6 +518,7 @@ impl Greeter {
     self.parse_remembers()?;
     self.parse_power();
     self.parse_keybinds()?;
+    self.parse_theme()?;
 
     Ok(())
   }

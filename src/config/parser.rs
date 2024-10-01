@@ -6,7 +6,7 @@ use crate::{
   info::{get_issue, get_min_max_uids, get_users},
   power::PowerOption,
   ui::{
-    common::menu::Menu,
+    common::{menu::Menu, style::Theme},
     power::Power,
     sessions::{SessionSource, SessionType},
   },
@@ -31,6 +31,14 @@ impl Greeter {
         None => DEFAULT_LOG_FILE.to_string(),
       };
     }
+  }
+
+  pub fn parse_theme(&mut self) -> Result<(), Box<dyn Error>> {
+    if let Some(spec) = self.config().opt_str("theme").or_else(|| self.config.ui.theme.clone()) {
+      self.theme = Theme::parse(spec.as_str());
+    }
+
+    Ok(())
   }
 
   pub fn parse_greeting(&mut self) -> Result<(), Box<dyn Error>> {

@@ -54,6 +54,7 @@ pub struct Remember {
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ui {
+  pub theme: Option<String>,
   pub greeting: Option<String>,
   #[serde(default)]
   pub use_issue: bool,
@@ -65,10 +66,11 @@ pub struct Ui {
   #[serde(default)]
   pub show_asterisks: bool,
   pub asterisks_char: Option<char>,
-  pub width: Option<u64>,
-  pub window_padding: Option<u64>,
-  pub container_padding: Option<u64>,
-  pub prompt_padding: Option<u64>,
+  pub width: Option<u16>,
+  pub window_padding: Option<u16>,
+  pub container_padding: Option<u16>,
+  pub prompt_padding: Option<u16>,
+  pub greet_align: Option<String>,
   pub command_f_key: Option<u8>,
   pub sessions_f_key: Option<u8>,
   pub power_f_key: Option<u8>,
