@@ -9,6 +9,64 @@ use crate::{
 use super::common::IntegrationRunner;
 
 #[tokio::test]
+async fn menus_labels_default() {
+  let opts = SessionOptions {
+    username: "apognu".to_string(),
+    password: "password".to_string(),
+    mfa: false,
+  };
+
+  let mut runner = IntegrationRunner::new(opts, None).await;
+
+  let events = tokio::task::spawn({
+    let mut runner = runner.clone();
+
+    async move {
+      runner.wait_until_buffer_contains("Username:").await;
+
+      assert!(runner.output().await.contains("F2 Change command"));
+      assert!(runner.output().await.contains("F3 Choose session"));
+      assert!(runner.output().await.contains("F12 Power"));
+    }
+  });
+
+  runner.join_until_end(events).await;
+}
+
+#[tokio::test]
+async fn menus_labels_with_custom_bindings() {
+  let opts = SessionOptions {
+    username: "apognu".to_string(),
+    password: "password".to_string(),
+    mfa: false,
+  };
+
+  let mut runner = IntegrationRunner::new(
+    opts,
+    Some(|greeter| {
+      greeter.kb_command = 11;
+      greeter.kb_sessions = 1;
+      greeter.kb_power = 6;
+    }),
+  )
+  .await;
+
+  let events = tokio::task::spawn({
+    let mut runner = runner.clone();
+
+    async move {
+      runner.wait_until_buffer_contains("Username:").await;
+
+      assert!(runner.output().await.contains("F11 Change command"));
+      assert!(runner.output().await.contains("F1 Choose session"));
+      assert!(runner.output().await.contains("F6 Power"));
+    }
+  });
+
+  runner.join_until_end(events).await;
+}
+
+#[tokio::test]
 async fn change_command() {
   let opts = SessionOptions {
     username: "apognu".to_string(),
