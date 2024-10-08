@@ -202,14 +202,6 @@ impl Greeter {
 
     #[cfg(not(test))]
     {
-      match env::var("GREETD_SOCK") {
-        Ok(socket) => greeter.socket = socket,
-        Err(_) => {
-          eprintln!("GREETD_SOCK must be defined");
-          process::exit(1);
-        }
-      }
-
       let args = env::args().collect::<Vec<String>>();
 
       match greeter.parse_opts(&args) {
@@ -218,6 +210,23 @@ impl Greeter {
           eprintln!("{err}");
           print_usage(Greeter::options());
 
+          process::exit(1);
+        }
+      }
+
+      if greeter.config().opt_present("help") {
+        print_usage(Greeter::options());
+        process::exit(0);
+      }
+      if greeter.config().opt_present("version") {
+        print_version();
+        process::exit(0);
+      }
+
+      match env::var("GREETD_SOCK") {
+        Ok(socket) => greeter.socket = socket,
+        Err(_) => {
+          eprintln!("GREETD_SOCK must be defined");
           process::exit(1);
         }
       }
@@ -493,15 +502,6 @@ impl Greeter {
 
   // Parses command line arguments to configured the software accordingly.
   pub async fn parse_config(&mut self) -> Result<(), Box<dyn Error>> {
-    if self.config().opt_present("help") {
-      print_usage(Greeter::options());
-      process::exit(0);
-    }
-    if self.config().opt_present("version") {
-      print_version();
-      process::exit(0);
-    }
-
     if self.config().opt_present("theme") {
       if let Some(spec) = self.config().opt_str("theme") {
         self.theme = Theme::parse(spec.as_str());
