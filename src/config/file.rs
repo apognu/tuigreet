@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct FileConfig {
   #[serde(default)]
@@ -15,10 +15,12 @@ pub struct FileConfig {
   pub ui: Ui,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Defaults {
-  pub debug: Option<String>,
+  #[serde(default)]
+  pub debug: bool,
+  pub log_file: Option<String>,
   pub command: Option<String>,
   pub env: Option<Vec<String>>,
   pub user_min_uid: Option<u16>,
@@ -29,7 +31,7 @@ pub struct Defaults {
   pub reboot_command: Option<String>,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Sessions {
   pub wayland_paths: Option<Vec<PathBuf>>,
@@ -40,7 +42,7 @@ pub struct Sessions {
   pub x11_wrapper_disabled: bool,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Remember {
   #[serde(default)]
@@ -51,7 +53,7 @@ pub struct Remember {
   pub last_user_session: bool,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ui {
   pub theme: Option<String>,

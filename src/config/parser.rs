@@ -21,12 +21,10 @@ pub const DEFAULT_XSESSION_WRAPPER: &str = "startx /usr/bin/env";
 
 impl Greeter {
   pub fn parse_debug(&mut self) {
-    let debug = self.config.defaults.debug.clone();
-
-    if self.config().opt_present("debug") || debug.is_some() {
+    if self.config().opt_present("debug") || self.config.defaults.debug {
       self.debug = true;
 
-      self.logfile = match self.config().opt_str("debug").or(debug) {
+      self.logfile = match self.config().opt_str("debug").or_else(|| self.config.defaults.log_file.clone()) {
         Some(file) => file.to_string(),
         None => DEFAULT_LOG_FILE.to_string(),
       };
@@ -212,7 +210,7 @@ impl Greeter {
 
 #[cfg(test)]
 mod tests {
-  use crate::{config::file::FileConfig, ui::sessions::SessionSource, Greeter, SecretDisplay};
+  use crate::{ui::sessions::SessionSource, Greeter, SecretDisplay};
 
   #[tokio::test]
   async fn test_command_line_arguments() {
@@ -315,39 +313,73 @@ mod tests {
 
   #[tokio::test]
   async fn command_and_env() {
-    let table: &[(&[&str], fn(&mut FileConfig), fn(&Greeter))] = &[
+    use crate::config::file::*;
+
+    let file = FileConfig {
+      defaults: Defaults {
+        debug: true,
+        log_file: Some("/tmp/filedebug.log".to_string()),
+        command: Some("filecmd".to_string()),
+        env: Some(vec!["FILEENV=value".to_string()]),
+        power_no_setsid: true,
+        ..Defaults::default()
+      },
+      sessions: Sessions { ..Default::default() },
+      remember: Remember { ..Default::default() },
+      ui: Ui { ..Default::default() },
+    };
+
+    let table: &[(&[&str], fn(&Greeter), fn(&Greeter))] = &[
+      (
+        &["--debug=/tmp/cmdfile.log"],
+        |greeter| {
+          assert_eq!(greeter.debug, true);
+          assert_eq!(&greeter.logfile, "/tmp/filedebug.log");
+        },
+        |greeter| {
+          assert_eq!(greeter.debug, true);
+          assert_eq!(&greeter.logfile, "/tmp/cmdfile.log");
+        },
+      ),
       (
         &["--cmd", "mycommand", "--env", "A=b", "--env", "C=d"],
-        |file: &mut FileConfig| {
-          file.defaults.command = Some("secondcommand".to_string());
-          file.defaults.env = Some(vec!["X=y".to_string()]);
+        |greeter| {
+          assert!(matches!(&greeter.session_source, SessionSource::DefaultCommand(cmd, Some(env)) if cmd == "filecmd" && env.len() == 1 && env.first().unwrap() == "FILEENV=value"));
         },
         |greeter| {
           assert!(matches!(&greeter.session_source, SessionSource::DefaultCommand(cmd, Some(env)) if cmd == "mycommand" && env.len() == 2));
         },
       ),
       (
-        &[],
-        |file: &mut FileConfig| {
-          file.defaults.command = Some("secondcommand".to_string());
-          file.defaults.env = Some(vec!["X=y".to_string()]);
+        &["--power-no-setsid"],
+        |greeter| {
+          assert_eq!(greeter.power_setsid, false);
         },
         |greeter| {
-          assert!(matches!(&greeter.session_source, SessionSource::DefaultCommand(cmd, Some(env)) if cmd == "secondcommand" && env.len() == 1 && env.first().unwrap() == "X=y"));
+          assert_eq!(greeter.power_setsid, false);
         },
       ),
     ];
 
-    for (opts, file, check) in table {
+    for (opts, without_opts, with_opts) in table {
       let mut greeter = Greeter::default();
-      greeter.opts = greeter.parse_opts(*opts).unwrap();
-      greeter.config = FileConfig::default();
+      greeter.config = file.clone();
 
-      file(&mut greeter.config);
+      {
+        greeter.opts = greeter.parse_opts::<&str>(&[]).unwrap();
 
-      assert!(matches!(greeter.parse_config().await, Ok(())), "{:?} cannot be parsed", opts);
+        assert!(matches!(greeter.parse_config().await, Ok(())), "{:?} cannot be parsed", opts);
 
-      check(&greeter);
+        without_opts(&greeter);
+      }
+
+      {
+        greeter.opts = greeter.parse_opts(*opts).unwrap();
+
+        assert!(matches!(greeter.parse_config().await, Ok(())), "{:?} cannot be parsed", opts);
+
+        with_opts(&greeter);
+      }
     }
   }
 }
