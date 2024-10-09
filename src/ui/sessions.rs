@@ -13,7 +13,7 @@ use super::common::menu::MenuItem;
 // file. Each variant contains a reference to the data required to create a
 // session, either the String of the command or the index of the session in the
 // session list.
-#[derive(SmartDefault)]
+#[derive(Debug, SmartDefault)]
 pub enum SessionSource {
   #[default]
   None,
