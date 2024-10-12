@@ -150,7 +150,7 @@ async fn session_menu() {
       runner.send_key(KeyCode::Enter).await;
       runner.wait_for_render().await;
 
-      assert!(runner.output().await.contains("CMD Second Session"));
+      assert!(runner.output().await.contains("SESS Second Session"));
 
       runner.send_key(KeyCode::F(3)).await;
       runner.wait_for_render().await;
@@ -159,7 +159,7 @@ async fn session_menu() {
       runner.send_key(KeyCode::Enter).await;
       runner.wait_for_render().await;
 
-      assert!(runner.output().await.contains("CMD My Session"));
+      assert!(runner.output().await.contains("SESS My Session"));
     }
   });
 
