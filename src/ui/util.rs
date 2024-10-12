@@ -11,6 +11,10 @@ pub fn titleize(message: &str) -> String {
   format!(" {message} ")
 }
 
+pub fn buttonize(message: &str) -> String {
+  format!(" {message}")
+}
+
 // Determinew whether the cursor should be shown or hidden from the current
 // mode and configuration. Usually, we will show the cursor only when expecting
 // text entries from the user.

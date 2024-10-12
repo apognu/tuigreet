@@ -20,11 +20,12 @@ use sessions::SessionSource;
 use tokio::sync::RwLock;
 use tui::{
   layout::{Alignment, Constraint, Direction, Layout},
-  style::Modifier,
+  style::{Modifier, Style},
   text::{Line, Span},
   widgets::Paragraph,
   Frame as CrosstermFrame, Terminal,
 };
+use util::buttonize;
 
 use crate::{
   info::capslock_status,
@@ -41,6 +42,13 @@ const STATUSBAR_LEFT_INDEX: usize = 1;
 const STATUSBAR_RIGHT_INDEX: usize = 2;
 
 pub(super) type Frame<'a> = CrosstermFrame<'a>;
+
+enum Button {
+  Command,
+  Session,
+  Power,
+  Other,
+}
 
 pub async fn draw<B>(greeter: Arc<RwLock<Greeter>>, terminal: &mut Terminal<B>) -> Result<(), Box<dyn Error>>
 where
@@ -98,15 +106,19 @@ where
 
     let status_left_text = Line::from(vec![
       status_label(theme, "ESC"),
-      status_value(theme, fl!("action_reset")),
+      status_value(&greeter, theme, Button::Other, fl!("action_reset")),
+      Span::from(" "),
       status_label(theme, format!("F{}", greeter.kb_command)),
-      status_value(theme, fl!("action_command")),
+      status_value(&greeter, theme, Button::Command, fl!("action_command")),
+      Span::from(" "),
       status_label(theme, format!("F{}", greeter.kb_sessions)),
-      status_value(theme, fl!("action_session")),
+      status_value(&greeter, theme, Button::Session, fl!("action_session")),
+      Span::from(" "),
       status_label(theme, format!("F{}", greeter.kb_power)),
-      status_value(theme, fl!("action_power")),
+      status_value(&greeter, theme, Button::Power, fl!("action_power")),
+      Span::from(" "),
       status_label(theme, session_source_label),
-      status_value(theme, session_source),
+      status_value(&greeter, theme, Button::Other, session_source),
     ]);
     let status_left = Paragraph::new(status_left_text);
 
@@ -156,11 +168,26 @@ where
   Span::styled(text.into(), theme.of(&[Themed::ActionButton]).add_modifier(Modifier::REVERSED))
 }
 
-fn status_value<'s, S>(theme: &Theme, text: S) -> Span<'s>
+fn status_value<'s, S>(greeter: &Greeter, theme: &Theme, button: Button, text: S) -> Span<'s>
 where
   S: Into<String>,
 {
-  Span::from(titleize(&text.into())).style(theme.of(&[Themed::Action]))
+  let relevant_mode = match button {
+    Button::Command => Mode::Command,
+    Button::Session => Mode::Sessions,
+    Button::Power => Mode::Power,
+
+    _ => {
+      return Span::from(buttonize(&text.into())).style(theme.of(&[Themed::Action]));
+    }
+  };
+
+  let style = match greeter.mode == relevant_mode {
+    true => theme.of(&[Themed::ActionButton]).add_modifier(Modifier::REVERSED),
+    false => theme.of(&[Themed::Action]),
+  };
+
+  Span::from(buttonize(&text.into())).style(style)
 }
 
 fn prompt_value<'s, S>(theme: &Theme, text: Option<S>) -> Span<'s>
