@@ -26,4 +26,5 @@ command_exited = Command exited with
 command_failed = Command failed
 
 status_command = CMD
+status_session = SESS
 status_caps = CAPS LOCK

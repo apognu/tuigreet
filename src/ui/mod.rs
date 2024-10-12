@@ -16,6 +16,7 @@ use std::{
 };
 
 use chrono::prelude::*;
+use sessions::SessionSource;
 use tokio::sync::RwLock;
 use tui::{
   layout::{Alignment, Constraint, Direction, Layout},
@@ -88,18 +89,24 @@ where
       )
       .split(chunks[STATUSBAR_INDEX]);
 
-    let command = greeter.session_source.label(&greeter).unwrap_or("-");
+    let session_source_label = match greeter.session_source {
+      SessionSource::Session(_) => fl!("status_session"),
+      _ => fl!("status_command"),
+    };
+
+    let session_source = greeter.session_source.label(&greeter).unwrap_or("-");
+
     let status_left_text = Line::from(vec![
       status_label(theme, "ESC"),
       status_value(theme, fl!("action_reset")),
       status_label(theme, format!("F{}", greeter.kb_command)),
       status_value(theme, fl!("action_command")),
-      status_label(theme, &format!("F{}", greeter.kb_sessions)),
+      status_label(theme, format!("F{}", greeter.kb_sessions)),
       status_value(theme, fl!("action_session")),
       status_label(theme, format!("F{}", greeter.kb_power)),
       status_value(theme, fl!("action_power")),
-      status_label(theme, fl!("status_command")),
-      status_value(theme, command),
+      status_label(theme, session_source_label),
+      status_value(theme, session_source),
     ]);
     let status_left = Paragraph::new(status_left_text);
 
