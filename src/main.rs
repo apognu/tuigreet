@@ -53,8 +53,6 @@ async fn run<B>(backend: B, mut greeter: Greeter, mut events: Events) -> Result<
 where
   B: tui::backend::Backend,
 {
-  let _guard = init_logger(&greeter);
-
   tracing::info!("tuigreet started");
 
   register_panic_handler();

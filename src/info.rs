@@ -253,6 +253,8 @@ pub fn get_sessions(greeter: &Greeter) -> Result<Vec<Session>, Box<dyn Error>> {
   let mut files = vec![];
 
   for (path, session_type) in paths.iter() {
+    tracing::info!("reading {:?} sessions from '{}'", session_type, path.display());
+
     if let Ok(entries) = fs::read_dir(path) {
       files.extend(entries.flat_map(|entry| entry.map(|entry| load_desktop_file(entry.path(), *session_type))).flatten().flatten());
     }
@@ -273,9 +275,11 @@ where
   let section = desktop.section(Some("Desktop Entry")).ok_or("no Desktop Entry section in desktop file")?;
 
   if let Some("true") = section.get("Hidden") {
+    tracing::info!("ignoring session in '{}': Hidden=true", path.as_ref().display());
     return Ok(None);
   }
   if let Some("true") = section.get("NoDisplay") {
+    tracing::info!("ignoring session in '{}': NoDisplay=true", path.as_ref().display());
     return Ok(None);
   }
 
@@ -283,6 +287,8 @@ where
   let name = section.get("Name").ok_or("no Name property in desktop file")?;
   let exec = section.get("Exec").ok_or("no Exec property in desktop file")?;
   let xdg_desktop_names = section.get("DesktopNames").map(str::to_string);
+
+  tracing::info!("got session '{}' in '{}'", name, path.as_ref().display());
 
   Ok(Some(Session {
     slug,

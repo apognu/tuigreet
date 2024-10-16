@@ -19,6 +19,7 @@ use tokio::{
   net::UnixStream,
   sync::{mpsc::Sender, RwLock, RwLockWriteGuard},
 };
+use tracing_appender::non_blocking::WorkerGuard;
 use zeroize::Zeroize;
 
 use crate::{
@@ -102,6 +103,7 @@ pub enum GreetAlign {
 pub struct Greeter {
   pub debug: bool,
   pub logfile: String,
+  pub logger: Option<WorkerGuard>,
 
   #[default(DEFAULT_LOCALE)]
   pub locale: Locale,
@@ -226,6 +228,8 @@ impl Greeter {
 
       greeter.connect().await;
     }
+
+    greeter.logger = crate::init_logger(&greeter);
 
     let sessions = get_sessions(&greeter).unwrap_or_default();
 
