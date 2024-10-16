@@ -4,6 +4,7 @@ extern crate smart_default;
 #[macro_use]
 mod macros;
 
+mod config;
 mod event;
 mod greeter;
 mod info;

@@ -1,0 +1,39 @@
+[defaults]
+debug = false
+command = "/bin/bash"
+env = ["VAR=value"]
+user_min_uid = 1000
+user_max_uid = 3000
+power_no_setsid = false
+shutdown_command = "shutdown -r now"
+reboot_command = "reboot"
+
+[sessions]
+wayland_paths = ["/usr/share/wayland-sessions"]
+wayland_wrapper = "/usr/local/bin/wlwrapper"
+x11_paths = ["/usr/share/xsessions"]
+x11_wrapper = "/usr/local/bin/x11wraper"
+x11_wrapper_disabled = false
+
+[remember]
+last_user = false
+last_session = false
+last_user_session = false
+
+[ui]
+theme = "border=red"
+greeting = "Well, hello there!"
+use_issue = false
+show_time = false
+time_format = "%d %B %Y"
+show_user_menu = false
+show_asterisks = false
+asterisks_char = "*"
+width = 220
+window_padding = 2
+container_padding = 2
+prompt_padding = 1
+greet_align = "center"
+command_f_key = 1
+sessions_f_key = 2
+power_f_key = 3
