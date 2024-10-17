@@ -20,18 +20,14 @@ use sessions::SessionSource;
 use tokio::sync::RwLock;
 use tui::{
   layout::{Alignment, Constraint, Direction, Layout},
-  style::{Modifier, Style},
+  style::Modifier,
   text::{Line, Span},
   widgets::Paragraph,
   Frame as CrosstermFrame, Terminal,
 };
 use util::buttonize;
 
-use crate::{
-  info::capslock_status,
-  ui::util::{should_hide_cursor, titleize},
-  Greeter, Mode,
-};
+use crate::{info::capslock_status, ui::util::should_hide_cursor, Greeter, Mode};
 
 use self::common::style::{Theme, Themed};
 pub use self::i18n::MESSAGES;
