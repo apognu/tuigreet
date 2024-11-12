@@ -203,7 +203,14 @@ pub fn get_users(min_uid: u16, max_uid: u16) -> Vec<User> {
       username: user.name().to_string_lossy().to_string(),
       name: match user.gecos() {
         name if name.is_empty() => None,
-        name => Some(name.to_string_lossy().to_string()),
+        name => {
+          let name = name.to_string_lossy();
+
+          match name.split_once(',') {
+            Some((name, _)) => Some(name.to_string()),
+            None => Some(name.to_string()),
+          }
+        }
       },
     })
     .collect();
