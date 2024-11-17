@@ -4,15 +4,13 @@ use std::{
   error::Error,
   ffi::OsStr,
   fmt::{self, Display},
+  fs,
   path::PathBuf,
   process,
   sync::Arc,
 };
 
-use chrono::{
-  format::{Item, StrftimeItems},
-  Locale,
-};
+use chrono::Locale;
 use getopts::{Matches, Options};
 use i18n_embed::DesktopLanguageRequester;
 use tokio::{
@@ -23,9 +21,9 @@ use tracing_appender::non_blocking::WorkerGuard;
 use zeroize::Zeroize;
 
 use crate::{
+  config::{file::FileConfig, parser::DEFAULT_XSESSION_WRAPPER},
   event::Event,
-  info::{get_issue, get_last_command, get_last_session_path, get_last_user_command, get_last_user_name, get_last_user_session, get_last_user_username, get_min_max_uids, get_sessions, get_users},
-  power::PowerOption,
+  info::{get_last_command, get_last_session_path, get_last_user_command, get_last_user_name, get_last_user_session, get_last_user_username, get_sessions},
   ui::{
     common::{masked::MaskedString, menu::Menu, style::Theme},
     power::Power,
@@ -34,12 +32,7 @@ use crate::{
   },
 };
 
-const DEFAULT_LOG_FILE: &str = "/tmp/tuigreet.log";
 const DEFAULT_LOCALE: Locale = Locale::en_US;
-const DEFAULT_ASTERISKS_CHARS: &str = "*";
-// `startx` wants an absolute path to the executable as a first argument.
-// We don't want to resolve the session command in the greeter though, so it should be additionally wrapped with a known noop command (like `/usr/bin/env`).
-const DEFAULT_XSESSION_WRAPPER: &str = "startx /usr/bin/env";
 
 #[derive(Debug, Copy, Clone)]
 pub enum AuthStatus {
@@ -101,13 +94,15 @@ pub enum GreetAlign {
 
 #[derive(SmartDefault)]
 pub struct Greeter {
+  pub opts: Option<Matches>,
+  pub config: FileConfig,
+
   pub debug: bool,
   pub logfile: String,
   pub logger: Option<WorkerGuard>,
 
   #[default(DEFAULT_LOCALE)]
   pub locale: Locale,
-  pub config: Option<Matches>,
   pub socket: String,
   pub stream: Option<Arc<RwLock<UnixStream>>>,
   pub events: Option<Sender<Event>>,
@@ -209,6 +204,27 @@ impl Greeter {
 
     #[cfg(not(test))]
     {
+      let args = env::args().collect::<Vec<String>>();
+
+      match greeter.parse_opts(&args) {
+        Ok(opts) => greeter.opts = opts,
+        Err(err) => {
+          eprintln!("{err}");
+          print_usage(Greeter::options());
+
+          process::exit(1);
+        }
+      }
+
+      if greeter.config().opt_present("help") {
+        print_usage(Greeter::options());
+        process::exit(0);
+      }
+      if greeter.config().opt_present("version") {
+        print_version();
+        process::exit(0);
+      }
+
       match env::var("GREETD_SOCK") {
         Ok(socket) => greeter.socket = socket,
         Err(_) => {
@@ -217,9 +233,26 @@ impl Greeter {
         }
       }
 
-      let args = env::args().collect::<Vec<String>>();
+      greeter.config = if let Some(config_file) = greeter.config().opt_str("config") {
+        match fs::read_to_string(config_file) {
+          Ok(config) => match toml::from_str::<FileConfig>(&config) {
+            Ok(config) => config,
+            Err(err) => {
+              eprintln!("ERROR: could not parse configuration file: {err}");
+              process::exit(1);
+            }
+          },
 
-      if let Err(err) = greeter.parse_options(&args).await {
+          Err(err) => {
+            eprintln!("ERROR: could not open configuration file: {err}");
+            process::exit(1);
+          }
+        }
+      } else {
+        FileConfig::default()
+      };
+
+      if let Err(err) = greeter.parse_config().await {
         eprintln!("{err}");
         print_usage(Greeter::options());
 
@@ -332,7 +365,7 @@ impl Greeter {
   }
 
   pub fn config(&self) -> &Matches {
-    self.config.as_ref().unwrap()
+    self.opts.as_ref().unwrap()
   }
 
   pub async fn stream(&self) -> RwLockWriteGuard<'_, UnixStream> {
@@ -353,10 +386,8 @@ impl Greeter {
   // Returns the width of the main window where content is displayed from the
   // provided arguments.
   pub fn width(&self) -> u16 {
-    if let Some(value) = self.option("width") {
-      if let Ok(width) = value.parse::<u16>() {
-        return width;
-      }
+    if let Some(width) = self.option("width").and_then(|value| value.parse::<u16>().ok()).or(self.config.ui.width) {
+      return width;
     }
 
     80
@@ -364,10 +395,8 @@ impl Greeter {
 
   // Returns the padding of the screen from the provided arguments.
   pub fn window_padding(&self) -> u16 {
-    if let Some(value) = self.option("window-padding") {
-      if let Ok(padding) = value.parse::<u16>() {
-        return padding;
-      }
+    if let Some(padding) = self.option("window-padding").and_then(|value| value.parse::<u16>().ok()).or(self.config.ui.window_padding) {
+      return padding;
     }
 
     0
@@ -376,10 +405,8 @@ impl Greeter {
   // Returns the padding of the main window where content is displayed from the
   // provided arguments.
   pub fn container_padding(&self) -> u16 {
-    if let Some(value) = self.option("container-padding") {
-      if let Ok(padding) = value.parse::<u16>() {
-        return padding + 1;
-      }
+    if let Some(padding) = self.option("container-padding").and_then(|value| value.parse::<u16>().ok()).or(self.config.ui.container_padding) {
+      return padding + 1;
     }
 
     2
@@ -387,17 +414,15 @@ impl Greeter {
 
   // Returns the spacing between each prompt from the provided arguments.
   pub fn prompt_padding(&self) -> u16 {
-    if let Some(value) = self.option("prompt-padding") {
-      if let Ok(padding) = value.parse::<u16>() {
-        return padding;
-      }
+    if let Some(padding) = self.option("prompt-padding").and_then(|value| value.parse::<u16>().ok()).or(self.config.ui.prompt_padding) {
+      return padding;
     }
 
     1
   }
 
   pub fn greet_align(&self) -> GreetAlign {
-    if let Some(value) = self.option("greet-align") {
+    if let Some(value) = self.option("greet-align").or_else(|| self.config.ui.greet_align.clone()) {
       match value.as_str() {
         "left" => GreetAlign::Left,
         "right" => GreetAlign::Right,
@@ -428,6 +453,7 @@ impl Greeter {
 
     opts.optflag("h", "help", "show this usage information");
     opts.optflag("v", "version", "print version information");
+    opts.optopt("", "config", "Path to tuigreet's configuration file", "FILE");
     opts.optflagopt("d", "debug", "enable debug logging to the provided file, or to /tmp/tuigreet.log", "FILE");
     opts.optopt("c", "cmd", "command to run", "COMMAND");
     opts.optmulti("", "env", "environment variables to run the default session with (can appear more than once)", "KEY=VALUE");
@@ -471,160 +497,32 @@ impl Greeter {
     opts
   }
 
-  // Parses command line arguments to configured the software accordingly.
-  pub async fn parse_options<S>(&mut self, args: &[S]) -> Result<(), Box<dyn Error>>
+  pub fn parse_opts<S>(&mut self, args: &[S]) -> Result<Option<Matches>, Box<dyn Error>>
   where
     S: AsRef<OsStr>,
   {
-    let opts = Greeter::options();
+    Ok(Some(Greeter::options().parse(args)?))
+  }
 
-    self.config = match opts.parse(args) {
-      Ok(matches) => Some(matches),
-      Err(err) => return Err(err.into()),
-    };
-
-    if self.config().opt_present("help") {
-      print_usage(opts);
-      process::exit(0);
-    }
-    if self.config().opt_present("version") {
-      print_version();
-      process::exit(0);
-    }
-
-    if self.config().opt_present("debug") {
-      self.debug = true;
-
-      self.logfile = match self.config().opt_str("debug") {
-        Some(file) => file.to_string(),
-        None => DEFAULT_LOG_FILE.to_string(),
-      }
-    }
-
-    if self.config().opt_present("issue") && self.config().opt_present("greeting") {
-      return Err("Only one of --issue and --greeting may be used at the same time".into());
-    }
-
+  // Parses command line arguments to configured the software accordingly.
+  pub async fn parse_config(&mut self) -> Result<(), Box<dyn Error>> {
     if self.config().opt_present("theme") {
       if let Some(spec) = self.config().opt_str("theme") {
         self.theme = Theme::parse(spec.as_str());
       }
     }
 
-    if self.config().opt_present("asterisks") {
-      let asterisk = if let Some(value) = self.config().opt_str("asterisks-char") {
-        if value.chars().count() < 1 {
-          return Err("--asterisks-char must have at least one character as its value".into());
-        }
-
-        value
-      } else {
-        DEFAULT_ASTERISKS_CHARS.to_string()
-      };
-
-      self.secret_display = SecretDisplay::Character(asterisk);
-    }
-
-    self.time = self.config().opt_present("time");
-
-    if let Some(format) = self.config().opt_str("time-format") {
-      if StrftimeItems::new(&format).any(|item| item == Item::Error) {
-        return Err("Invalid strftime format provided in --time-format".into());
-      }
-
-      self.time_format = Some(format);
-    }
-
-    if self.config().opt_present("user-menu") {
-      self.user_menu = true;
-
-      let min_uid = self.config().opt_str("user-menu-min-uid").and_then(|uid| uid.parse::<u16>().ok());
-      let max_uid = self.config().opt_str("user-menu-max-uid").and_then(|uid| uid.parse::<u16>().ok());
-      let (min_uid, max_uid) = get_min_max_uids(min_uid, max_uid);
-
-      tracing::info!("min/max UIDs are {}/{}", min_uid, max_uid);
-
-      if min_uid >= max_uid {
-        return Err("Minimum UID ({min_uid}) must be less than maximum UID ({max_uid})".into());
-      }
-
-      self.users = Menu {
-        title: fl!("title_users"),
-        options: get_users(min_uid, max_uid),
-        selected: 0,
-      };
-
-      tracing::info!("found {} users", self.users.options.len());
-    }
-
-    if self.config().opt_present("remember-session") && self.config().opt_present("remember-user-session") {
-      return Err("Only one of --remember-session and --remember-user-session may be used at the same time".into());
-    }
-    if self.config().opt_present("remember-user-session") && !self.config().opt_present("remember") {
-      return Err("--remember-session must be used with --remember".into());
-    }
-
-    self.remember = self.config().opt_present("remember");
-    self.remember_session = self.config().opt_present("remember-session");
-    self.remember_user_session = self.config().opt_present("remember-user-session");
-    self.greeting = self.option("greeting");
-
-    // If the `--cmd` argument is provided, it will override the selected session.
-    if let Some(command) = self.option("cmd") {
-      let envs = self.options_multi("env");
-
-      if let Some(envs) = envs {
-        for env in envs {
-          if !env.contains('=') {
-            return Err(format!("malformed environment variable definition for '{env}'").into());
-          }
-        }
-      }
-
-      self.session_source = SessionSource::DefaultCommand(command, self.options_multi("env"));
-    }
-
-    if let Some(dirs) = self.option("sessions") {
-      self.session_paths.extend(env::split_paths(&dirs).map(|dir| (dir, SessionType::Wayland)));
-    }
-
-    if let Some(dirs) = self.option("xsessions") {
-      self.session_paths.extend(env::split_paths(&dirs).map(|dir| (dir, SessionType::X11)));
-    }
-
-    if self.option("session-wrapper").is_some() {
-      self.session_wrapper = self.option("session-wrapper");
-    }
-
-    if !self.config().opt_present("no-xsession-wrapper") {
-      self.xsession_wrapper = self.option("xsession-wrapper").or_else(|| Some(DEFAULT_XSESSION_WRAPPER.to_string()));
-    }
-
-    if self.config().opt_present("issue") {
-      self.greeting = get_issue();
-    }
-
-    self.powers.options.push(Power {
-      action: PowerOption::Shutdown,
-      label: fl!("shutdown"),
-      command: self.config().opt_str("power-shutdown"),
-    });
-
-    self.powers.options.push(Power {
-      action: PowerOption::Reboot,
-      label: fl!("reboot"),
-      command: self.config().opt_str("power-reboot"),
-    });
-
-    self.power_setsid = !self.config().opt_present("power-no-setsid");
-
-    self.kb_command = self.config().opt_str("kb-command").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(2);
-    self.kb_sessions = self.config().opt_str("kb-sessions").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(3);
-    self.kb_power = self.config().opt_str("kb-power").map(|i| i.parse::<u8>().unwrap_or_default()).unwrap_or(12);
-
-    if self.kb_command == self.kb_sessions || self.kb_sessions == self.kb_power || self.kb_power == self.kb_command {
-      return Err("keybindings must all be distinct".into());
-    }
+    self.parse_debug();
+    self.parse_greeting()?;
+    self.parse_asterisks()?;
+    self.parse_default_command()?;
+    self.parse_sessions();
+    self.parse_time()?;
+    self.parse_menus()?;
+    self.parse_remembers()?;
+    self.parse_power();
+    self.parse_keybinds()?;
+    self.parse_theme()?;
 
     Ok(())
   }
@@ -661,7 +559,7 @@ fn print_version() {
 
 #[cfg(test)]
 mod test {
-  use crate::{ui::sessions::SessionSource, Greeter, SecretDisplay};
+  use crate::Greeter;
 
   #[test]
   fn test_prompt_width() {
@@ -690,92 +588,5 @@ mod test {
     greeter.remove_prompt();
 
     assert_eq!(greeter.prompt, None);
-  }
-
-  #[tokio::test]
-  async fn test_command_line_arguments() {
-    let table: &[(&[&str], _, Option<fn(&Greeter)>)] = &[
-      // No arguments
-      (&[], true, None),
-      // Valid combinations
-      (&["--cmd", "hello"], true, None),
-      (
-        &[
-          "--cmd",
-          "uname",
-          "--env",
-          "A=B",
-          "--env",
-          "C=D=E",
-          "--asterisks",
-          "--asterisks-char",
-          ".",
-          "--issue",
-          "--time",
-          "--prompt-padding",
-          "0",
-          "--window-padding",
-          "1",
-          "--container-padding",
-          "12",
-          "--user-menu",
-        ],
-        true,
-        Some(|greeter| {
-          assert!(matches!(&greeter.session_source, SessionSource::DefaultCommand(cmd, Some(env)) if cmd == "uname" && env.len() == 2));
-
-          if let SessionSource::DefaultCommand(_, Some(env)) = &greeter.session_source {
-            assert_eq!(env[0], "A=B");
-            assert_eq!(env[1], "C=D=E");
-          }
-
-          assert!(matches!(&greeter.secret_display, SecretDisplay::Character(c) if c == "."));
-          assert_eq!(greeter.prompt_padding(), 0);
-          assert_eq!(greeter.window_padding(), 1);
-          assert_eq!(greeter.container_padding(), 13);
-          assert_eq!(greeter.user_menu, true);
-          assert!(matches!(greeter.xsession_wrapper.as_deref(), Some("startx /usr/bin/env")));
-        }),
-      ),
-      (
-        &["--xsession-wrapper", "mywrapper.sh"],
-        true,
-        Some(|greeter| {
-          assert!(matches!(greeter.xsession_wrapper.as_deref(), Some("mywrapper.sh")));
-        }),
-      ),
-      (
-        &["--no-xsession-wrapper"],
-        true,
-        Some(|greeter| {
-          assert!(matches!(greeter.xsession_wrapper, None));
-        }),
-      ),
-      // Invalid combinations
-      (&["--remember-session", "--remember-user-session"], false, None),
-      (&["--asterisk-char", ""], false, None),
-      (&["--remember-user-session"], false, None),
-      (&["--min-uid", "10000", "--max-uid", "5000"], false, None),
-      (&["--issue", "--greeting", "Hello, world!"], false, None),
-      (&["--kb-command", "F2", "--kb-sessions", "F2"], false, None),
-      (&["--time-format", "%i %"], false, None),
-      (&["--cmd", "cmd", "--env"], false, None),
-      (&["--cmd", "cmd", "--env", "A"], false, None),
-    ];
-
-    for (opts, valid, check) in table {
-      let mut greeter = Greeter::default();
-
-      match valid {
-        true => {
-          assert!(matches!(greeter.parse_options(*opts).await, Ok(())), "{:?} cannot be parsed", opts);
-
-          if let Some(check) = check {
-            check(&greeter);
-          }
-        }
-        false => assert!(matches!(greeter.parse_options(*opts).await, Err(_))),
-      }
-    }
   }
 }
